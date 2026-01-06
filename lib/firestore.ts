@@ -234,8 +234,15 @@ export function calculateOverallStats(reports: Report[]) {
   let totalViews = 0;
   let totalImpressions = 0;
   let totalPosts = 0;
+  let totalProfileAccess = 0;
+  let totalExternalTaps = 0;
+  let totalInteractions = 0;
+  let totalStories = 0;
+  let totalLikes = 0;
+  let totalReplies = 0;
 
   const memberSet = new Set<string>();
+  const latestFollowers: { [key: string]: { ig: number; yt: number; tiktok: number } } = {};
 
   reports.forEach(report => {
     memberSet.add(report.name);
@@ -243,16 +250,50 @@ export function calculateOverallStats(reports: Report[]) {
     if (report.teamType === "shorts") {
       totalViews += report.igViews || 0;
       totalImpressions += report.igProfileAccess || 0;
+      totalProfileAccess += report.igProfileAccess || 0;
+      totalExternalTaps += report.igExternalTaps || 0;
+      totalInteractions += report.igInteractions || 0;
+      totalStories += report.weeklyStories || 0;
       totalPosts += 1;
+      
+      // 最新のフォロワー数を保持
+      const key = `${report.team}-${report.name}`;
+      if (!latestFollowers[key]) {
+        latestFollowers[key] = { ig: 0, yt: 0, tiktok: 0 };
+      }
+      latestFollowers[key].ig = report.igFollowers || 0;
+      latestFollowers[key].yt = report.ytFollowers || 0;
+      latestFollowers[key].tiktok = report.tiktokFollowers || 0;
     } else {
       totalPosts += report.postCount || 0;
+      totalLikes += report.likeCount || 0;
+      totalReplies += report.replyCount || 0;
     }
+  });
+
+  // 全メンバーの最新フォロワー数を合計
+  let totalIgFollowers = 0;
+  let totalYtFollowers = 0;
+  let totalTiktokFollowers = 0;
+  Object.values(latestFollowers).forEach(f => {
+    totalIgFollowers += f.ig;
+    totalYtFollowers += f.yt;
+    totalTiktokFollowers += f.tiktok;
   });
 
   return {
     totalViews,
     totalImpressions,
     totalPosts,
+    totalProfileAccess,
+    totalExternalTaps,
+    totalInteractions,
+    totalStories,
+    totalLikes,
+    totalReplies,
+    totalIgFollowers,
+    totalYtFollowers,
+    totalTiktokFollowers,
     activeMembers: memberSet.size
   };
 }
