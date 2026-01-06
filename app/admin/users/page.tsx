@@ -269,7 +269,8 @@ export default function AdminUsersPage() {
                 return (
                   <div
                     key={u.uid}
-                    className="p-4 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 transition-all"
+                    className="p-4 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 transition-all cursor-pointer"
+                    onClick={() => window.location.href = `/admin/users/${u.uid}`}
                   >
                     <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
                       {/* ユーザー情報 */}
