@@ -1,5 +1,6 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
@@ -14,6 +15,9 @@ import {
   Users,
   Settings
 } from "lucide-react";
+import { getTeamType, getGuardianProgress } from "@/lib/guardian-system";
+import { getReportsByPeriod } from "@/lib/firestore";
+import { calculateStreak } from "@/lib/gamification";
 
 // メンバー専用ナビゲーション（デスクトップ表示用）
 const memberNavItems = [
@@ -81,11 +85,43 @@ const adminNavItems = [
 
 export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
   const pathname = usePathname();
-  const { userProfile } = useAuth();
+  const { user, userProfile } = useAuth();
+  const [guardianInfo, setGuardianInfo] = useState<any>(null);
 
   // 役割に応じてナビゲーションを切り替え
   const navItems = userProfile?.role === "admin" ? adminNavItems : memberNavItems;
   const roleLabel = userProfile?.role === "admin" ? "管理者" : "メンバー";
+
+  // ガーディアン情報取得（メンバーのみ）
+  useEffect(() => {
+    if (!user || !userProfile || userProfile.role === "admin" || !userProfile.team) return;
+
+    const loadGuardianInfo = async () => {
+      try {
+        const reports = await getReportsByPeriod("1q");
+        const myReports = reports.filter(r => r.userEmail === user.email);
+        
+        const teamType = getTeamType(userProfile.team);
+        let totalValue = 0;
+        
+        myReports.forEach(report => {
+          if (teamType === "shorts") {
+            totalValue += report.igViews || 0;
+          } else {
+            const estimatedImpressions = ((report.likeCount || 0) + (report.replyCount || 0)) * 100;
+            totalValue += estimatedImpressions;
+          }
+        });
+        
+        const progress = getGuardianProgress(totalValue, teamType);
+        setGuardianInfo(progress);
+      } catch (error) {
+        console.error("ガーディアン情報取得エラー:", error);
+      }
+    };
+
+    loadGuardianInfo();
+  }, [user, userProfile]);
 
   return (
     <aside className="fixed left-0 top-0 z-40 h-screen w-64 border-r border-white/10 bg-white/5 backdrop-blur-xl">
@@ -118,6 +154,50 @@ export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
               </div>
             </div>
           </div>
+        )}
+
+        {/* Guardian Mini Display (Members Only) */}
+        {userProfile && userProfile.role !== "admin" && guardianInfo && guardianInfo.currentStage && (
+          <Link href="/mypage" onClick={onNavigate} className="block border-b border-white/10 p-4 hover:bg-white/5 transition-colors">
+            <div className="flex items-center gap-3 mb-2">
+              <div 
+                className="w-12 h-12 rounded-full flex items-center justify-center text-2xl relative flex-shrink-0"
+                style={{
+                  backgroundColor: `${guardianInfo.currentStage.color}20`,
+                  boxShadow: `0 0 15px ${guardianInfo.currentStage.glowColor}`,
+                  border: `2px solid ${guardianInfo.currentStage.color}`,
+                }}
+              >
+                {guardianInfo.currentStage.emoji}
+                {guardianInfo.currentStage.stage === 5 && (
+                  <span className="absolute -top-1 -right-1 text-sm">👑</span>
+                )}
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-xs text-muted-foreground">Stage {guardianInfo.currentStage.stage}</p>
+                <p className="text-xs font-bold truncate" style={{ color: guardianInfo.currentStage.color }}>
+                  {guardianInfo.currentStage.japaneseName}
+                </p>
+              </div>
+            </div>
+            
+            {guardianInfo.nextStage && (
+              <div className="space-y-1">
+                <div className="relative w-full h-2 bg-white/10 rounded-full overflow-hidden">
+                  <div
+                    className="h-full transition-all duration-500"
+                    style={{
+                      width: `${guardianInfo.progress}%`,
+                      background: `linear-gradient(90deg, ${guardianInfo.currentStage.color}, ${guardianInfo.nextStage.color})`,
+                    }}
+                  />
+                </div>
+                <p className="text-xs text-muted-foreground text-center">
+                  {guardianInfo.progress}% → {guardianInfo.nextStage.japaneseName}
+                </p>
+              </div>
+            )}
+          </Link>
         )}
 
         {/* Navigation */}
