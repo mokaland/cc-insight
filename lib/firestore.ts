@@ -314,7 +314,8 @@ export function calculateRankings(reports: Report[], type: "views" | "posts" | "
 export interface User {
   uid: string;
   email: string;
-  displayName: string;
+  realName: string; // 漢字フルネーム（管理者のみ閲覧）
+  displayName: string; // ニックネーム（公開）
   team: string;
   role: "member" | "admin";
   status: "pending" | "approved" | "suspended";

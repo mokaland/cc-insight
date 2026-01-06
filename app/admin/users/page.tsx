@@ -276,7 +276,14 @@ export default function AdminUsersPage() {
                       {/* ユーザー情報 */}
                       <div className="flex-1">
                         <div className="flex items-center gap-3 mb-2">
-                          <h3 className="text-lg font-semibold">{u.displayName}</h3>
+                          <h3 className="text-lg font-semibold">
+                            {u.realName || u.displayName}
+                            {u.realName && (
+                              <span className="text-sm font-normal text-muted-foreground ml-2">
+                                ({u.displayName})
+                              </span>
+                            )}
+                          </h3>
                           {u.role === "admin" && (
                             <span className="px-2 py-0.5 rounded-full bg-purple-500/20 text-purple-300 text-xs flex items-center gap-1">
                               <Shield className="w-3 h-3" />
