@@ -5,6 +5,8 @@ import {
   orderBy, 
   onSnapshot,
   getDocs,
+  deleteDoc,
+  doc,
   Timestamp,
   DocumentData
 } from "firebase/firestore";
@@ -247,6 +249,21 @@ export function calculateOverallStats(reports: Report[]) {
     totalPosts,
     activeMembers: memberSet.size
   };
+}
+
+// 全レポートを削除（データクリーンアップ用）
+export async function deleteAllReports(): Promise<number> {
+  const q = query(collection(db, "reports"));
+  const snapshot = await getDocs(q);
+  let count = 0;
+  
+  const deletePromises = snapshot.docs.map(async (docSnapshot) => {
+    await deleteDoc(doc(db, "reports", docSnapshot.id));
+    count++;
+  });
+  
+  await Promise.all(deletePromises);
+  return count;
 }
 
 // ランキングを計算

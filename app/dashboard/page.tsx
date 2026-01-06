@@ -19,23 +19,35 @@ export default function DashboardPage() {
   const [period, setPeriod] = useState("week");
   const [reports, setReports] = useState<Report[]>([]);
   const [loading, setLoading] = useState(true);
+  const [initialLoadDone, setInitialLoadDone] = useState(false);
 
   useEffect(() => {
-    setLoading(true);
+    // 最大3秒でローディング終了
+    const timeout = setTimeout(() => {
+      setLoading(false);
+      setInitialLoadDone(true);
+    }, 3000);
+
     const unsubscribe = subscribeToReports((data) => {
       setReports(data);
       setLoading(false);
+      setInitialLoadDone(true);
+      clearTimeout(timeout);
     });
 
-    return () => unsubscribe();
+    return () => {
+      unsubscribe();
+      clearTimeout(timeout);
+    };
   }, []);
 
   const overallStats = calculateOverallStats(reports);
 
-  if (loading) {
+  if (loading && !initialLoadDone) {
     return (
-      <div className="flex items-center justify-center min-h-[50vh]">
+      <div className="flex flex-col items-center justify-center min-h-[50vh] gap-4">
         <Loader2 className="w-8 h-8 animate-spin text-pink-500" />
+        <p className="text-sm text-muted-foreground">データを読み込み中...</p>
       </div>
     );
   }
@@ -193,7 +205,7 @@ export default function DashboardPage() {
       </div>
 
       {/* Empty State */}
-      {reports.length === 0 && (
+      {reports.length === 0 && initialLoadDone && (
         <GlassCard glowColor="#a855f7" className="p-8 text-center">
           <div className="text-6xl mb-4">📊</div>
           <h3 className="text-xl font-semibold mb-2">まだデータがありません</h3>
