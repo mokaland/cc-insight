@@ -19,6 +19,7 @@ import {
   Loader2
 } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { cn } from "@/lib/utils";
 
 export default function AdminUsersPage() {
   const { user, userProfile } = useAuth();
@@ -138,7 +139,7 @@ export default function AdminUsersPage() {
   }
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-8 pb-24 md:pb-8">
       {/* ヘッダー */}
       <div>
         <h1 className="text-3xl font-bold bg-gradient-to-r from-purple-500 via-indigo-500 to-blue-500 bg-clip-text text-transparent">
@@ -186,48 +187,81 @@ export default function AdminUsersPage() {
           </div>
 
           {/* フィルタボタン */}
-          <div className="flex flex-wrap gap-2">
+          <div className="flex flex-wrap gap-2 relative z-10">
             <Button
               size="sm"
               variant={statusFilter === "all" ? "default" : "outline"}
-              onClick={() => setStatusFilter("all")}
-              className={statusFilter === "all" ? "bg-gradient-to-r from-purple-500 to-indigo-500" : ""}
+              onClick={(e) => {
+                e.stopPropagation();
+                setStatusFilter("all");
+              }}
+              className={cn(
+                "relative z-10",
+                statusFilter === "all" && "bg-gradient-to-r from-purple-500 to-indigo-500"
+              )}
+              style={{ touchAction: "manipulation" }}
             >
               全て
             </Button>
             <Button
               size="sm"
               variant={statusFilter === "pending" ? "default" : "outline"}
-              onClick={() => setStatusFilter("pending")}
-              className={statusFilter === "pending" ? "bg-gradient-to-r from-yellow-500 to-orange-500" : ""}
+              onClick={(e) => {
+                e.stopPropagation();
+                setStatusFilter("pending");
+              }}
+              className={cn(
+                "relative z-10",
+                statusFilter === "pending" && "bg-gradient-to-r from-yellow-500 to-orange-500"
+              )}
+              style={{ touchAction: "manipulation" }}
             >
               承認待ち
             </Button>
             <Button
               size="sm"
               variant={statusFilter === "approved" ? "default" : "outline"}
-              onClick={() => setStatusFilter("approved")}
-              className={statusFilter === "approved" ? "bg-gradient-to-r from-green-500 to-emerald-500" : ""}
+              onClick={(e) => {
+                e.stopPropagation();
+                setStatusFilter("approved");
+              }}
+              className={cn(
+                "relative z-10",
+                statusFilter === "approved" && "bg-gradient-to-r from-green-500 to-emerald-500"
+              )}
+              style={{ touchAction: "manipulation" }}
             >
               承認済み
             </Button>
             <Button
               size="sm"
               variant={statusFilter === "suspended" ? "default" : "outline"}
-              onClick={() => setStatusFilter("suspended")}
-              className={statusFilter === "suspended" ? "bg-gradient-to-r from-red-500 to-pink-500" : ""}
+              onClick={(e) => {
+                e.stopPropagation();
+                setStatusFilter("suspended");
+              }}
+              className={cn(
+                "relative z-10",
+                statusFilter === "suspended" && "bg-gradient-to-r from-red-500 to-pink-500"
+              )}
+              style={{ touchAction: "manipulation" }}
             >
               停止中
             </Button>
           </div>
 
           {/* チームフィルタ */}
-          <div className="flex flex-wrap gap-2">
+          <div className="flex flex-wrap gap-2 relative z-10">
             <span className="text-sm text-muted-foreground self-center">チーム:</span>
             <Button
               size="sm"
               variant={teamFilter === "all" ? "default" : "outline"}
-              onClick={() => setTeamFilter("all")}
+              onClick={(e) => {
+                e.stopPropagation();
+                setTeamFilter("all");
+              }}
+              className="relative z-10"
+              style={{ touchAction: "manipulation" }}
             >
               全チーム
             </Button>
@@ -236,9 +270,14 @@ export default function AdminUsersPage() {
                 key={team.id}
                 size="sm"
                 variant={teamFilter === team.id ? "default" : "outline"}
-                onClick={() => setTeamFilter(team.id)}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setTeamFilter(team.id);
+                }}
+                className="relative z-10"
                 style={{
                   backgroundColor: teamFilter === team.id ? team.color : undefined,
+                  touchAction: "manipulation",
                 }}
               >
                 {team.name}

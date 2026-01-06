@@ -3,7 +3,7 @@
 import { usePathname, useRouter } from "next/navigation";
 import { AuthProvider, AuthGuard } from "@/lib/auth-context";
 import { Sidebar } from "@/components/sidebar";
-import { LogOut, Home, ClipboardList, Trophy } from "lucide-react";
+import { LogOut, Home, ClipboardList, Trophy, LayoutDashboard, Users } from "lucide-react";
 import { useAuth } from "@/lib/auth-context";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -63,10 +63,24 @@ function LayoutContent({ children }: { children: React.ReactNode }) {
 function BottomNavigation() {
   const pathname = usePathname();
   const router = useRouter();
-  const { userProfile } = useAuth();
+  const { userProfile, logout } = useAuth();
+
+  // 管理者用のナビゲーション項目
+  const adminNavItems = [
+    {
+      label: "全体状況",
+      icon: LayoutDashboard,
+      href: "/dashboard",
+    },
+    {
+      label: "メンバー",
+      icon: Users,
+      href: "/admin/users",
+    },
+  ];
 
   // メンバー専用のナビゲーション項目
-  const navItems = [
+  const memberNavItems = [
     {
       label: "マイページ",
       icon: Home,
@@ -84,16 +98,20 @@ function BottomNavigation() {
     },
   ];
 
-  // 管理者の場合はボトムナビを表示しない（デスクトップUIを推奨）
-  if (userProfile?.role === "admin") {
-    return null;
-  }
+  const handleLogout = () => {
+    if (confirm("ログアウトしますか？")) {
+      logout();
+    }
+  };
+
+  // 管理者と一般メンバーで異なるナビを表示
+  const navItems = userProfile?.role === "admin" ? adminNavItems : memberNavItems;
 
   return (
     <nav className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-gray-900/90 backdrop-blur-md border-t border-white/10 pb-safe">
       <div className="flex items-center justify-around h-16">
         {navItems.map((item) => {
-          const isActive = pathname === item.href;
+          const isActive = pathname === item.href || pathname.startsWith(item.href);
           const Icon = item.icon;
           
           return (
@@ -101,9 +119,10 @@ function BottomNavigation() {
               key={item.href}
               onClick={() => router.push(item.href)}
               className={cn(
-                "flex flex-col items-center justify-center gap-1 px-4 py-2 transition-transform duration-100 active:scale-95",
+                "flex flex-col items-center justify-center gap-1 px-4 py-2 transition-transform duration-100 active:scale-95 relative z-50",
                 isActive ? "text-pink-500" : "text-gray-400"
               )}
+              style={{ touchAction: "manipulation" }}
             >
               <Icon
                 className={cn(
@@ -122,6 +141,18 @@ function BottomNavigation() {
             </button>
           );
         })}
+        
+        {/* ログアウトボタン */}
+        <button
+          onClick={handleLogout}
+          className="flex flex-col items-center justify-center gap-1 px-4 py-2 transition-transform duration-100 active:scale-95 text-red-400 relative z-50"
+          style={{ touchAction: "manipulation" }}
+        >
+          <LogOut className="w-6 h-6" />
+          <span className="text-xs font-medium">
+            ログアウト
+          </span>
+        </button>
       </div>
     </nav>
   );
