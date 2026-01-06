@@ -15,7 +15,7 @@ import {
   Settings
 } from "lucide-react";
 
-// メンバー専用ナビゲーション
+// メンバー専用ナビゲーション（デスクトップ表示用）
 const memberNavItems = [
   {
     title: "マイページ",
@@ -28,6 +28,16 @@ const memberNavItems = [
     subtitle: "全メンバー比較",
     href: "/ranking",
     icon: Trophy,
+  },
+];
+
+// モバイルドロワー用（サブ機能のみ）
+const memberMobileNavItems = [
+  {
+    title: "設定",
+    subtitle: "プロフィール編集",
+    href: "/mypage",
+    icon: Settings,
   },
 ];
 
