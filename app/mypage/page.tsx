@@ -14,11 +14,11 @@ import {
   getAchievementMessage 
 } from "@/lib/gamification";
 import { getReportsByPeriod, calculateTeamStats, teams } from "@/lib/firestore";
-import { TrendingUp, Target, Award, Flame, Calendar, Eye, Video, Loader2 } from "lucide-react";
+import { TrendingUp, Target, Award, Flame, Calendar, Eye, Video, Loader2, LogOut } from "lucide-react";
 import Link from "next/link";
 
 export default function MyPage() {
-  const { user, userProfile } = useAuth();
+  const { user, userProfile, logout } = useAuth();
   const [reports, setReports] = useState<any[]>([]);
   const [weeklyStats, setWeeklyStats] = useState<any>(null);
   const [loading, setLoading] = useState(true);
@@ -432,6 +432,20 @@ export default function MyPage() {
             </div>
           </GlassCard>
         </Link>
+      </div>
+
+      {/* ログアウト（モバイル用） */}
+      <div className="md:hidden">
+        <GlassCard glowColor="#ef4444" className="p-6">
+          <Button
+            onClick={logout}
+            variant="outline"
+            className="w-full border-red-500/50 text-red-400 hover:bg-red-500/10"
+          >
+            <LogOut className="w-4 h-4 mr-2" />
+            ログアウト
+          </Button>
+        </GlassCard>
       </div>
     </div>
   );

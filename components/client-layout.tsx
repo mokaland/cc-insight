@@ -7,6 +7,7 @@ import { LogOut, Home, ClipboardList, Trophy } from "lucide-react";
 import { useAuth } from "@/lib/auth-context";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { motion, AnimatePresence } from "framer-motion";
 
 // 完全公開ページ（認証不要・サイドバー非表示・ボトムナビ非表示）
 const publicPages = ["/login", "/register", "/verify-email", "/pending-approval", "/admin/login"];
@@ -48,9 +49,22 @@ function LayoutContent({ children }: { children: React.ReactNode }) {
         </div>
 
         {/* メインコンテンツ */}
-        <main className="flex-1 md:ml-64 pb-20 md:pb-8 p-4 md:p-8 w-full">
+        <main className="flex-1 md:ml-64 pb-20 md:pb-8 p-4 md:p-8 w-full overflow-hidden">
           <LogoutButton />
-          {children}
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={pathname}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -20 }}
+              transition={{
+                duration: 0.25,
+                ease: [0.4, 0.0, 0.2, 1],
+              }}
+            >
+              {children}
+            </motion.div>
+          </AnimatePresence>
         </main>
 
         {/* ボトムナビゲーション（モバイルのみ） */}
@@ -97,21 +111,27 @@ function BottomNavigation() {
           const Icon = item.icon;
           
           return (
-            <button
+            <motion.button
               key={item.href}
               onClick={() => router.push(item.href)}
+              whileTap={{ scale: 0.85 }}
+              transition={{ type: "spring", stiffness: 400, damping: 17 }}
               className={cn(
-                "flex flex-col items-center justify-center gap-1 px-4 py-2 transition-all duration-200",
-                "active:scale-95",
+                "flex flex-col items-center justify-center gap-1 px-4 py-2",
                 isActive ? "text-pink-500" : "text-gray-400"
               )}
             >
-              <Icon
-                className={cn(
-                  "w-6 h-6 transition-all",
-                  isActive && "drop-shadow-[0_0_8px_rgba(236,72,153,0.8)]"
-                )}
-              />
+              <motion.div
+                animate={isActive ? { scale: [1, 1.2, 1] } : {}}
+                transition={{ duration: 0.3 }}
+              >
+                <Icon
+                  className={cn(
+                    "w-6 h-6 transition-all",
+                    isActive && "drop-shadow-[0_0_8px_rgba(236,72,153,0.8)]"
+                  )}
+                />
+              </motion.div>
               <span
                 className={cn(
                   "text-xs font-medium transition-all",
@@ -120,7 +140,7 @@ function BottomNavigation() {
               >
                 {item.label}
               </span>
-            </button>
+            </motion.button>
           );
         })}
       </div>
