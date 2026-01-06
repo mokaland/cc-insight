@@ -5,27 +5,29 @@ import { useAuth } from "@/lib/auth-context";
 import { GlassCard } from "@/components/glass-card";
 import { Button } from "@/components/ui/button";
 import { 
-  calculateLevel, 
-  calculateLevelProgress, 
-  BADGES, 
-  getBadgeRarityColor,
-  calculateStreak,
-  getAchievementColor,
-  getAchievementMessage 
-} from "@/lib/gamification";
-import { getReportsByPeriod, calculateTeamStats, teams } from "@/lib/firestore";
-import { TrendingUp, Target, Award, Flame, Calendar, Eye, Video, Loader2, LogOut } from "lucide-react";
+  getTeamType,
+  getGuardianProgress,
+  getTeamAccentColor,
+  getValueUnit,
+  formatValue,
+  getLegendRewardStatus,
+  getActiveMutation,
+  getHighestStreakBadge,
+  getEarnedStreakBadges,
+  STREAK_BADGES,
+  getRarityColor,
+  getRarityGlow
+} from "@/lib/guardian-system";
+import { calculateStreak } from "@/lib/gamification";
+import { getReportsByPeriod, teams } from "@/lib/firestore";
+import { Loader2, Sparkles, Lock, Crown, Flame, Award } from "lucide-react";
 import Link from "next/link";
 
 export default function MyPage() {
-  const { user, userProfile, logout } = useAuth();
-  const [reports, setReports] = useState<any[]>([]);
-  const [weeklyStats, setWeeklyStats] = useState<any>(null);
+  const { user, userProfile } = useAuth();
   const [loading, setLoading] = useState(true);
-  const [totalViews, setTotalViews] = useState(0);
+  const [totalValue, setTotalValue] = useState(0);
   const [streak, setStreak] = useState({ currentStreak: 0, longestStreak: 0 });
-  const [teamRanking, setTeamRanking] = useState<any[]>([]);
-  const [myRank, setMyRank] = useState<number>(0);
 
   useEffect(() => {
     const loadData = async () => {
@@ -34,48 +36,28 @@ export default function MyPage() {
       try {
         setLoading(true);
 
-        // 全期間のレポートを取得（累計再生数計算用）
-        const allReports = await getReportsByPeriod("1q"); // 適当な長期間
+        // 全期間のレポートを取得
+        const allReports = await getReportsByPeriod("1q");
         const myReports = allReports.filter(r => r.userEmail === user.email);
 
-        // 累計再生数計算
+        // チームタイプに応じた累計値を計算
+        const teamType = getTeamType(userProfile.team);
         let total = 0;
+
         myReports.forEach(report => {
-          if (report.teamType === "shorts") {
+          if (teamType === "shorts") {
+            // 動画チーム：再生数
             total += report.igViews || 0;
+          } else {
+            // Xチーム：インプレッション
+            // 注：現在のFirestoreにはインプレッション項目がないため、
+            // 仮でいいね+リプライ×100で簡易計算（後でFirestoreに追加）
+            const estimatedImpressions = ((report.likeCount || 0) + (report.replyCount || 0)) * 100;
+            total += estimatedImpressions;
           }
         });
-        setTotalViews(total);
 
-        // 今週のレポート
-        const weeklyReports = await getReportsByPeriod("week");
-        const myWeeklyReports = weeklyReports.filter(r => r.userEmail === user.email);
-        setReports(myWeeklyReports);
-
-        // 週次統計とチーム内ランキング
-        const team = teams.find(t => t.id === userProfile.team);
-        if (team) {
-          const stats = calculateTeamStats(weeklyReports, userProfile.team);
-          const myStats = stats.members.find((m: any) => m.name === userProfile.displayName);
-          setWeeklyStats(myStats || { views: 0, posts: 0, achievementRate: 0 });
-          
-          // チーム内ランキング（今週の再生数順、TOP5）
-          const ranking = stats.members
-            .sort((a: any, b: any) => b.views - a.views)
-            .slice(0, 5)
-            .map((member: any, index: number) => ({
-              ...member,
-              rank: index + 1,
-              isMe: member.name === userProfile.displayName
-            }));
-          setTeamRanking(ranking);
-          
-          // 自分の順位を取得
-          const myRankIndex = stats.members
-            .sort((a: any, b: any) => b.views - a.views)
-            .findIndex((m: any) => m.name === userProfile.displayName);
-          setMyRank(myRankIndex + 1);
-        }
+        setTotalValue(total);
 
         // ストリーク計算
         const streakData = calculateStreak(myReports);
@@ -108,296 +90,363 @@ export default function MyPage() {
     );
   }
 
-  const levelProgress = calculateLevelProgress(totalViews);
-  const { currentLevel, nextLevel, progress, viewsToNext } = levelProgress;
+  // チーム情報取得
+  const teamType = getTeamType(userProfile.team);
+  const teamAccentColor = getTeamAccentColor(teamType);
+  const valueUnit = getValueUnit(teamType);
+  const teamInfo = teams.find(t => t.id === userProfile.team);
 
-  // 仮のバッジ（後で実際のFirestoreデータと連携）
-  const earnedBadges = [
-    BADGES.find(b => b.id === "firstReport"),
-    totalViews >= 10000 ? BADGES.find(b => b.id === "firstViral") : null,
-    streak.currentStreak >= 7 ? BADGES.find(b => b.id === "streak7") : null,
-  ].filter(Boolean);
+  // ガーディアン進化情報
+  const guardianProgress = getGuardianProgress(totalValue, teamType);
+  const { currentStage, nextStage, progress, valueToNext } = guardianProgress;
 
-  const achievementRate = weeklyStats?.achievementRate || 0;
-  const achievementColor = getAchievementColor(achievementRate);
-  const achievementMessage = getAchievementMessage(achievementRate);
+  // Legend特典
+  const legendReward = getLegendRewardStatus(totalValue, teamType);
+
+  // 隠し変異
+  const activeMutation = getActiveMutation(totalValue, teamType);
+
+  // 継続バッジ
+  const highestStreakBadge = getHighestStreakBadge(streak.currentStreak);
+  const earnedStreakBadges = getEarnedStreakBadges(streak.currentStreak);
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-8 pb-8">
       {/* ヘッダー */}
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-        <div>
-          <h1 className="text-3xl font-bold bg-gradient-to-r from-pink-500 via-purple-500 to-cyan-500 bg-clip-text text-transparent">
-            マイページ
-          </h1>
-          <p className="text-muted-foreground mt-2">
-            {userProfile.displayName} の冒険の記録
-          </p>
-        </div>
+      <div className="flex flex-col gap-2">
+        <h1 className="text-3xl font-bold" style={{ color: teamAccentColor }}>
+          マイページ
+        </h1>
+        <p className="text-muted-foreground">
+          {userProfile.displayName} の冒険の記録
+        </p>
+        {highestStreakBadge && (
+          <div className="flex items-center gap-2">
+            <span className="text-2xl">{highestStreakBadge.emoji}</span>
+            <span className="font-bold" style={{ color: highestStreakBadge.color }}>
+              {highestStreakBadge.japaneseName}
+            </span>
+          </div>
+        )}
       </div>
 
-      {/* レベル＆経験値カード */}
-      <GlassCard glowColor={currentLevel.color} className="p-8">
-        <div className="flex flex-col md:flex-row gap-8 items-center">
-          {/* レベルアイコン */}
-          <div className="flex-shrink-0">
-            <div 
-              className="w-32 h-32 rounded-full flex items-center justify-center text-6xl relative"
-              style={{
-                backgroundColor: `${currentLevel.color}20`,
-                boxShadow: `0 0 40px ${currentLevel.glowColor}, inset 0 0 20px ${currentLevel.glowColor}`,
-                border: `3px solid ${currentLevel.color}`,
-              }}
-            >
-              {currentLevel.icon}
-              {/* パルスアニメーション */}
-              <span 
-                className="absolute inset-0 rounded-full animate-ping opacity-75"
-                style={{ 
-                  border: `2px solid ${currentLevel.color}`,
-                  boxShadow: `0 0 20px ${currentLevel.glowColor}`
+      {/* ガーディアン進化エリア */}
+      <GlassCard glowColor={currentStage.glowColor} className="p-8">
+        <div className="flex flex-col gap-6">
+          {/* ガーディアン表示 */}
+          <div className="flex flex-col md:flex-row items-center gap-8">
+            {/* アバター */}
+            <div className="flex-shrink-0 relative">
+              <div 
+                className="w-40 h-40 rounded-full flex items-center justify-center text-8xl relative"
+                style={{
+                  backgroundColor: `${currentStage.color}20`,
+                  boxShadow: `0 0 60px ${currentStage.glowColor}, 0 0 40px ${currentStage.glowColor}, inset 0 0 30px ${currentStage.glowColor}`,
+                  border: `4px solid ${currentStage.color}`,
                 }}
-              />
-            </div>
-          </div>
-
-          {/* レベル情報 */}
-          <div className="flex-1 w-full">
-            <div className="flex items-center gap-3 mb-2">
-              <h2 className="text-2xl font-bold" style={{ color: currentLevel.color }}>
-                Lv.{currentLevel.level} {currentLevel.name}
-              </h2>
-            </div>
-            
-            <p className="text-muted-foreground mb-4">
-              累計経験値（再生数）: {totalViews.toLocaleString()} XP
-            </p>
-
-            {/* 経験値ゲージ */}
-            {nextLevel ? (
-              <div className="space-y-2">
-                <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">次のレベルまで</span>
-                  <span className="font-bold" style={{ color: nextLevel.color }}>
-                    Lv.{nextLevel.level} {nextLevel.name} {nextLevel.icon}
-                  </span>
-                </div>
+              >
+                {currentStage.emoji}
                 
-                {/* プログレスバー */}
-                <div className="relative w-full h-8 bg-white/10 rounded-full overflow-hidden border border-white/20">
-                  <div
-                    className="h-full transition-all duration-1000 ease-out relative"
-                    style={{
-                      width: `${progress}%`,
-                      background: `linear-gradient(90deg, ${currentLevel.color}, ${nextLevel.color})`,
-                      boxShadow: `0 0 20px ${currentLevel.glowColor}`,
+                {/* パルスアニメーション */}
+                <span 
+                  className="absolute inset-0 rounded-full animate-ping opacity-40"
+                  style={{ 
+                    border: `3px solid ${currentStage.color}`,
+                    boxShadow: `0 0 30px ${currentStage.glowColor}`
+                  }}
+                />
+
+                {/* 継続バッジ（100日以上で王冠表示） */}
+                {streak.currentStreak >= 100 && (
+                  <div className="absolute -top-4 -right-4 text-4xl animate-bounce">
+                    {streak.currentStreak >= 200 ? "👑" : "⚔️"}
+                  </div>
+                )}
+
+                {/* 隠し変異エフェクト */}
+                {activeMutation && (
+                  <div 
+                    className="absolute -bottom-2 text-3xl"
+                    style={{ 
+                      filter: `drop-shadow(0 0 10px ${activeMutation.color})`
                     }}
                   >
-                    {/* ネオングロー効果 */}
-                    <div 
-                      className="absolute inset-0 animate-pulse"
-                      style={{
-                        background: `linear-gradient(90deg, transparent, ${nextLevel.color}40, transparent)`,
-                      }}
-                    />
+                    {activeMutation.emoji}
+                  </div>
+                )}
+              </div>
+
+              {/* Stage表示 */}
+              <div className="absolute -bottom-3 left-1/2 transform -translate-x-1/2">
+                <div 
+                  className="px-4 py-1 rounded-full text-xs font-bold text-white"
+                  style={{ 
+                    backgroundColor: currentStage.color,
+                    boxShadow: `0 0 20px ${currentStage.glowColor}`
+                  }}
+                >
+                  Stage {currentStage.stage}
+                </div>
+              </div>
+            </div>
+
+            {/* 進化情報 */}
+            <div className="flex-1 w-full">
+              <div className="mb-4">
+                <h2 className="text-3xl font-bold mb-2" style={{ color: currentStage.color }}>
+                  {currentStage.japaneseName}
+                </h2>
+                <p className="text-sm text-muted-foreground mb-2">
+                  {currentStage.name}
+                </p>
+                <p className="text-sm" style={{ color: currentStage.color }}>
+                  {currentStage.description}
+                </p>
+              </div>
+
+              {/* 累計値表示 */}
+              <div className="flex items-baseline gap-2 mb-4">
+                <span className="text-4xl font-bold bg-gradient-to-r from-pink-500 via-purple-500 to-cyan-500 bg-clip-text text-transparent">
+                  {formatValue(totalValue, teamType)}
+                </span>
+                <span className="text-xl text-muted-foreground">{valueUnit}</span>
+              </div>
+
+              {/* 進化ゲージ */}
+              {nextStage ? (
+                <div className="space-y-3">
+                  <div className="flex justify-between text-sm">
+                    <span className="text-muted-foreground">次の進化まで</span>
+                    <span className="font-bold" style={{ color: nextStage.color }}>
+                      {nextStage.japaneseName} {nextStage.emoji}
+                    </span>
                   </div>
                   
-                  {/* パーセンテージ表示 */}
-                  <div className="absolute inset-0 flex items-center justify-center text-sm font-bold text-white drop-shadow-lg">
-                    {progress}%
+                  <div className="relative w-full h-10 bg-white/10 rounded-full overflow-hidden border-2 border-white/20">
+                    <div
+                      className="h-full transition-all duration-1000 ease-out relative"
+                      style={{
+                        width: `${progress}%`,
+                        background: `linear-gradient(90deg, ${currentStage.color}, ${nextStage.color})`,
+                        boxShadow: `0 0 30px ${currentStage.glowColor}`,
+                      }}
+                    >
+                      <div 
+                        className="absolute inset-0 animate-pulse"
+                        style={{
+                          background: `linear-gradient(90deg, transparent, ${nextStage.color}60, transparent)`,
+                        }}
+                      />
+                    </div>
+                    
+                    <div className="absolute inset-0 flex items-center justify-center text-sm font-bold text-white drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]">
+                      {progress}%
+                    </div>
+                  </div>
+
+                  <div className="flex justify-between text-sm">
+                    <span className="text-muted-foreground">
+                      あと {formatValue(valueToNext, teamType)} {valueUnit}
+                    </span>
+                    <span className="text-muted-foreground">
+                      {formatValue(guardianProgress.nextThreshold, teamType)} {valueUnit} で進化
+                    </span>
                   </div>
                 </div>
-
-                <p className="text-sm text-muted-foreground text-center">
-                  あと {viewsToNext.toLocaleString()} XP でレベルアップ！
-                </p>
-              </div>
-            ) : (
-              <div className="text-center">
-                <p className="text-xl font-bold" style={{ color: currentLevel.color }}>
-                  🏆 最高レベル到達！
-                </p>
-                <p className="text-sm text-muted-foreground mt-2">
-                  あなたは真のレジェンドです
-                </p>
-              </div>
-            )}
+              ) : (
+                <div className="text-center p-6 bg-gradient-to-r from-pink-500/20 to-purple-500/20 rounded-xl border-2 border-pink-500/50">
+                  <p className="text-2xl font-bold mb-2" style={{ color: currentStage.color }}>
+                    🏆 伝説の存在！
+                  </p>
+                  <p className="text-sm text-muted-foreground">
+                    あなたは最高峰に到達しました
+                  </p>
+                </div>
+              )}
+            </div>
           </div>
+
+          {/* 隠し変異情報 */}
+          {activeMutation && (
+            <div 
+              className="p-4 rounded-xl border-2"
+              style={{
+                backgroundColor: `${activeMutation.color}10`,
+                borderColor: `${activeMutation.color}60`,
+                boxShadow: `0 0 20px ${activeMutation.color}40`
+              }}
+            >
+              <div className="flex items-center gap-3">
+                <span className="text-3xl">{activeMutation.emoji}</span>
+                <div className="flex-1">
+                  <p className="font-bold" style={{ color: activeMutation.color }}>
+                    {activeMutation.japaneseName}
+                  </p>
+                  <p className="text-sm text-muted-foreground">
+                    {activeMutation.description}
+                  </p>
+                </div>
+                <div className="text-right">
+                  <p className="text-sm font-bold" style={{ color: activeMutation.color }}>
+                    XP {activeMutation.boostMultiplier}倍
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       </GlassCard>
 
-      {/* 統計カード */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        {/* 今週の再生数 */}
-        <GlassCard glowColor="#ec4899" title="今週の再生数" icon={<Eye className="h-5 w-5" />} value={weeklyStats?.views?.toLocaleString() || "0"} subtitle="Weekly Views">
-          <div></div>
-        </GlassCard>
+      {/* Legend特典カード */}
+      <GlassCard 
+        glowColor={legendReward.isUnlocked ? getRarityGlow("legend") : "rgba(107, 114, 128, 0.3)"}
+        className="p-8"
+      >
+        <div className="flex items-center gap-3 mb-6">
+          <Crown className="h-8 w-8" style={{ color: legendReward.isUnlocked ? "#EC4899" : "#6B7280" }} />
+          <h3 className="text-2xl font-bold" style={{ color: legendReward.isUnlocked ? "#EC4899" : "#6B7280" }}>
+            伝説の特典
+          </h3>
+        </div>
 
-        {/* 今週の投稿数 */}
-        <GlassCard glowColor="#06b6d4" title="今週の投稿数" icon={<Video className="h-5 w-5" />} value={weeklyStats?.posts?.toString() || "0"} subtitle="Weekly Posts">
-          <div></div>
-        </GlassCard>
+        {legendReward.isUnlocked ? (
+          /* UNLOCKED状態 */
+          <div className="space-y-6">
+            <div 
+              className="p-8 rounded-2xl border-4 relative overflow-hidden"
+              style={{
+                backgroundColor: "#EC489920",
+                borderColor: "#EC4899",
+                boxShadow: "0 0 40px rgba(236, 72, 153, 0.6), 0 0 80px rgba(236, 72, 153, 0.3)"
+              }}
+            >
+              {/* 背景アニメーション */}
+              <div className="absolute inset-0 bg-gradient-to-r from-transparent via-pink-500/20 to-transparent animate-pulse" />
+              
+              <div className="relative z-10 text-center">
+                <div className="text-6xl mb-4 animate-bounce">👑</div>
+                <h4 className="text-2xl font-bold mb-4 text-pink-500">
+                  ✨ UNLOCKED ✨
+                </h4>
+                <p className="text-xl font-bold mb-2">{legendReward.name}</p>
+                <p className="text-sm text-muted-foreground mb-6">
+                  {legendReward.description}
+                </p>
+                
+                <Button
+                  className="bg-gradient-to-r from-pink-500 via-purple-500 to-cyan-500 text-white font-bold px-8 py-6 text-lg"
+                  style={{ boxShadow: "0 0 30px rgba(236, 72, 153, 0.6)" }}
+                >
+                  <Sparkles className="w-5 h-5 mr-2" />
+                  申請する
+                </Button>
 
-        {/* 目標達成率 */}
-        <GlassCard 
-          glowColor={achievementColor} 
-          title="目標達成率" 
-          icon={<Target className="h-5 w-5" />} 
-          value={`${achievementRate}%`}
-          subtitle={achievementMessage}
-        >
-          <div></div>
-        </GlassCard>
+                <p className="text-xs text-muted-foreground mt-4">
+                  獲得日: {new Date().toLocaleDateString('ja-JP')}
+                </p>
+              </div>
+            </div>
 
-        {/* ストリーク */}
-        <GlassCard glowColor="#ef4444" title="連続投稿" icon={<Flame className="h-5 w-5" />} value={`${streak.currentStreak}日`} subtitle={`最長: ${streak.longestStreak}日`}>
-          <div></div>
-        </GlassCard>
-      </div>
-
-      {/* チーム内ランキング */}
-      {teamRanking.length > 0 && (
-        <GlassCard glowColor="#f59e0b" className="p-6">
-          <div className="flex items-center gap-2 mb-6">
-            <div className="text-2xl">🏆</div>
-            <div className="flex-1">
-              <h3 className="text-xl font-bold">チーム内ランキング</h3>
-              <p className="text-sm text-muted-foreground">
-                {teams.find(t => t.id === userProfile?.team)?.name} - 今週の再生数TOP5
+            <div className="text-center p-4 bg-gradient-to-r from-yellow-500/10 to-orange-500/10 rounded-xl">
+              <p className="text-sm font-bold text-yellow-500">
+                🏅 伝説到達者: 全国 ○位 / ○名中
               </p>
             </div>
-            {myRank > 0 && (
-              <div className="text-right">
-                <div className="text-sm text-muted-foreground">あなたの順位</div>
-                <div className="text-2xl font-bold text-yellow-500">#{myRank}</div>
-              </div>
-            )}
           </div>
-
-          <div className="space-y-3">
-            {teamRanking.map((member) => {
-              const isTopThree = member.rank <= 3;
-              const medalEmoji = member.rank === 1 ? "🥇" : member.rank === 2 ? "🥈" : member.rank === 3 ? "🥉" : "";
-              
-              return (
-                <div
-                  key={member.name}
-                  className={`p-4 rounded-xl border-2 transition-all ${
-                    member.isMe
-                      ? "bg-gradient-to-r from-yellow-500/20 to-orange-500/20 border-yellow-500/50 shadow-[0_0_20px_rgba(234,179,8,0.3)]"
-                      : isTopThree
-                      ? "bg-white/10 border-white/20"
-                      : "bg-white/5 border-white/10"
-                  } hover:scale-[1.02]`}
-                >
-                  <div className="flex items-center gap-4">
-                    {/* 順位 */}
-                    <div className="flex-shrink-0 w-12 text-center">
-                      {medalEmoji ? (
-                        <div className="text-3xl">{medalEmoji}</div>
-                      ) : (
-                        <div className="text-2xl font-bold text-muted-foreground">
-                          #{member.rank}
-                        </div>
-                      )}
-                    </div>
-
-                    {/* 名前 */}
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2">
-                        <p className="font-bold text-lg">{member.name}</p>
-                        {member.isMe && (
-                          <span className="px-2 py-0.5 rounded-full bg-yellow-500/20 text-yellow-400 text-xs font-bold">
-                            YOU
-                          </span>
-                        )}
-                      </div>
-                      <p className="text-sm text-muted-foreground">
-                        {member.posts} 投稿
-                      </p>
-                    </div>
-
-                    {/* 再生数 */}
-                    <div className="text-right">
-                      <div className="text-2xl font-bold bg-gradient-to-r from-pink-500 to-purple-500 bg-clip-text text-transparent">
-                        {member.views.toLocaleString()}
-                      </div>
-                      <p className="text-xs text-muted-foreground">views</p>
-                    </div>
+        ) : (
+          /* LOCKED状態 */
+          <div className="space-y-6">
+            <div 
+              className="p-8 rounded-2xl border-4 relative overflow-hidden"
+              style={{
+                backgroundColor: "rgba(107, 114, 128, 0.1)",
+                borderColor: "#6B7280",
+                boxShadow: "0 0 20px rgba(107, 114, 128, 0.2)"
+              }}
+            >
+              <div className="text-center">
+                <Lock className="w-16 h-16 mx-auto mb-4 text-gray-500" />
+                <h4 className="text-xl font-bold mb-2 text-gray-500">🔒 LOCKED</h4>
+                <p className="text-lg font-bold mb-4">{legendReward.name}</p>
+                <p className="text-sm text-muted-foreground mb-6">
+                  {legendReward.description}
+                </p>
+                
+                <div className="space-y-3">
+                  <p className="text-sm font-bold text-gray-400">
+                    「Stage 5到達で解放」
+                  </p>
+                  
+                  {/* 進捗バー */}
+                  <div className="w-full h-8 bg-white/10 rounded-full overflow-hidden border-2 border-white/20">
+                    <div
+                      className="h-full transition-all duration-1000"
+                      style={{
+                        width: `${Math.min((totalValue / legendReward.requirement) * 100, 100)}%`,
+                        background: `linear-gradient(90deg, ${teamAccentColor}, #EC4899)`,
+                        boxShadow: `0 0 20px ${teamAccentColor}60`
+                      }}
+                    />
                   </div>
 
-                  {/* プログレスバー（TOP3のみ） */}
-                  {isTopThree && (
-                    <div className="mt-3">
-                      <div className="h-2 bg-white/10 rounded-full overflow-hidden">
-                        <div
-                          className="h-full bg-gradient-to-r from-yellow-500 to-orange-500 rounded-full transition-all duration-500"
-                          style={{
-                            width: `${Math.min((member.views / teamRanking[0].views) * 100, 100)}%`,
-                            boxShadow: "0 0 10px rgba(234,179,8,0.5)",
-                          }}
-                        />
-                      </div>
-                    </div>
-                  )}
+                  <div className="flex justify-between text-sm text-muted-foreground">
+                    <span>現在: {formatValue(totalValue, teamType)} {valueUnit}</span>
+                    <span>目標: {formatValue(legendReward.requirement, teamType)} {valueUnit}</span>
+                  </div>
+
+                  <p className="text-xl font-bold" style={{ color: teamAccentColor }}>
+                    {Math.round((totalValue / legendReward.requirement) * 100)}% 達成
+                  </p>
                 </div>
-              );
-            })}
-          </div>
+              </div>
+            </div>
 
-          {/* 全体ランキングへのリンク */}
-          <div className="mt-6 text-center">
-            <Link href="/ranking">
-              <Button
-                variant="outline"
-                className="border-yellow-500/50 text-yellow-400 hover:bg-yellow-500/10"
-              >
-                <TrendingUp className="w-4 h-4 mr-2" />
-                全体ランキングを見る
-              </Button>
-            </Link>
+            <div className="text-center p-4 bg-white/5 rounded-xl">
+              <p className="text-xs text-muted-foreground">
+                ✨ この特典を手に入れた者: ○名
+              </p>
+            </div>
           </div>
-        </GlassCard>
-      )}
+        )}
+      </GlassCard>
 
-      {/* バッジコレクション */}
-      <GlassCard glowColor="#a855f7" className="p-6">
-        <div className="flex items-center gap-2 mb-6">
-          <Award className="h-6 w-6 text-purple-500" />
-          <h3 className="text-xl font-bold">獲得バッジ</h3>
+      {/* 継続バッジコレクション */}
+      <GlassCard glowColor={teamAccentColor} className="p-6">
+        <div className="flex items-center gap-3 mb-6">
+          <Flame className="h-6 w-6" style={{ color: teamAccentColor }} />
+          <h3 className="text-xl font-bold">継続バッジ</h3>
           <span className="text-sm text-muted-foreground ml-auto">
-            {earnedBadges.length} / {BADGES.length}
+            {earnedStreakBadges.length} / {STREAK_BADGES.length}
           </span>
         </div>
 
-        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
-          {BADGES.map((badge) => {
-            const isEarned = earnedBadges.some(b => b?.id === badge.id);
-            const rarityColor = getBadgeRarityColor(badge.rarity);
+        <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+          {STREAK_BADGES.map((badge) => {
+            const isEarned = streak.currentStreak >= badge.days;
+            const rarityColor = getRarityColor(badge.rarity);
+            const rarityGlow = getRarityGlow(badge.rarity);
 
             return (
               <div
                 key={badge.id}
                 className={`p-4 rounded-xl border-2 transition-all ${
                   isEarned
-                    ? "bg-white/10 border-opacity-100 hover:scale-105"
-                    : "bg-white/5 border-white/10 opacity-40 grayscale"
+                    ? "hover:scale-105"
+                    : "opacity-40 grayscale"
                 }`}
                 style={{
-                  borderColor: isEarned ? rarityColor : undefined,
-                  boxShadow: isEarned ? `0 0 15px ${rarityColor}40` : undefined,
+                  backgroundColor: isEarned ? `${rarityColor}10` : "rgba(107, 114, 128, 0.05)",
+                  borderColor: isEarned ? rarityColor : "#6B7280",
+                  boxShadow: isEarned ? `0 0 20px ${rarityGlow}` : undefined
                 }}
               >
                 <div className="text-center">
-                  <div className="text-4xl mb-2">{badge.icon}</div>
-                  <p className="text-xs font-semibold mb-1">{badge.name}</p>
-                  <p className="text-xs text-muted-foreground">{badge.description}</p>
+                  <div className="text-4xl mb-2">{badge.emoji}</div>
+                  <p className="text-xs font-bold mb-1">{badge.japaneseName}</p>
+                  <p className="text-xs text-muted-foreground mb-2">{badge.days}日</p>
                   {isEarned && (
-                    <div 
-                      className="mt-2 text-xs font-bold"
-                      style={{ color: rarityColor }}
-                    >
-                      ✓ 獲得済み
+                    <div className="text-xs font-bold" style={{ color: rarityColor }}>
+                      ✓ {badge.effect}
                     </div>
                   )}
                 </div>
@@ -405,12 +454,24 @@ export default function MyPage() {
             );
           })}
         </div>
+
+        <div className="mt-6 p-4 bg-white/5 rounded-xl text-center">
+          <div className="flex items-center justify-center gap-2 mb-2">
+            <Flame className="w-5 h-5 text-orange-500" />
+            <p className="text-lg font-bold">
+              現在のストリーク: <span className="text-orange-500">{streak.currentStreak}日</span>
+            </p>
+          </div>
+          <p className="text-sm text-muted-foreground">
+            最長記録: {streak.longestStreak}日
+          </p>
+        </div>
       </GlassCard>
 
       {/* クイックアクション */}
       <div className="grid gap-4 md:grid-cols-2">
         <Link href="/report">
-          <GlassCard glowColor="#22c55e" className="p-6 cursor-pointer hover:scale-[1.02] transition-transform">
+          <GlassCard glowColor="#22C55E" className="p-6 cursor-pointer hover:scale-[1.02] transition-transform">
             <div className="text-center">
               <div className="text-5xl mb-3">📝</div>
               <h3 className="text-lg font-bold mb-2">今日の報告</h3>
@@ -422,7 +483,7 @@ export default function MyPage() {
         </Link>
 
         <Link href="/ranking">
-          <GlassCard glowColor="#eab308" className="p-6 cursor-pointer hover:scale-[1.02] transition-transform">
+          <GlassCard glowColor="#EAB308" className="p-6 cursor-pointer hover:scale-[1.02] transition-transform">
             <div className="text-center">
               <div className="text-5xl mb-3">🏆</div>
               <h3 className="text-lg font-bold mb-2">ランキング</h3>
@@ -432,20 +493,6 @@ export default function MyPage() {
             </div>
           </GlassCard>
         </Link>
-      </div>
-
-      {/* ログアウト（モバイル用） */}
-      <div className="md:hidden">
-        <GlassCard glowColor="#ef4444" className="p-6">
-          <Button
-            onClick={logout}
-            variant="outline"
-            className="w-full border-red-500/50 text-red-400 hover:bg-red-500/10"
-          >
-            <LogOut className="w-4 h-4 mr-2" />
-            ログアウト
-          </Button>
-        </GlassCard>
       </div>
     </div>
   );
