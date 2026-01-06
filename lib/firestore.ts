@@ -7,6 +7,8 @@ import {
   getDocs,
   deleteDoc,
   doc,
+  setDoc,
+  serverTimestamp,
   Timestamp,
   DocumentData
 } from "firebase/firestore";
@@ -305,4 +307,55 @@ export function calculateRankings(reports: Report[], type: "views" | "posts" | "
     .slice(0, 10);
 
   return rankings;
+}
+
+// ユーザー管理機能
+export interface User {
+  uid: string;
+  email: string;
+  displayName: string;
+  team: string;
+  role: "member" | "admin";
+  status: "pending" | "approved" | "suspended";
+  emailVerified: boolean;
+  createdAt: Timestamp;
+  approvedAt?: Timestamp;
+  approvedBy?: string;
+  lastLoginAt?: Timestamp;
+}
+
+// 全ユーザーを取得
+export async function getAllUsers(): Promise<User[]> {
+  const q = query(collection(db, "users"), orderBy("createdAt", "desc"));
+  const snapshot = await getDocs(q);
+  const users: User[] = [];
+  
+  snapshot.forEach((doc) => {
+    users.push({ uid: doc.id, ...doc.data() } as User);
+  });
+  
+  return users;
+}
+
+// ユーザーのステータスを更新
+export async function updateUserStatus(
+  userId: string, 
+  status: "pending" | "approved" | "suspended",
+  adminUid: string
+): Promise<void> {
+  const updates: any = {
+    status,
+  };
+  
+  if (status === "approved") {
+    updates.approvedAt = serverTimestamp();
+    updates.approvedBy = adminUid;
+  }
+  
+  await setDoc(doc(db, "users", userId), updates, { merge: true });
+}
+
+// ユーザーの役割を更新
+export async function updateUserRole(userId: string, role: "member" | "admin"): Promise<void> {
+  await setDoc(doc(db, "users", userId), { role }, { merge: true });
 }
