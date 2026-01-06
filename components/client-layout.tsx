@@ -49,7 +49,7 @@ function LayoutContent({ children }: { children: React.ReactNode }) {
         </div>
 
         {/* メインコンテンツ */}
-        <main className="flex-1 md:ml-64 pb-20 md:pb-8 p-4 md:p-8 w-full overflow-hidden">
+        <main className="flex-1 md:ml-64 pb-20 md:pb-8 p-4 md:p-8 pt-[env(safe-area-inset-top,1rem)] w-full overflow-hidden">
           <LogoutButton />
           <AnimatePresence mode="wait">
             <motion.div

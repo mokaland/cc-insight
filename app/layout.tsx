@@ -17,7 +17,7 @@ export const metadata: Metadata = {
   title: "CC Insight",
   description: "C-Creation メンバー専用・自己成長プラットフォーム",
   manifest: "/manifest.json",
-  themeColor: "#ec4899",
+  themeColor: "#111827",
   appleWebApp: {
     capable: true,
     statusBarStyle: "black-translucent",
