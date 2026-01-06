@@ -20,6 +20,7 @@ export default function RegisterPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  const [realName, setRealName] = useState("");
   const [displayName, setDisplayName] = useState("");
   const [selectedTeam, setSelectedTeam] = useState<TeamType | null>(null);
   const [error, setError] = useState("");
@@ -31,8 +32,12 @@ export default function RegisterPage() {
     setError("");
 
     // バリデーション
+    if (!realName.trim()) {
+      setError("漢字フルネームを入力してください");
+      return;
+    }
     if (!displayName.trim()) {
-      setError("表示名を入力してください");
+      setError("ニックネームを入力してください");
       return;
     }
     if (!selectedTeam) {
@@ -51,7 +56,7 @@ export default function RegisterPage() {
     setIsLoading(true);
 
     try {
-      await register(email, password, displayName, selectedTeam);
+      await register(email, password, displayName, selectedTeam, realName);
     } catch (err: any) {
       console.error("Registration error:", err);
       if (err.code === "auth/email-already-in-use") {
@@ -83,23 +88,44 @@ export default function RegisterPage() {
         {/* 登録フォーム */}
         <div className="backdrop-blur-xl bg-white/5 border border-white/10 rounded-2xl p-8 shadow-2xl">
           <form onSubmit={handleSubmit} className="space-y-5">
-            {/* 表示名 */}
+            {/* 漢字フルネーム */}
+            <div className="space-y-2">
+              <Label htmlFor="realName" className="text-gray-300">
+                漢字フルネーム（正式名）
+              </Label>
+              <div className="relative">
+                <User className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-500" />
+                <Input
+                  id="realName"
+                  type="text"
+                  placeholder="山田 太郎"
+                  value={realName}
+                  onChange={(e) => setRealName(e.target.value)}
+                  className="pl-10 bg-white/5 border-white/10 text-white placeholder:text-gray-500 focus:border-pink-500 focus:ring-pink-500/20"
+                  required
+                />
+              </div>
+              <p className="text-xs text-gray-500">※管理者のみ閲覧可能</p>
+            </div>
+
+            {/* ニックネーム */}
             <div className="space-y-2">
               <Label htmlFor="displayName" className="text-gray-300">
-                表示名
+                ニックネーム（表示名）
               </Label>
               <div className="relative">
                 <User className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-500" />
                 <Input
                   id="displayName"
                   type="text"
-                  placeholder="山田 太郎"
+                  placeholder="やまたろ"
                   value={displayName}
                   onChange={(e) => setDisplayName(e.target.value)}
                   className="pl-10 bg-white/5 border-white/10 text-white placeholder:text-gray-500 focus:border-pink-500 focus:ring-pink-500/20"
                   required
                 />
               </div>
+              <p className="text-xs text-gray-500">※ランキング等で公開されます</p>
             </div>
 
             {/* メールアドレス */}

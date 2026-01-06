@@ -18,7 +18,8 @@ import { useRouter, usePathname } from "next/navigation";
 export interface UserProfile {
   uid: string;
   email: string;
-  displayName: string;
+  realName: string; // 漢字フルネーム（管理者のみ閲覧）
+  displayName: string; // ニックネーム（公開）
   team: "fukugyou" | "taishoku" | "buppan";
   role: "member" | "admin";
   status: "pending" | "approved" | "suspended";
@@ -34,7 +35,7 @@ interface AuthContextType {
   user: User | null;
   userProfile: UserProfile | null;
   loading: boolean;
-  register: (email: string, password: string, displayName: string, team: UserProfile["team"]) => Promise<void>;
+  register: (email: string, password: string, displayName: string, team: UserProfile["team"], realName: string) => Promise<void>;
   login: (email: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
   resendVerificationEmail: () => Promise<void>;
@@ -130,21 +131,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     email: string, 
     password: string, 
     displayName: string, 
-    team: UserProfile["team"]
+    team: UserProfile["team"],
+    realName: string
   ) => {
     try {
       // Firebase Authでユーザー作成
       const userCredential = await createUserWithEmailAndPassword(auth, email, password);
       const newUser = userCredential.user;
 
-      // プロフィール名を設定
+      // プロフィール名を設定（ニックネーム）
       await updateProfile(newUser, { displayName });
 
       // Firestoreにユーザードキュメント作成
       const userProfile: Omit<UserProfile, "approvedAt" | "approvedBy" | "lastLoginAt" | "profileImage"> = {
         uid: newUser.uid,
         email: email,
-        displayName: displayName,
+        realName: realName, // 漢字フルネーム
+        displayName: displayName, // ニックネーム
         team: team,
         role: "member",
         status: "pending",
