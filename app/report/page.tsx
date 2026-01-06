@@ -129,9 +129,11 @@ export default function ReportPage() {
       setSuccess(true);
       // フォームリセット
       resetForm();
-    } catch (err) {
-      console.error(err);
-      setError("送信に失敗しました。もう一度お試しください。");
+    } catch (err: unknown) {
+      const errorMessage = err instanceof Error ? err.message : String(err);
+      console.error("送信エラー詳細:", err);
+      console.error("エラーメッセージ:", errorMessage);
+      setError(`送信に失敗: ${errorMessage}`);
     } finally {
       setLoading(false);
     }
