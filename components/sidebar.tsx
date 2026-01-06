@@ -8,10 +8,17 @@ import {
   Briefcase, 
   LogOut, 
   Smartphone, 
-  Trophy 
+  Trophy,
+  User
 } from "lucide-react";
 
 const navItems = [
+  {
+    title: "マイページ",
+    subtitle: "レベル・バッジ",
+    href: "/mypage",
+    icon: User,
+  },
   {
     title: "全体サマリー",
     href: "/dashboard",

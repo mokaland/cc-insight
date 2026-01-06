@@ -20,6 +20,9 @@ export interface Report {
   name: string;
   date: string;
   createdAt: Timestamp;
+  // ユーザー紐付け
+  userId?: string;
+  userEmail?: string;
   // Shorts系
   accountId?: string;
   igViews?: number;
