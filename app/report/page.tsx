@@ -38,13 +38,15 @@ const teams = [
 ];
 
 export default function ReportPage() {
-  const { user, userProfile } = useAuth();
+  const { user, userProfile, loading: authLoading } = useAuth();
   const router = useRouter();
-  const [selectedTeam, setSelectedTeam] = useState("");
   const [date, setDate] = useState(new Date().toISOString().split("T")[0]);
-  const [loading, setLoading] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState("");
+  
+  // ログインユーザーのチームを自動設定
+  const selectedTeam = userProfile?.team || "";
 
   // Shorts系（副業・退職）用の12項目
   const [accountId, setAccountId] = useState("");
@@ -94,7 +96,7 @@ export default function ReportPage() {
     }
     
     console.log('🚀 送信開始', { name: userProfile.displayName, selectedTeam, date });
-    setLoading(true);
+    setSubmitting(true);
     setError("");
     setSuccess(false);
 
@@ -158,7 +160,7 @@ export default function ReportPage() {
       console.error("エラーメッセージ:", errorMessage);
       setError(`送信に失敗: ${errorMessage}`);
     } finally {
-      setLoading(false);
+      setSubmitting(false);
     }
   };
 
@@ -181,6 +183,36 @@ export default function ReportPage() {
     setXReplyCount("");
     setXTodayComment("");
   };
+
+  // ローディング中の表示
+  if (authLoading) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900">
+        <div className="w-16 h-16 border-4 border-pink-500 border-t-transparent rounded-full animate-spin mb-4" />
+        <p className="text-white text-lg font-medium">読み込み中...</p>
+        <p className="text-muted-foreground text-sm mt-2">チーム情報を取得しています</p>
+      </div>
+    );
+  }
+
+  // 未ログインの場合
+  if (!user || !userProfile) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 p-4">
+        <div className="text-center">
+          <AlertCircle className="w-16 h-16 mx-auto mb-4 text-red-400" />
+          <h1 className="text-2xl font-bold text-white mb-2">ログインが必要です</h1>
+          <p className="text-muted-foreground mb-6">報告するにはログインしてください</p>
+          <Button
+            onClick={() => router.push("/login")}
+            className="bg-gradient-to-r from-pink-500 to-purple-600"
+          >
+            ログインページへ
+          </Button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 p-4 md:p-8">
@@ -246,44 +278,37 @@ export default function ReportPage() {
                 </div>
               )}
 
-              {/* Team Selection */}
-              <div className="space-y-3">
-                <Label className="flex items-center gap-2">
-                  <Users className="w-4 h-4" />
-                  所属チーム選択
-                </Label>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                  {teams.map((team) => (
-                    <button
-                      key={team.id}
-                      type="button"
-                      onClick={() => setSelectedTeam(team.id)}
-                      className={`p-4 rounded-xl border-2 transition-all text-left ${
-                        selectedTeam === team.id
-                          ? "bg-white/10 scale-[1.02]"
-                          : "border-white/10 hover:border-white/30 bg-white/5"
-                      }`}
-                      style={selectedTeam === team.id ? { 
-                        borderColor: team.color,
-                        boxShadow: `0 0 25px ${team.color}40`
-                      } : {}}
-                    >
-                      <span 
-                        className="w-3 h-3 rounded-full inline-block mr-2 animate-pulse"
-                        style={{ backgroundColor: team.color, boxShadow: `0 0 10px ${team.color}` }}
-                      />
-                      <span className="font-medium">{team.name}</span>
-                      <p className="text-xs text-muted-foreground mt-1">
-                        {team.type === "x" ? "X (Twitter)" : "Instagram / TikTok / YouTube"}
-                      </p>
-                    </button>
-                  ))}
+              {/* チーム未設定の場合のエラー */}
+              {!selectedTeam && userProfile && (
+                <div className="p-6 rounded-lg bg-orange-500/10 border border-orange-500/20 text-orange-400 text-center">
+                  <AlertCircle className="w-12 h-12 mx-auto mb-4" />
+                  <p className="font-medium text-lg mb-2">所属チームが設定されていません</p>
+                  <p className="text-sm">管理者に連絡してチームを設定してもらってください</p>
                 </div>
-              </div>
+              )}
 
-              {/* 選択後のフォーム */}
-              {selectedTeam && userProfile && (
+              {/* 所属チーム表示 & フォーム */}
+              {selectedTeam && userProfile && selectedTeamData && (
                 <>
+                  {/* 所属チーム表示 */}
+                  <div className="p-4 rounded-xl border-2 bg-white/10"
+                    style={{ 
+                      borderColor: teamColor,
+                      boxShadow: `0 0 25px ${teamColor}40`
+                    }}
+                  >
+                    <div className="flex items-center gap-3">
+                      <span 
+                        className="w-4 h-4 rounded-full animate-pulse"
+                        style={{ backgroundColor: teamColor, boxShadow: `0 0 10px ${teamColor}` }}
+                      />
+                      <div>
+                        <p className="text-sm text-muted-foreground">所属チーム</p>
+                        <p className="font-bold text-lg">{selectedTeamData.name}</p>
+                      </div>
+                    </div>
+                  </div>
+
                   {/* ログインユーザー表示 & 日付 */}
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="space-y-2">
@@ -599,9 +624,9 @@ export default function ReportPage() {
                       background: `linear-gradient(to right, ${teamColor}, #a855f7)`,
                       boxShadow: `0 0 30px ${teamColor}40`
                     }}
-                    disabled={loading}
+                    disabled={submitting}
                   >
-                    {loading ? (
+                    {submitting ? (
                       <div className="flex items-center gap-2">
                         <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
                         送信中...
@@ -619,10 +644,6 @@ export default function ReportPage() {
           </CardContent>
         </Card>
 
-        {/* Footer */}
-        <div className="mt-6 text-center text-sm text-muted-foreground">
-          <p>管理者の方は <a href="/login" className="hover:underline" style={{ color: teamColor }}>こちらからログイン</a></p>
-        </div>
       </div>
     </div>
   );
