@@ -32,23 +32,8 @@ import {
   TrendingUp,
   Zap
 } from "lucide-react";
-import {
-  getTeamType,
-  calculateXP,
-  getGuardianProgress,
-  formatValue,
-  getValueUnit,
-  isWeekend,
-  isBurningDay
-} from "@/lib/guardian-system";
-import { getReportsByPeriod } from "@/lib/firestore";
-import { calculateStreak } from "@/lib/gamification";
-
-const teams = [
-  { id: "fukugyou", name: "副業チーム", color: "#ec4899", type: "shorts" },
-  { id: "taishoku", name: "退職サポートチーム", color: "#06b6d4", type: "shorts" },
-  { id: "buppan", name: "スマホ物販チーム", color: "#eab308", type: "x" },
-];
+import { teams, processReportWithEnergy } from "@/lib/firestore";
+import EnergyToast from "@/components/energy-toast";
 
 export default function ReportPage() {
   const { user, userProfile, loading: authLoading } = useAuth();
@@ -58,7 +43,7 @@ export default function ReportPage() {
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState("");
   const [earnedXP, setEarnedXP] = useState(0);
-  const [guardianInfo, setGuardianInfo] = useState<any>(null);
+  const [showEnergyToast, setShowEnergyToast] = useState(false);
   
   // ログインユーザーのチームを自動設定
   const selectedTeam = userProfile?.team || "";
@@ -195,57 +180,14 @@ export default function ReportPage() {
         timeout
       ]);
 
-      // XP計算（報告完了後）
+      // エナジー獲得処理
       try {
-        const allReports = await getReportsByPeriod("1q");
-        const myReports = allReports.filter(r => r.userEmail === user.email);
-        const streakData = calculateStreak(myReports);
-        
-        const teamType = getTeamType(selectedTeam);
-        
-        // 今回のレポートからXP計算
-        const currentViews = isXTeam ? 0 : parseInt(igViews) || 0;
-        const currentImpressions = isXTeam ? 
-          ((parseInt(xLikeCount) || 0) + (parseInt(xReplyCount) || 0)) * 100 : 0;
-        
-        const xpData = calculateXP({
-          teamType,
-          views: currentViews,
-          impressions: currentImpressions,
-          reposts: 0, // 現在の報告フォームにはない
-          likes: isXTeam ? parseInt(xLikeCount) || 0 : 0,
-          replies: isXTeam ? parseInt(xReplyCount) || 0 : 0,
-          profileVisits: 0,
-          linkClicks: 0,
-          likeGiven: 0,
-          replyGiven: 0,
-          postCount: isXTeam ? parseInt(xPostCount) || 0 : 1,
-          streak: streakData.currentStreak,
-          totalValue: 0,
-          isWeekend: isWeekend(),
-          isBurningDay: isBurningDay()
-        });
-        
-        setEarnedXP(xpData.totalXP);
-        
-        // 累計値を計算してガーディアン情報取得
-        let totalValue = 0;
-        myReports.forEach(report => {
-          if (teamType === "shorts") {
-            totalValue += report.igViews || 0;
-          } else {
-            const estimatedImpressions = ((report.likeCount || 0) + (report.replyCount || 0)) * 100;
-            totalValue += estimatedImpressions;
-          }
-        });
-        
-        // 今回の報告分も追加
-        totalValue += teamType === "shorts" ? currentViews : currentImpressions;
-        
-        const progress = getGuardianProgress(totalValue, teamType);
-        setGuardianInfo(progress);
-      } catch (xpError) {
-        console.error("XP計算エラー:", xpError);
+        const result = await processReportWithEnergy(user.uid);
+        if (result.energyEarned > 0) {
+          setEarnedXP(result.energyEarned);
+        }
+      } catch (energyError) {
+        console.error("エナジー処理エラー:", energyError);
       }
 
       setSuccess(true);
@@ -412,66 +354,21 @@ export default function ReportPage() {
 
                         <div className="text-center mb-4">
                           <div className="text-5xl font-bold bg-gradient-to-r from-yellow-500 via-orange-500 to-yellow-500 bg-clip-text text-transparent animate-pulse">
-                            +{earnedXP.toLocaleString()} XP
+                            +{earnedXP.toLocaleString()} エナジー
                           </div>
                         </div>
 
-                        {guardianInfo && guardianInfo.currentStage && (
-                          <div className="space-y-4">
-                            {/* ガーディアン情報 */}
-                            <div className="flex items-center justify-center gap-3 p-4 rounded-xl bg-white/5">
-                              <span className="text-4xl">{guardianInfo.currentStage.emoji}</span>
-                              <div>
-                                <p className="text-sm text-muted-foreground">現在のガーディアン</p>
-                                <p className="font-bold" style={{ color: guardianInfo.currentStage.color }}>
-                                  {guardianInfo.currentStage.japaneseName}
-                                </p>
-                              </div>
-                            </div>
-
-                            {/* 次の進化まで */}
-                            {guardianInfo.nextStage && (
-                              <div className="space-y-2">
-                                <div className="flex justify-between text-sm">
-                                  <span className="text-muted-foreground">次の進化まで</span>
-                                  <span className="font-bold" style={{ color: guardianInfo.nextStage.color }}>
-                                    {guardianInfo.nextStage.japaneseName} {guardianInfo.nextStage.emoji}
-                                  </span>
-                                </div>
-                                
-                                <div className="relative w-full h-6 bg-white/10 rounded-full overflow-hidden border border-white/20">
-                                  <div
-                                    className="h-full transition-all duration-1000"
-                                    style={{
-                                      width: `${guardianInfo.progress}%`,
-                                      background: `linear-gradient(90deg, ${guardianInfo.currentStage.color}, ${guardianInfo.nextStage.color})`,
-                                      boxShadow: `0 0 20px ${guardianInfo.currentStage.glowColor}`
-                                    }}
-                                  />
-                                  <div className="absolute inset-0 flex items-center justify-center text-xs font-bold text-white drop-shadow-lg">
-                                    {guardianInfo.progress}%
-                                  </div>
-                                </div>
-
-                                <p className="text-xs text-center text-muted-foreground">
-                                  あと {formatValue(guardianInfo.valueToNext, getTeamType(selectedTeam))} {getValueUnit(getTeamType(selectedTeam))} で進化！
-                                </p>
-                              </div>
-                            )}
-
-                            {/* マイページへのリンク */}
-                            <div className="text-center pt-2">
-                              <Button
-                                onClick={() => router.push("/mypage")}
-                                variant="outline"
-                                className="border-yellow-500/50 text-yellow-400 hover:bg-yellow-500/10"
-                              >
-                                <TrendingUp className="w-4 h-4 mr-2" />
-                                マイページで詳細を見る
-                              </Button>
-                            </div>
-                          </div>
-                        )}
+                        {/* マイページへのリンク */}
+                        <div className="text-center pt-2">
+                          <Button
+                            onClick={() => router.push("/mypage")}
+                            variant="outline"
+                            className="border-yellow-500/50 text-yellow-400 hover:bg-yellow-500/10"
+                          >
+                            <TrendingUp className="w-4 h-4 mr-2" />
+                            マイページで詳細を見る
+                          </Button>
+                        </div>
                       </div>
                     </div>
                   )}
