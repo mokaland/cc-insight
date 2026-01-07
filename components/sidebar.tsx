@@ -204,8 +204,11 @@ export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
 
                 {/* 王冠バッジ（最高Stageのみ） */}
                 {guardianInfo.stage === 4 && (
-                  <div className="absolute -top-1 -right-1 w-5 h-5 bg-yellow-400 rounded-full flex items-center justify-center shadow-lg animate-pulse">
-                    <span className="text-xs">👑</span>
+                  <div className="absolute -top-2 -right-2 w-6 h-6 bg-gradient-to-br from-yellow-300 to-yellow-600 rounded-full flex items-center justify-center shadow-lg animate-pulse"
+                       style={{
+                         boxShadow: '0 0 20px rgba(250, 204, 21, 0.8)'
+                       }}>
+                    <span className="text-sm">👑</span>
                   </div>
                 )}
 

@@ -6,9 +6,10 @@ import {
   Trophy, Eye, Users, TrendingUp, Heart, MessageCircle, Instagram, 
   Youtube, Loader2, Crown, Medal, Award, ChevronRight, Zap
 } from "lucide-react";
-import { subscribeToReports, calculateTeamStats, teams, Report } from "@/lib/firestore";
+import { subscribeToReports, calculateTeamStats, teams, Report, getUserGuardianProfile } from "@/lib/firestore";
 import { useAuth } from "@/lib/auth-context";
 import { getTeamType, getGuardianStage } from "@/lib/guardian-system";
+import { GUARDIANS, ATTRIBUTES, getGuardianImagePath, GuardianId } from "@/lib/guardian-collection";
 
 const getMedalIcon = (rank: number) => {
   switch (rank) {
