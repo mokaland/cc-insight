@@ -63,7 +63,7 @@ export default function ReportPage() {
   // ログインユーザーのチームを自動設定
   const selectedTeam = userProfile?.team || "";
 
-  // Shorts系（副業・退職）用の12項目
+  // Shorts系（副業・退職）用の15項目（SNS別投稿数追加）
   const [accountId, setAccountId] = useState("");
   const [igViews, setIgViews] = useState("");
   const [igProfileAccess, setIgProfileAccess] = useState("");
@@ -73,6 +73,10 @@ export default function ReportPage() {
   const [igFollowers, setIgFollowers] = useState("");
   const [ytFollowers, setYtFollowers] = useState("");
   const [tiktokFollowers, setTiktokFollowers] = useState("");
+  // ✅ SNS別投稿数（菅原副社長の要求）
+  const [igPosts, setIgPosts] = useState("");
+  const [ytPosts, setYtPosts] = useState("");
+  const [tiktokPosts, setTiktokPosts] = useState("");
   const [todayComment, setTodayComment] = useState("");
 
   // X運用（物販）用の項目
@@ -178,6 +182,10 @@ export default function ReportPage() {
         igFollowers: parseInt(igFollowers) || 0,
         ytFollowers: parseInt(ytFollowers) || 0,
         tiktokFollowers: parseInt(tiktokFollowers) || 0,
+        // ✅ SNS別投稿数（菅原副社長の要求）
+        igPosts: parseInt(igPosts) || 0,
+        ytPosts: parseInt(ytPosts) || 0,
+        tiktokPosts: parseInt(tiktokPosts) || 0,
         todayComment: todayComment || "",
         createdAt: serverTimestamp(),
       };
@@ -264,6 +272,10 @@ export default function ReportPage() {
     setIgFollowers("");
     setYtFollowers("");
     setTiktokFollowers("");
+    // ✅ SNS別投稿数リセット
+    setIgPosts("");
+    setYtPosts("");
+    setTiktokPosts("");
     setTodayComment("");
     // X系
     setXPostCount("");
@@ -791,6 +803,84 @@ export default function ReportPage() {
                             min="0"
                           />
                         </div>
+                      </div>
+
+                      {/* ✅ SNS別投稿数（菅原副社長の要求） */}
+                      <div className="p-4 rounded-xl border-2 space-y-4"
+                        style={{ 
+                          borderColor: `${teamColor}40`,
+                          backgroundColor: `${teamColor}05`
+                        }}
+                      >
+                        <div className="flex items-center gap-2">
+                          <FileText className="w-5 h-5" style={{ color: teamColor }} />
+                          <span className="font-semibold" style={{ color: teamColor }}>
+                            SNS別投稿数（必須）
+                          </span>
+                        </div>
+                        <p className="text-xs text-muted-foreground">
+                          各SNSで投稿した数を入力してください。合計が自動計算されます。
+                        </p>
+                        <div className="grid grid-cols-3 gap-4">
+                          <div className="space-y-2">
+                            <Label className="flex items-center gap-2 text-sm">
+                              <Instagram className="w-4 h-4" style={{ color: teamColor }} />
+                              IG 投稿数
+                            </Label>
+                            <Input
+                              type="number"
+                              placeholder="0"
+                              value={igPosts}
+                              onChange={(e) => setIgPosts(e.target.value)}
+                              className="bg-white/5"
+                              style={{ borderColor: `${teamColor}30` }}
+                              min="0"
+                            />
+                          </div>
+                          <div className="space-y-2">
+                            <Label className="flex items-center gap-2 text-sm">
+                              <Youtube className="w-4 h-4 text-red-500" />
+                              YT 投稿数
+                            </Label>
+                            <Input
+                              type="number"
+                              placeholder="0"
+                              value={ytPosts}
+                              onChange={(e) => setYtPosts(e.target.value)}
+                              className="bg-white/5"
+                              style={{ borderColor: `${teamColor}30` }}
+                              min="0"
+                            />
+                          </div>
+                          <div className="space-y-2">
+                            <Label className="flex items-center gap-2 text-sm">
+                              <svg className="w-4 h-4" style={{ color: teamColor }} viewBox="0 0 24 24" fill="currentColor">
+                                <path d="M12.525.02c1.31-.02 2.61-.01 3.91-.02.08 1.53.63 3.09 1.75 4.17 1.12 1.11 2.7 1.62 4.24 1.79v4.03c-1.44-.05-2.89-.35-4.2-.97-.57-.26-1.10-.59-1.62-.93-.01 2.92.01 5.84-.02 8.75-.08 1.4-.54 2.79-1.35 3.94-1.31 1.92-3.58 3.17-5.91 3.21-1.43.08-2.86-.31-4.08-1.03-2.02-1.19-3.44-3.37-3.65-5.71-.02-.5-.03-1-.01-1.49.18-1.9 1.12-3.72 2.58-4.96 1.66-1.44 3.98-2.13 6.15-1.72.02 1.48-.04 2.96-.04 4.44-.99-.32-2.15-.23-3.02.37-.63.41-1.11 1.04-1.36 1.75-.21.51-.15 1.07-.14 1.61.24 1.64 1.82 3.02 3.5 2.87 1.12-.01 2.19-.66 2.77-1.61.19-.33.4-.67.41-1.06.1-1.79.06-3.57.07-5.36.01-4.03-.01-8.05.02-12.07z"/>
+                              </svg>
+                              TT 投稿数
+                            </Label>
+                            <Input
+                              type="number"
+                              placeholder="0"
+                              value={tiktokPosts}
+                              onChange={(e) => setTiktokPosts(e.target.value)}
+                              className="bg-white/5"
+                              style={{ borderColor: `${teamColor}30` }}
+                              min="0"
+                            />
+                          </div>
+                        </div>
+                        {/* 合計投稿数表示 */}
+                        {(igPosts || ytPosts || tiktokPosts) && (
+                          <div className="pt-2 border-t" style={{ borderColor: `${teamColor}20` }}>
+                            <div className="flex items-center justify-between">
+                              <span className="text-sm text-muted-foreground">合計投稿数</span>
+                              <span className="text-2xl font-bold" style={{ color: teamColor }}>
+                                {(parseInt(igPosts) || 0) + (parseInt(ytPosts) || 0) + (parseInt(tiktokPosts) || 0)}
+                              </span>
+                            </div>
+                          </div>
+                        )}
                       </div>
 
                       {/* 今日の一言 */}

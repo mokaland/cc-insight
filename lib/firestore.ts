@@ -37,12 +37,17 @@ export interface Report {
   ytFollowers?: number;
   tiktokFollowers?: number;
   todayComment?: string;
+  // SNS別投稿数（Shorts系）
+  igPosts?: number;
+  ytPosts?: number;
+  tiktokPosts?: number;
   // X系
   postCount?: number;
   postUrls?: string[];
   likeCount?: number;
   replyCount?: number;
 }
+
 
 // チーム情報
 export const teams = [
@@ -217,7 +222,8 @@ export function calculateTeamStats(reports: Report[], teamId: string) {
       stats.views += report.igViews || 0;
       stats.impressions += report.igProfileAccess || 0;
       stats.interactions += report.igInteractions || 0;
-      stats.posts += 1; // 報告1件 = 1日分の投稿として扱う
+      // ✅ SNS別投稿数を正確に集計（報告1件=1投稿ではない）
+      stats.posts += (report.igPosts || 0) + (report.ytPosts || 0) + (report.tiktokPosts || 0);
       
       // 詳細KPI集計
       totalProfileAccess += report.igProfileAccess || 0;
@@ -313,7 +319,8 @@ export function calculateOverallStats(reports: Report[]) {
       totalExternalTaps += report.igExternalTaps || 0;
       totalInteractions += report.igInteractions || 0;
       totalStories += report.weeklyStories || 0;
-      totalPosts += 1;
+      // ✅ SNS別投稿数を正確に集計
+      totalPosts += (report.igPosts || 0) + (report.ytPosts || 0) + (report.tiktokPosts || 0);
       
       // 最新のフォロワー数を保持
       const key = `${report.team}-${report.name}`;
@@ -395,7 +402,8 @@ export function calculateRankings(reports: Report[], type: "views" | "posts" | "
     
     if (report.teamType === "shorts") {
       stats.views += report.igViews || 0;
-      stats.posts += 1;
+      // ✅ SNS別投稿数を正確に集計
+      stats.posts += (report.igPosts || 0) + (report.ytPosts || 0) + (report.tiktokPosts || 0);
       stats.activity += (report.igInteractions || 0);
     } else {
       stats.posts += report.postCount || 0;
