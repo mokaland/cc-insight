@@ -154,7 +154,7 @@ export async function getReportsByPeriod(
   return reports;
 }
 
-// チーム別統計を計算
+// チーム別統計を計算（全体サマリーと同じKPI）
 export function calculateTeamStats(reports: Report[], teamId: string) {
   const teamReports = reports.filter(r => r.team === teamId);
   const team = teams.find(t => t.id === teamId);
@@ -168,12 +168,33 @@ export function calculateTeamStats(reports: Report[], teamId: string) {
       achievementRate: 0,
       memberCount: 0,
       perfectMembers: 0,
-      members: []
+      members: [],
+      // 詳細KPI（全体サマリーと同じ）
+      totalProfileAccess: 0,
+      totalExternalTaps: 0,
+      totalInteractions: 0,
+      totalStories: 0,
+      totalLikes: 0,
+      totalReplies: 0,
+      totalIgFollowers: 0,
+      totalYtFollowers: 0,
+      totalTiktokFollowers: 0,
     };
   }
 
   // メンバーごとに集計
   const memberStats: { [name: string]: any } = {};
+  
+  // 詳細KPI集計用
+  let totalProfileAccess = 0;
+  let totalExternalTaps = 0;
+  let totalInteractions = 0;
+  let totalStories = 0;
+  let totalLikes = 0;
+  let totalReplies = 0;
+  
+  // 最新フォロワー数（メンバーごと）
+  const latestFollowers: { [name: string]: { ig: number; yt: number; tiktok: number } } = {};
   
   teamReports.forEach(report => {
     if (!memberStats[report.name]) {
@@ -197,10 +218,28 @@ export function calculateTeamStats(reports: Report[], teamId: string) {
       stats.impressions += report.igProfileAccess || 0;
       stats.interactions += report.igInteractions || 0;
       stats.posts += 1; // 報告1件 = 1日分の投稿として扱う
+      
+      // 詳細KPI集計
+      totalProfileAccess += report.igProfileAccess || 0;
+      totalExternalTaps += report.igExternalTaps || 0;
+      totalInteractions += report.igInteractions || 0;
+      totalStories += report.weeklyStories || 0;
+      
+      // 最新フォロワー数を保持
+      if (!latestFollowers[report.name]) {
+        latestFollowers[report.name] = { ig: 0, yt: 0, tiktok: 0 };
+      }
+      latestFollowers[report.name].ig = report.igFollowers || 0;
+      latestFollowers[report.name].yt = report.ytFollowers || 0;
+      latestFollowers[report.name].tiktok = report.tiktokFollowers || 0;
     } else {
       stats.posts += report.postCount || 0;
       stats.likes += report.likeCount || 0;
       stats.replies += report.replyCount || 0;
+      
+      // X（Twitter）統計
+      totalLikes += report.likeCount || 0;
+      totalReplies += report.replyCount || 0;
     }
   });
 
@@ -217,6 +256,16 @@ export function calculateTeamStats(reports: Report[], teamId: string) {
   const totalTargetPosts = members.length * team.dailyPostGoal * 7;
   const perfectMembers = members.filter((m: any) => m.achievementRate >= 100).length;
 
+  // 全メンバーの最新フォロワー数を合計
+  let totalIgFollowers = 0;
+  let totalYtFollowers = 0;
+  let totalTiktokFollowers = 0;
+  Object.values(latestFollowers).forEach(f => {
+    totalIgFollowers += f.ig;
+    totalYtFollowers += f.yt;
+    totalTiktokFollowers += f.tiktok;
+  });
+
   return {
     totalViews,
     totalImpressions,
@@ -225,7 +274,17 @@ export function calculateTeamStats(reports: Report[], teamId: string) {
     achievementRate: totalTargetPosts > 0 ? Math.round((totalPosts / totalTargetPosts) * 100) : 0,
     memberCount: members.length,
     perfectMembers,
-    members
+    members,
+    // 詳細KPI（全体サマリーと完全一致）
+    totalProfileAccess,
+    totalExternalTaps,
+    totalInteractions,
+    totalStories,
+    totalLikes,
+    totalReplies,
+    totalIgFollowers,
+    totalYtFollowers,
+    totalTiktokFollowers,
   };
 }
 

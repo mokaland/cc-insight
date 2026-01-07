@@ -120,6 +120,40 @@ export default function FukugyouTeamPage() {
         </GlassCard>
       </div>
 
+      {/* 詳細KPI（全体サマリーと同じ） */}
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+        <GlassCard glowColor="#22c55e" title="プロフアクセス数" icon={<Users className="h-5 w-5" />} value={teamStats.totalProfileAccess.toLocaleString()} subtitle="Instagram">
+          <div></div>
+        </GlassCard>
+
+        <GlassCard glowColor="#f59e0b" title="外部タップ数" icon={<TrendingUp className="h-5 w-5" />} value={teamStats.totalExternalTaps.toLocaleString()} subtitle="リンククリック">
+          <div></div>
+        </GlassCard>
+
+        <GlassCard glowColor="#8b5cf6" title="インタラクション" icon={<Eye className="h-5 w-5" />} value={teamStats.totalInteractions.toLocaleString()} subtitle="エンゲージメント">
+          <div></div>
+        </GlassCard>
+
+        <GlassCard glowColor="#ec4899" title="ストーリー投稿" icon={<Video className="h-5 w-5" />} value={teamStats.totalStories.toString()} subtitle="週間合計">
+          <div></div>
+        </GlassCard>
+      </div>
+
+      {/* SNSフォロワー統計 */}
+      <div className="grid gap-4 md:grid-cols-3">
+        <GlassCard glowColor="#e1306c" title="Instagram" icon={<Users className="h-5 w-5" />} value={teamStats.totalIgFollowers.toLocaleString()} subtitle="総フォロワー数">
+          <div></div>
+        </GlassCard>
+
+        <GlassCard glowColor="#ff0000" title="YouTube" icon={<Users className="h-5 w-5" />} value={teamStats.totalYtFollowers.toLocaleString()} subtitle="総フォロワー数">
+          <div></div>
+        </GlassCard>
+
+        <GlassCard glowColor="#000000" title="TikTok" icon={<Users className="h-5 w-5" />} value={teamStats.totalTiktokFollowers.toLocaleString()} subtitle="総フォロワー数">
+          <div></div>
+        </GlassCard>
+      </div>
+
       {/* Achievement & Progress */}
       <div className="grid gap-6 md:grid-cols-2">
         {/* Circular Progress with Glassmorphism */}

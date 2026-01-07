@@ -106,15 +106,26 @@ export default function BuppanTeamPage() {
           <div></div>
         </GlassCard>
 
-        <GlassCard glowColor="#eab308" title="いいね回り" icon={<Heart className="h-5 w-5" />} value={teamStats.members.reduce((sum: number, m: any) => sum + (m.likes || 0), 0).toLocaleString()} subtitle="エンゲージメント">
+        <GlassCard glowColor="#eab308" title="いいね回り" icon={<Heart className="h-5 w-5" />} value={teamStats.totalLikes.toLocaleString()} subtitle="エンゲージメント">
           <div></div>
         </GlassCard>
 
-        <GlassCard glowColor="#eab308" title="リプライ回り" icon={<MessageCircle className="h-5 w-5" />} value={teamStats.members.reduce((sum: number, m: any) => sum + (m.replies || 0), 0).toLocaleString()} subtitle="交流活動">
+        <GlassCard glowColor="#eab308" title="リプライ回り" icon={<MessageCircle className="h-5 w-5" />} value={teamStats.totalReplies.toLocaleString()} subtitle="交流活動">
           <div></div>
         </GlassCard>
 
         <GlassCard glowColor="#eab308" title="MVP達成者" icon={<Users className="h-5 w-5" />} value={`${teamStats.perfectMembers}人`} subtitle={`${teamStats.memberCount}人中`}>
+          <div></div>
+        </GlassCard>
+      </div>
+
+      {/* X（Twitter）詳細統計 */}
+      <div className="grid gap-4 md:grid-cols-2">
+        <GlassCard glowColor="#1da1f2" title="いいね回り合計" icon={<Heart className="h-5 w-5" />} value={teamStats.totalLikes.toLocaleString()} subtitle="X (Twitter)">
+          <div></div>
+        </GlassCard>
+
+        <GlassCard glowColor="#1da1f2" title="リプライ回り合計" icon={<MessageCircle className="h-5 w-5" />} value={teamStats.totalReplies.toLocaleString()} subtitle="X (Twitter)">
           <div></div>
         </GlassCard>
       </div>
