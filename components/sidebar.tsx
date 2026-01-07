@@ -162,35 +162,103 @@ export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
           </div>
         )}
 
-        {/* Guardian Mini Display (Members Only) */}
+        {/* Guardian Portal Display (Members Only) */}
         {userProfile && userProfile.role !== "admin" && guardianInfo && (
-          <Link href="/mypage" onClick={onNavigate} className="block border-b border-white/10 p-4 hover:bg-white/5 transition-colors">
-            <div className="flex items-center gap-3 mb-2">
-              <div 
-                className="w-12 h-12 rounded-full flex items-center justify-center text-2xl relative flex-shrink-0"
-                style={{
-                  backgroundColor: `${guardianInfo.color}20`,
-                  boxShadow: `0 0 15px ${guardianInfo.color}60`,
-                  border: `2px solid ${guardianInfo.color}`,
-                }}
-              >
-                {guardianInfo.emoji}
+          <Link href="/mypage" onClick={onNavigate} className="block border-b border-white/10 p-4 hover:bg-white/5 transition-all group">
+            <div className="flex items-center gap-3 mb-3">
+              {/* ポータル型守護神表示 */}
+              <div className="relative w-16 h-16 flex-shrink-0">
+                {/* 外側のオーラリング */}
+                <div 
+                  className="portal-ring absolute inset-0 rounded-full"
+                  style={{
+                    border: `3px solid ${guardianInfo.color}`,
+                    boxShadow: `0 0 20px ${guardianInfo.color}80`,
+                  }}
+                />
+                
+                {/* 内側のグロー */}
+                <div 
+                  className="absolute inset-1 rounded-full opacity-30"
+                  style={{
+                    background: `radial-gradient(circle, ${guardianInfo.color} 0%, transparent 70%)`
+                  }}
+                />
+
+                {/* 守護神画像 */}
+                <div className="absolute inset-2 rounded-full overflow-hidden bg-black/50">
+                  <img
+                    src={getGuardianImagePath(guardianInfo.guardianId, guardianInfo.stage)}
+                    alt={guardianInfo.name}
+                    className="w-full h-full object-contain animate-guardian-breathe"
+                    onError={(e) => {
+                      e.currentTarget.style.display = 'none';
+                      e.currentTarget.nextElementSibling?.classList.remove('hidden');
+                    }}
+                  />
+                  {/* フォールバック絵文字 */}
+                  <div className="hidden absolute inset-0 flex items-center justify-center text-2xl">
+                    {guardianInfo.emoji}
+                  </div>
+                </div>
+
+                {/* 王冠バッジ（最高Stageのみ） */}
                 {guardianInfo.stage === 4 && (
-                  <span className="absolute -top-1 -right-1 text-sm">👑</span>
+                  <div className="absolute -top-1 -right-1 w-5 h-5 bg-yellow-400 rounded-full flex items-center justify-center shadow-lg animate-pulse">
+                    <span className="text-xs">👑</span>
+                  </div>
                 )}
+
+                {/* エナジーメーター（弧状） */}
+                <svg className="absolute -inset-1 w-[calc(100%+8px)] h-[calc(100%+8px)] -rotate-90">
+                  <circle
+                    cx="50%"
+                    cy="50%"
+                    r="45%"
+                    fill="none"
+                    stroke={guardianInfo.color}
+                    strokeWidth="2"
+                    strokeDasharray="220"
+                    strokeDashoffset={220 - (guardianInfo.energy / 100) * 220}
+                    strokeLinecap="round"
+                    className="transition-all duration-500"
+                    style={{
+                      filter: `drop-shadow(0 0 5px ${guardianInfo.color})`
+                    }}
+                  />
+                </svg>
               </div>
+
+              {/* 情報エリア */}
               <div className="flex-1 min-w-0">
-                <p className="text-xs text-muted-foreground">Stage {guardianInfo.stage}</p>
-                <p className="text-xs font-bold truncate" style={{ color: guardianInfo.color }}>
+                <div className="flex items-center gap-2 mb-1">
+                  <span className="text-xs text-muted-foreground">Stage {guardianInfo.stage}</span>
+                  {guardianInfo.stage === 4 && (
+                    <span className="text-xs bg-gradient-to-r from-yellow-400 to-orange-400 bg-clip-text text-transparent font-bold">MAX</span>
+                  )}
+                </div>
+                <p className="text-xs font-bold truncate group-hover:text-white transition-colors" style={{ color: guardianInfo.color }}>
                   {guardianInfo.stageName}
                 </p>
               </div>
             </div>
             
-            {/* エナジー表示 */}
-            <div className="flex items-center justify-between text-xs">
-              <span className="text-muted-foreground">保有エナジー</span>
-              <span className="font-bold text-yellow-400">{guardianInfo.energy}E</span>
+            {/* エナジーバー */}
+            <div className="space-y-1">
+              <div className="flex items-center justify-between text-xs">
+                <span className="text-muted-foreground">エナジー</span>
+                <span className="font-bold text-yellow-400">{guardianInfo.energy}E</span>
+              </div>
+              <div className="relative h-1.5 bg-white/10 rounded-full overflow-hidden">
+                <div
+                  className="h-full rounded-full transition-all duration-500 liquid-progress"
+                  style={{
+                    width: `${Math.min((guardianInfo.energy / 100) * 100, 100)}%`,
+                    background: 'linear-gradient(90deg, #FACC15, #EAB308)',
+                    boxShadow: '0 0 10px rgba(250, 204, 21, 0.5)'
+                  }}
+                />
+              </div>
             </div>
           </Link>
         )}

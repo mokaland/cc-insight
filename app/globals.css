@@ -127,10 +127,39 @@
   
   html,
   body {
-    background: linear-gradient(135deg, #F8FAFC 0%, #F1F5F9 100%) !important;
+    background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 50%, #4c1d95 100%) !important;
     min-height: 100vh;
     overscroll-behavior: none;
-    color: #0F172A !important;
+    color: #F8FAFC !important;
+  }
+
+  /* 宇宙空間の星々 */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image: 
+      radial-gradient(2px 2px at 20% 30%, white, transparent),
+      radial-gradient(2px 2px at 60% 70%, white, transparent),
+      radial-gradient(1px 1px at 50% 50%, white, transparent),
+      radial-gradient(1px 1px at 80% 10%, white, transparent),
+      radial-gradient(2px 2px at 90% 60%, white, transparent),
+      radial-gradient(1px 1px at 30% 80%, white, transparent);
+    background-size: 200% 200%;
+    background-position: 0% 0%;
+    animation: stars-float 60s ease-in-out infinite;
+    opacity: 0.3;
+    pointer-events: none;
+    z-index: -1;
+  }
+
+  @keyframes stars-float {
+    0%, 100% {
+      background-position: 0% 0%;
+    }
+    50% {
+      background-position: 100% 100%;
+    }
   }
 }
 
@@ -294,4 +323,238 @@
 
 .unlock-burst {
   animation: unlock-burst 0.8s ease-out forwards;
+}
+
+/* =====================================
+   🌌 Phase 1: 星雲＆魔法陣エフェクト
+   ===================================== */
+
+/* 星雲ドリフトアニメーション */
+@keyframes nebula-drift {
+  0% {
+    transform: translate(0, 0) rotate(0deg) scale(1);
+  }
+  33% {
+    transform: translate(30px, -20px) rotate(120deg) scale(1.1);
+  }
+  66% {
+    transform: translate(-20px, 30px) rotate(240deg) scale(0.9);
+  }
+  100% {
+    transform: translate(0, 0) rotate(360deg) scale(1);
+  }
+}
+
+.nebula-bg {
+  animation: nebula-drift 20s ease-in-out infinite;
+}
+
+/* 優しいフローティング */
+@keyframes float-gentle {
+  0%, 100% {
+    transform: translateY(0px) scale(1);
+  }
+  50% {
+    transform: translateY(-15px) scale(1.02);
+  }
+}
+
+.floating-card {
+  animation: float-gentle 4s ease-in-out infinite;
+}
+
+/* 虹色グローボーダー */
+@keyframes rainbow-glow {
+  0% {
+    box-shadow: 0 0 20px #A855F7, 0 0 40px #A855F7;
+  }
+  25% {
+    box-shadow: 0 0 20px #EC4899, 0 0 40px #EC4899;
+  }
+  50% {
+    box-shadow: 0 0 20px #22D3EE, 0 0 40px #22D3EE;
+  }
+  75% {
+    box-shadow: 0 0 20px #FACC15, 0 0 40px #FACC15;
+  }
+  100% {
+    box-shadow: 0 0 20px #A855F7, 0 0 40px #A855F7;
+  }
+}
+
+.rainbow-glow-border {
+  animation: rainbow-glow 3s ease-in-out infinite;
+}
+
+/* 衝撃波リップル */
+@keyframes ripple-wave {
+  0% {
+    transform: scale(1);
+    opacity: 0.8;
+  }
+  100% {
+    transform: scale(2.5);
+    opacity: 0;
+  }
+}
+
+.impact-button {
+  position: relative;
+  overflow: visible;
+}
+
+.impact-button::before,
+.impact-button::after {
+  content: '';
+  position: absolute;
+  inset: -4px;
+  border-radius: inherit;
+  border: 3px solid currentColor;
+  animation: ripple-wave 2s ease-out infinite;
+  pointer-events: none;
+}
+
+.impact-button::after {
+  animation-delay: 1s;
+}
+
+/* 魔法陣回転（異なる速度） */
+@keyframes spin-slow {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+@keyframes spin-medium {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(-360deg); }
+}
+
+@keyframes spin-fast {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.animate-spin-slow {
+  animation: spin-slow 20s linear infinite;
+}
+
+.animate-spin-medium {
+  animation: spin-medium 12s linear infinite;
+}
+
+.animate-spin-fast {
+  animation: spin-fast 6s linear infinite;
+}
+
+.animate-spin-reverse {
+  animation: spin-medium 15s linear infinite;
+}
+
+/* =====================================
+   💎 Phase 2: ジュエルエフェクト
+   ===================================== */
+
+/* 3Dジュエルカード */
+.jewel-card {
+  background: linear-gradient(
+    145deg,
+    rgba(255, 255, 255, 0.15) 0%,
+    rgba(255, 255, 255, 0.05) 50%,
+    rgba(0, 0, 0, 0.1) 100%
+  );
+  box-shadow: 
+    inset 0 2px 0 rgba(255, 255, 255, 0.4),
+    inset 0 -2px 0 rgba(0, 0, 0, 0.4),
+    0 15px 35px rgba(0, 0, 0, 0.4),
+    0 5px 15px rgba(0, 0, 0, 0.3);
+  transform: perspective(1000px) rotateX(2deg);
+  transition: transform 0.3s ease;
+}
+
+.jewel-card:hover {
+  transform: perspective(1000px) rotateX(0deg) translateY(-5px);
+}
+
+/* ネオンアイコングロー */
+.neon-icon-wrapper {
+  position: relative;
+  display: inline-block;
+}
+
+.neon-glow {
+  position: absolute;
+  inset: -20%;
+  border-radius: 50%;
+  animation: neon-pulse 2s ease-in-out infinite;
+}
+
+/* リキッドプログレスバー */
+@keyframes liquid-wave {
+  0%, 100% {
+    transform: scaleY(1);
+  }
+  50% {
+    transform: scaleY(1.1);
+  }
+}
+
+.liquid-progress {
+  animation: liquid-wave 2s ease-in-out infinite;
+}
+
+/* =====================================
+   🛡️ Phase 3: ポータルエフェクト
+   ===================================== */
+
+/* ガーディアンブレス（呼吸） */
+@keyframes guardian-breathe {
+  0%, 100% {
+    transform: scale(1);
+    filter: brightness(1);
+  }
+  50% {
+    transform: scale(1.05);
+    filter: brightness(1.15);
+  }
+}
+
+.animate-guardian-breathe {
+  animation: guardian-breathe 4s ease-in-out infinite;
+}
+
+/* ポータルリング回転 */
+.portal-ring {
+  animation: spin-slow 30s linear infinite;
+  filter: drop-shadow(0 0 10px currentColor);
+}
+
+/* =====================================
+   🎨 Phase 4: プレミアムグラス
+   ===================================== */
+
+.glass-premium {
+  background: rgba(15, 23, 42, 0.6);
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 
+    0 25px 50px -12px rgba(0, 0, 0, 0.5),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1);
+}
+
+/* 統計数値のテキストシャドウ */
+.stat-value {
+  font-weight: 800;
+  text-shadow: 0 0 20px currentColor, 0 0 40px currentColor;
+}
+
+.stat-label {
+  font-weight: 400;
+  opacity: 0.7;
+  letter-spacing: 0.05em;
+}
+
+/* グラデーション背景（宇宙感） */
+.cosmic-bg {
+  background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 50%, #4c1d95 100%);
 }

@@ -17,6 +17,25 @@ import {
 } from "@/lib/guardian-collection";
 import { Loader2, Sparkles, Zap, Crown, Flame, TrendingUp } from "lucide-react";
 import Link from "next/link";
+import { motion, useSpring, useTransform } from "framer-motion";
+
+// カウントアップコンポーネント
+function AnimatedNumber({ value }: { value: number }) {
+  const spring = useSpring(0, { 
+    damping: 20, 
+    stiffness: 100 
+  });
+  const display = useTransform(spring, (current) => Math.round(current));
+  const [displayValue, setDisplayValue] = useState(0);
+
+  useEffect(() => {
+    spring.set(value);
+    const unsubscribe = display.onChange(setDisplayValue);
+    return () => unsubscribe();
+  }, [value, spring, display]);
+
+  return <>{displayValue}</>;
+}
 
 export default function MyPage() {
   const { user } = useAuth();
@@ -67,45 +86,126 @@ export default function MyPage() {
   
   if (!activeGuardian || !activeInstance) {
     return (
-      <div className="min-h-[70vh] flex items-center justify-center relative overflow-hidden">
-        {/* 背景エフェクト */}
-        <div className="absolute inset-0 bg-gradient-to-br from-gray-900 via-purple-900/20 to-gray-900" />
+      <div className="min-h-[70vh] flex items-center justify-center relative overflow-hidden cosmic-bg">
+        {/* 星雲背景（複数レイヤー） */}
         <div className="absolute inset-0">
-          <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-purple-500/20 rounded-full blur-3xl animate-pulse" />
-          <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-pink-500/20 rounded-full blur-3xl animate-pulse delay-1000" />
+          {/* メイン星雲 */}
+          <div className="nebula-bg absolute top-0 left-1/4 w-[600px] h-[600px] rounded-full blur-3xl opacity-40" 
+               style={{
+                 background: 'radial-gradient(ellipse at center, rgba(139, 92, 246, 0.4) 0%, rgba(236, 72, 153, 0.3) 40%, transparent 70%)'
+               }} 
+          />
+          <div className="nebula-bg absolute bottom-0 right-1/4 w-[500px] h-[500px] rounded-full blur-3xl opacity-30"
+               style={{
+                 background: 'radial-gradient(ellipse at center, rgba(34, 211, 238, 0.3) 0%, rgba(168, 85, 247, 0.2) 40%, transparent 70%)',
+                 animationDelay: '5s'
+               }} 
+          />
+          <div className="nebula-bg absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[400px] h-[400px] rounded-full blur-3xl opacity-20"
+               style={{
+                 background: 'radial-gradient(ellipse at center, rgba(250, 204, 21, 0.2) 0%, transparent 60%)',
+                 animationDelay: '10s'
+               }} 
+          />
+        </div>
+
+        {/* パーティクル星（小さな光点） */}
+        <div className="absolute inset-0">
+          {[...Array(20)].map((_, i) => (
+            <div
+              key={i}
+              className="absolute w-1 h-1 bg-white rounded-full animate-pulse"
+              style={{
+                top: `${Math.random() * 100}%`,
+                left: `${Math.random() * 100}%`,
+                opacity: Math.random() * 0.5 + 0.3,
+                animationDelay: `${Math.random() * 3}s`,
+                animationDuration: `${Math.random() * 2 + 2}s`
+              }}
+            />
+          ))}
         </div>
 
         {/* コンテンツ */}
         <div className="relative z-10 text-center max-w-md mx-auto px-4">
-          {/* 魔法陣風エフェクト */}
+          {/* 強化された魔法陣 */}
           <div className="relative mb-8">
-            <div className="w-48 h-48 mx-auto relative">
-              <div className="absolute inset-0 rounded-full border-4 border-purple-500/30 animate-spin-slow" />
-              <div className="absolute inset-4 rounded-full border-4 border-pink-500/30 animate-spin-reverse" />
-              <div className="absolute inset-8 rounded-full border-4 border-blue-500/30 animate-spin-slow" />
+            <div className="w-56 h-56 mx-auto relative">
+              {/* 外側リング（ゆっくり） */}
+              <div 
+                className="absolute inset-0 rounded-full border-4 animate-spin-slow"
+                style={{
+                  borderColor: 'rgba(168, 85, 247, 0.4)',
+                  filter: 'drop-shadow(0 0 15px rgba(168, 85, 247, 0.6))'
+                }}
+              />
+              {/* 中間リング（中速・逆回転） */}
+              <div 
+                className="absolute inset-6 rounded-full border-4 animate-spin-medium"
+                style={{
+                  borderColor: 'rgba(236, 72, 153, 0.4)',
+                  filter: 'drop-shadow(0 0 12px rgba(236, 72, 153, 0.6))'
+                }}
+              />
+              {/* 内側リング（速い） */}
+              <div 
+                className="absolute inset-12 rounded-full border-4 animate-spin-fast"
+                style={{
+                  borderColor: 'rgba(34, 211, 238, 0.4)',
+                  filter: 'drop-shadow(0 0 10px rgba(34, 211, 238, 0.6))'
+                }}
+              />
+              
+              {/* 中心のアイコン */}
               <div className="absolute inset-0 flex items-center justify-center">
-                <Sparkles className="w-16 h-16 text-purple-400 animate-pulse" />
+                <div className="relative">
+                  <Sparkles className="w-20 h-20 text-purple-400 animate-pulse" 
+                             style={{
+                               filter: 'drop-shadow(0 0 20px rgba(168, 85, 247, 0.8))'
+                             }} 
+                  />
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <div className="w-16 h-16 bg-gradient-to-br from-purple-400 to-pink-400 rounded-full opacity-20 blur-xl animate-pulse" />
+                  </div>
+                </div>
               </div>
+
+              {/* 回転するルーン風装飾 */}
+              {[0, 60, 120, 180, 240, 300].map((angle, i) => (
+                <div
+                  key={i}
+                  className="absolute w-3 h-3 bg-white rounded-full"
+                  style={{
+                    top: '50%',
+                    left: '50%',
+                    transform: `translate(-50%, -50%) rotate(${angle}deg) translateY(-90px)`,
+                    opacity: 0.6,
+                    boxShadow: '0 0 10px rgba(255, 255, 255, 0.8)',
+                    animation: `sparkle ${2 + i * 0.3}s ease-in-out infinite`,
+                    animationDelay: `${i * 0.2}s`
+                  }}
+                />
+              ))}
             </div>
           </div>
 
-          {/* Glassmorphismカード */}
-          <div className="backdrop-blur-xl bg-white/5 border border-white/10 rounded-2xl p-8 shadow-2xl">
-            <h2 className="text-3xl font-bold bg-gradient-to-r from-purple-400 via-pink-400 to-blue-400 bg-clip-text text-transparent mb-4">
+          {/* フローティング＆虹色グローカード */}
+          <div className="floating-card rainbow-glow-border backdrop-blur-xl bg-white/5 border border-white/10 rounded-2xl p-8 shadow-2xl">
+            <h2 className="text-3xl font-bold bg-gradient-to-r from-purple-400 via-pink-400 to-blue-400 bg-clip-text text-transparent mb-4 drop-shadow-lg">
               召喚を待つ守護神
             </h2>
-            <p className="text-gray-300 mb-8">
+            <p className="text-gray-200 mb-8 text-sm">
               あなたの相棒となる守護神を選び、<br />
               共に成長する冒険を始めましょう
             </p>
             
             <Link href="/guardians">
               <Button 
-                className="w-full h-14 text-lg font-bold bg-gradient-to-r from-purple-500 via-pink-500 to-blue-500 hover:from-purple-600 hover:via-pink-600 hover:to-blue-600 text-white border-0 shadow-lg hover:shadow-purple-500/50 transition-all duration-300 hover:scale-105"
+                className="impact-button w-full h-16 text-lg font-bold bg-gradient-to-r from-purple-500 via-pink-500 to-blue-500 hover:from-purple-600 hover:via-pink-600 hover:to-blue-600 text-white border-0 shadow-lg hover:shadow-purple-500/50 transition-all duration-300 hover:scale-105 relative"
               >
-                <Sparkles className="w-5 h-5 mr-2" />
+                <Sparkles className="w-6 h-6 mr-2" />
                 守護神を選ぶ
-                <Sparkles className="w-5 h-5 ml-2" />
+                <Sparkles className="w-6 h-6 ml-2" />
               </Button>
             </Link>
           </div>
@@ -270,34 +370,123 @@ export default function MyPage() {
         </div>
       </GlassCard>
 
-      {/* エナジー＆ストリーク */}
-      <div className="grid gap-4 md:grid-cols-3">
-        <GlassCard glowColor="#EAB308" className="p-6">
-          <div className="text-center">
-            <Zap className="w-12 h-12 mx-auto mb-3 text-yellow-400" />
-            <p className="text-sm text-muted-foreground mb-1">保有エナジー</p>
-            <p className="text-4xl font-bold text-yellow-400">{profile.energy.current}</p>
-          </div>
-        </GlassCard>
+      {/* エナジー＆ストリーク（ジュエル化 + カウントアップ） */}
+      <div className="grid gap-6 md:grid-cols-3">
+        {/* 保有エナジー */}
+        <motion.div
+          initial={{ scale: 0, rotateY: -180 }}
+          animate={{ scale: 1, rotateY: 0 }}
+          transition={{ duration: 0.6, delay: 0 }}
+          className="jewel-card glass-premium p-6 rounded-2xl border border-white/20"
+        >
+          <div className="text-center relative">
+            {/* ネオンアイコン */}
+            <div className="neon-icon-wrapper mx-auto mb-4">
+              <Zap 
+                className="w-14 h-14 text-yellow-400 relative z-10" 
+                style={{
+                  filter: 'drop-shadow(0 0 15px rgba(250, 204, 21, 0.8))'
+                }}
+              />
+              <div className="neon-glow absolute inset-0 bg-yellow-400/50" />
+            </div>
+            
+            {/* ラベル */}
+            <p className="stat-label text-sm mb-2 text-gray-300">保有エナジー</p>
+            
+            {/* カウントアップ数値 */}
+            <motion.p 
+              className="stat-value text-5xl font-extrabold text-yellow-400"
+              initial={{ scale: 0 }}
+              animate={{ scale: 1 }}
+              transition={{ type: "spring", stiffness: 200, damping: 10, delay: 0.2 }}
+            >
+              <AnimatedNumber value={profile.energy.current} />
+            </motion.p>
 
-        <GlassCard glowColor="#A855F7" className="p-6">
-          <div className="text-center">
-            <TrendingUp className="w-12 h-12 mx-auto mb-3 text-purple-400" />
-            <p className="text-sm text-muted-foreground mb-1">累計獲得</p>
-            <p className="text-4xl font-bold text-purple-400">{profile.energy.totalEarned}</p>
+            {/* 宝石のハイライト */}
+            <div className="absolute top-0 left-1/4 w-1/2 h-1/2 bg-yellow-400/10 rounded-full blur-2xl" />
           </div>
-        </GlassCard>
+        </motion.div>
 
-        <GlassCard glowColor="#F97316" className="p-6">
-          <div className="text-center">
-            <Flame className="w-12 h-12 mx-auto mb-3 text-orange-400" />
-            <p className="text-sm text-muted-foreground mb-1">ストリーク</p>
-            <p className="text-4xl font-bold text-orange-400">{profile.streak.current}日</p>
-            <p className="text-xs text-muted-foreground mt-2">
-              最高記録: {profile.streak.max}日
-            </p>
+        {/* 累計獲得 */}
+        <motion.div
+          initial={{ scale: 0, rotateY: -180 }}
+          animate={{ scale: 1, rotateY: 0 }}
+          transition={{ duration: 0.6, delay: 0.1 }}
+          className="jewel-card glass-premium p-6 rounded-2xl border border-white/20"
+        >
+          <div className="text-center relative">
+            {/* ネオンアイコン */}
+            <div className="neon-icon-wrapper mx-auto mb-4">
+              <TrendingUp 
+                className="w-14 h-14 text-purple-400 relative z-10" 
+                style={{
+                  filter: 'drop-shadow(0 0 15px rgba(168, 85, 247, 0.8))'
+                }}
+              />
+              <div className="neon-glow absolute inset-0 bg-purple-400/50" />
+            </div>
+            
+            {/* ラベル */}
+            <p className="stat-label text-sm mb-2 text-gray-300">累計獲得</p>
+            
+            {/* カウントアップ数値 */}
+            <motion.p 
+              className="stat-value text-5xl font-extrabold text-purple-400"
+              initial={{ scale: 0 }}
+              animate={{ scale: 1 }}
+              transition={{ type: "spring", stiffness: 200, damping: 10, delay: 0.3 }}
+            >
+              <AnimatedNumber value={profile.energy.totalEarned} />
+            </motion.p>
+
+            {/* 宝石のハイライト */}
+            <div className="absolute top-0 left-1/4 w-1/2 h-1/2 bg-purple-400/10 rounded-full blur-2xl" />
           </div>
-        </GlassCard>
+        </motion.div>
+
+        {/* ストリーク */}
+        <motion.div
+          initial={{ scale: 0, rotateY: -180 }}
+          animate={{ scale: 1, rotateY: 0 }}
+          transition={{ duration: 0.6, delay: 0.2 }}
+          className="jewel-card glass-premium p-6 rounded-2xl border border-white/20"
+        >
+          <div className="text-center relative">
+            {/* ネオンアイコン */}
+            <div className="neon-icon-wrapper mx-auto mb-4">
+              <Flame 
+                className="w-14 h-14 text-orange-400 relative z-10" 
+                style={{
+                  filter: 'drop-shadow(0 0 15px rgba(251, 146, 60, 0.8))'
+                }}
+              />
+              <div className="neon-glow absolute inset-0 bg-orange-400/50" />
+            </div>
+            
+            {/* ラベル */}
+            <p className="stat-label text-sm mb-2 text-gray-300">ストリーク</p>
+            
+            {/* カウントアップ数値 */}
+            <motion.div
+              initial={{ scale: 0 }}
+              animate={{ scale: 1 }}
+              transition={{ type: "spring", stiffness: 200, damping: 10, delay: 0.4 }}
+            >
+              <p className="stat-value text-5xl font-extrabold text-orange-400">
+                <AnimatedNumber value={profile.streak.current} />
+                <span className="text-2xl">日</span>
+              </p>
+              <p className="text-xs text-gray-400 mt-2">
+                最高記録: {profile.streak.max}日 🔥
+              </p>
+            </motion.div>
+
+            {/* 宝石のハイライト */}
+            <div className="absolute top-0 left-1/4 w-1/2 h-1/2 bg-orange-400/10 rounded-full blur-2xl" />
+          </div>
+        </motion.div>
       </div>
 
       {/* クイックアクション */}
