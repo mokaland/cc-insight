@@ -114,20 +114,20 @@ export default function GuardiansPage() {
   const tier2 = Object.values(GUARDIANS).filter(g => g.tier === 2);
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-slate-950 via-purple-950 to-slate-950 text-white p-6">
+    <div className="min-h-screen bg-gradient-to-b from-slate-950 via-purple-950 to-slate-950 text-white p-4">
       <div className="max-w-7xl mx-auto">
         {/* ヘッダー */}
-        <div className="mb-8">
-          <h1 className="text-4xl font-bold mb-2 bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">
+        <div className="mb-4">
+          <h1 className="text-2xl font-bold mb-1 bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">
             🛡️ 守護神コレクション
           </h1>
-          <p className="text-gray-400">
+          <p className="text-gray-400 text-sm">
             守護神を集め、育て、最強のパートナーに
           </p>
         </div>
 
         {/* エナジー表示 */}
-        <div className="mb-8 p-6 bg-slate-900/50 backdrop-blur-sm rounded-xl border border-purple-500/30">
+        <div className="mb-4 p-4 bg-slate-900/50 backdrop-blur-sm rounded-xl border border-purple-500/30">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-gray-400 text-sm mb-1">保有エナジー</p>

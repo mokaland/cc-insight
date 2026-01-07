@@ -158,12 +158,12 @@ export default function GuardianSummoning({ userId, onComplete }: GuardianSummon
   if (step === 'selection') {
     return (
       <div className="fixed inset-0 bg-gradient-to-b from-slate-950 via-purple-950 to-slate-950 flex items-center justify-center p-4 z-50 overflow-y-auto">
-        <div className="max-w-5xl w-full py-8">
-          <div className="text-center mb-8">
-            <h2 className="text-4xl font-bold text-white mb-2">
+        <div className="max-w-6xl w-full max-h-[90vh] overflow-y-auto py-4">
+          <div className="text-center mb-4">
+            <h2 className="text-2xl font-bold text-white mb-1">
               ⚡ 守護神召喚の儀式
             </h2>
-            <p className="text-gray-400 text-lg">
+            <p className="text-gray-400 text-sm">
               3体の守護神から、あなたの相棒を選んでください
             </p>
           </div>
