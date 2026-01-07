@@ -8,8 +8,7 @@ import {
 } from "lucide-react";
 import { subscribeToReports, calculateTeamStats, teams, Report, getUserGuardianProfile } from "@/lib/firestore";
 import { useAuth } from "@/lib/auth-context";
-import { getTeamType, getGuardianStage } from "@/lib/guardian-system";
-import { GUARDIANS, ATTRIBUTES, getGuardianImagePath, GuardianId } from "@/lib/guardian-collection";
+import { GUARDIANS, ATTRIBUTES, getGuardianImagePath, GuardianId, EVOLUTION_STAGES } from "@/lib/guardian-collection";
 
 const getMedalIcon = (rank: number) => {
   switch (rank) {
@@ -262,10 +261,12 @@ export default function AllTeamsRankingPage() {
                       const rank = index + 1;
                       const isTop3 = rank <= 3;
                       
-                      // ガーディアンStage計算
-                      const teamType = getTeamType(id);
-                      const totalValue = isShorts ? member.views : (member.likes + member.replies);
-                      const guardianStage = getGuardianStage(totalValue, teamType);
+                      // デフォルト守護神表示（TODO: userIdベースで実際の守護神データ取得）
+                      const defaultGuardian = {
+                        emoji: "🛡️",
+                        japaneseName: "守護神",
+                        color: color
+                      };
 
                       // 表示する主要数値
                       const mainValue = isShorts ? member.views : (member.likes || 0) + (member.replies || 0);
@@ -303,12 +304,12 @@ export default function AllTeamsRankingPage() {
                             <div
                               className="w-12 h-12 rounded-full flex items-center justify-center text-2xl flex-shrink-0"
                               style={{
-                                backgroundColor: `${guardianStage.color}20`,
-                                boxShadow: `0 0 15px ${guardianStage.glowColor}`,
-                                border: `2px solid ${guardianStage.color}`,
+                                backgroundColor: `${defaultGuardian.color}20`,
+                                boxShadow: `0 0 15px ${defaultGuardian.color}`,
+                                border: `2px solid ${defaultGuardian.color}`,
                               }}
                             >
-                              {guardianStage.emoji}
+                              {defaultGuardian.emoji}
                             </div>
 
                             {/* メンバー情報 */}
@@ -324,8 +325,8 @@ export default function AllTeamsRankingPage() {
                                 )}
                               </div>
                               <div className="flex items-center gap-2 text-xs text-slate-500">
-                                <span style={{ color: guardianStage.color }} className="font-medium">
-                                  {guardianStage.japaneseName}
+                                <span style={{ color: defaultGuardian.color }} className="font-medium">
+                                  {defaultGuardian.japaneseName}
                                 </span>
                                 <span>•</span>
                                 <span>{member.reports}回報告</span>
