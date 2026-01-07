@@ -71,25 +71,38 @@ export default function RankingPage() {
   const [reports, setReports] = useState<Report[]>([]);
   const [loading, setLoading] = useState(true);
   const [initialLoadDone, setInitialLoadDone] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    // 最大3秒でローディング終了
+    // 最大5秒でローディング終了
     const timeout = setTimeout(() => {
       setLoading(false);
       setInitialLoadDone(true);
-    }, 3000);
+      if (reports.length === 0 && !error) {
+        setError("データの読み込みに時間がかかっています。Firestoreインデックスが構築中の可能性があります。");
+      }
+    }, 5000);
 
-    const unsubscribe = subscribeToReports((data) => {
-      setReports(data);
+    try {
+      const unsubscribe = subscribeToReports((data) => {
+        setReports(data);
+        setLoading(false);
+        setInitialLoadDone(true);
+        setError(null);
+        clearTimeout(timeout);
+      });
+
+      return () => {
+        unsubscribe();
+        clearTimeout(timeout);
+      };
+    } catch (err: any) {
+      console.error("ランキングデータ取得エラー:", err);
+      setError("データの取得に失敗しました。Firestoreインデックスを作成してください。");
       setLoading(false);
       setInitialLoadDone(true);
       clearTimeout(timeout);
-    });
-
-    return () => {
-      unsubscribe();
-      clearTimeout(timeout);
-    };
+    }
   }, []);
 
   // チーム別フィルタリング：ログインユーザーと同じチームのメンバーのみ表示
