@@ -90,9 +90,9 @@ export default function GuardianSummoning({ userId, onComplete }: GuardianSummon
             <label className="block text-white font-bold mb-3">性別</label>
             <div className="grid grid-cols-3 gap-3">
               {[
-                { value: 'male' as const, label: '男性', emoji: '👨' },
-                { value: 'female' as const, label: '女性', emoji: '👩' },
-                { value: 'other' as const, label: 'その他', emoji: '🧑' }
+                { value: 'male' as const, label: '男性', image: '/images/ui/gender-male.png' },
+                { value: 'female' as const, label: '女性', image: '/images/ui/gender-female.png' },
+                { value: 'other' as const, label: 'その他', image: '/images/ui/gender-other.png' }
               ].map(option => (
                 <button
                   key={option.value}
@@ -105,7 +105,20 @@ export default function GuardianSummoning({ userId, onComplete }: GuardianSummon
                     }
                   `}
                 >
-                  <div className="text-3xl mb-2">{option.emoji}</div>
+                  <div className="h-16 w-16 mx-auto mb-2 flex items-center justify-center relative">
+                    <img
+                      src={option.image}
+                      alt={option.label}
+                      className="w-full h-full object-contain"
+                      onError={(e) => {
+                        e.currentTarget.style.display = 'none';
+                        e.currentTarget.nextElementSibling?.classList.remove('hidden');
+                      }}
+                    />
+                    <div className="hidden absolute inset-0 flex items-center justify-center">
+                      <span className="text-sm font-bold text-center">{option.label}</span>
+                    </div>
+                  </div>
                   <div className="text-sm">{option.label}</div>
                 </button>
               ))}
