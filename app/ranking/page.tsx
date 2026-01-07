@@ -85,7 +85,7 @@ export default function AllTeamsRankingPage() {
       <div className="min-h-[50vh] flex flex-col items-center justify-center">
         <Trophy className="w-16 h-16 text-slate-400 mb-4" />
         <h2 className="text-2xl font-bold text-slate-900 mb-2">ログインが必要です</h2>
-        <p className="text-slate-600 mb-6">ランキングを表示するにはログインしてください</p>
+        <p className="text-slate-300 mb-6">ランキングを表示するにはログインしてください</p>
       </div>
     );
   }
@@ -94,7 +94,7 @@ export default function AllTeamsRankingPage() {
     return (
       <div className="flex flex-col items-center justify-center min-h-[50vh] gap-4">
         <Loader2 className="w-8 h-8 animate-spin text-pink-500" />
-        <p className="text-sm text-slate-600">ランキングを読み込み中...</p>
+        <p className="text-sm text-slate-300">ランキングを読み込み中...</p>
       </div>
     );
   }
@@ -115,7 +115,7 @@ export default function AllTeamsRankingPage() {
         <h1 className="text-4xl font-bold mb-3 bg-gradient-to-r from-pink-500 via-purple-500 to-cyan-500 bg-clip-text text-transparent">
           🏆 全チームランキング
         </h1>
-        <p className="text-slate-600">全メンバーのパフォーマンスを一覧表示</p>
+        <p className="text-slate-300">全メンバーのパフォーマンスを一覧表示</p>
       </div>
 
       {error && (
@@ -170,7 +170,7 @@ export default function AllTeamsRankingPage() {
                     {name}
                   </h2>
                 </div>
-                <div className="text-sm text-slate-600">
+                <div className="text-sm text-slate-300">
                   {totalMembers}人のメンバー
                 </div>
               </div>
@@ -180,39 +180,39 @@ export default function AllTeamsRankingPage() {
                 {isShorts ? (
                   <>
                     {/* Shorts系KPI */}
-                    <div className="bg-white/50 rounded-xl p-4">
+                    <div className="glass-bg rounded-xl p-4">
                       <div className="flex items-center gap-2 mb-2">
                         <Eye className="w-4 h-4" style={{ color }} />
-                        <p className="text-xs text-slate-600">総再生数</p>
+                        <p className="text-xs text-slate-300">総再生数</p>
                       </div>
                       <p className="text-2xl font-bold" style={{ color }}>
                         {stats.totalViews.toLocaleString()}
                       </p>
                       <p className="text-xs text-slate-500 mt-1">平均: {avgViews.toLocaleString()}</p>
                     </div>
-                    <div className="bg-white/50 rounded-xl p-4">
+                    <div className="glass-bg rounded-xl p-4">
                       <div className="flex items-center gap-2 mb-2">
                         <Users className="w-4 h-4" style={{ color }} />
-                        <p className="text-xs text-slate-600">プロフアクセス</p>
+                        <p className="text-xs text-slate-300">プロフアクセス</p>
                       </div>
                       <p className="text-2xl font-bold" style={{ color }}>
                         {stats.totalProfileAccess.toLocaleString()}
                       </p>
                     </div>
-                    <div className="bg-white/50 rounded-xl p-4">
+                    <div className="glass-bg rounded-xl p-4">
                       <div className="flex items-center gap-2 mb-2">
                         <TrendingUp className="w-4 h-4" style={{ color }} />
-                        <p className="text-xs text-slate-600">インタラクション</p>
+                        <p className="text-xs text-slate-300">インタラクション</p>
                       </div>
                       <p className="text-2xl font-bold" style={{ color }}>
                         {stats.totalInteractions.toLocaleString()}
                       </p>
                       <p className="text-xs text-slate-500 mt-1">平均: {avgActivity.toLocaleString()}</p>
                     </div>
-                    <div className="bg-white/50 rounded-xl p-4">
+                    <div className="glass-bg rounded-xl p-4">
                       <div className="flex items-center gap-2 mb-2">
                         <Instagram className="w-4 h-4" style={{ color }} />
-                        <p className="text-xs text-slate-600">総フォロワー</p>
+                        <p className="text-xs text-slate-300">総フォロワー</p>
                       </div>
                       <p className="text-2xl font-bold" style={{ color }}>
                         {(stats.totalIgFollowers + stats.totalYtFollowers + stats.totalTiktokFollowers).toLocaleString()}
@@ -222,38 +222,38 @@ export default function AllTeamsRankingPage() {
                 ) : (
                   <>
                     {/* X系KPI */}
-                    <div className="bg-white/50 rounded-xl p-4">
+                    <div className="glass-bg rounded-xl p-4">
                       <div className="flex items-center gap-2 mb-2">
                         <Heart className="w-4 h-4" style={{ color }} />
-                        <p className="text-xs text-slate-600">いいね回り</p>
+                        <p className="text-xs text-slate-300">いいね回り</p>
                       </div>
                       <p className="text-2xl font-bold" style={{ color }}>
                         {stats.totalLikes.toLocaleString()}
                       </p>
                     </div>
-                    <div className="bg-white/50 rounded-xl p-4">
+                    <div className="glass-bg rounded-xl p-4">
                       <div className="flex items-center gap-2 mb-2">
                         <MessageCircle className="w-4 h-4" style={{ color }} />
-                        <p className="text-xs text-slate-600">リプライ回り</p>
+                        <p className="text-xs text-slate-300">リプライ回り</p>
                       </div>
                       <p className="text-2xl font-bold" style={{ color }}>
                         {stats.totalReplies.toLocaleString()}
                       </p>
                     </div>
-                    <div className="bg-white/50 rounded-xl p-4">
+                    <div className="glass-bg rounded-xl p-4">
                       <div className="flex items-center gap-2 mb-2">
                         <Zap className="w-4 h-4" style={{ color }} />
-                        <p className="text-xs text-slate-600">総活動量</p>
+                        <p className="text-xs text-slate-300">総活動量</p>
                       </div>
                       <p className="text-2xl font-bold" style={{ color }}>
                         {(stats.totalLikes + stats.totalReplies).toLocaleString()}
                       </p>
                       <p className="text-xs text-slate-500 mt-1">平均: {avgActivity.toLocaleString()}</p>
                     </div>
-                    <div className="bg-white/50 rounded-xl p-4">
+                    <div className="glass-bg rounded-xl p-4">
                       <div className="flex items-center gap-2 mb-2">
                         <Trophy className="w-4 h-4" style={{ color }} />
-                        <p className="text-xs text-slate-600">総投稿数</p>
+                        <p className="text-xs text-slate-300">総投稿数</p>
                       </div>
                       <p className="text-2xl font-bold" style={{ color }}>
                         {stats.totalPosts}
@@ -269,12 +269,12 @@ export default function AllTeamsRankingPage() {
             {sortedMembers.length === 0 ? (
               <div className="bg-white rounded-2xl p-12 text-center border border-slate-200">
                 <div className="text-4xl mb-4">📊</div>
-                <p className="text-slate-600">まだレポートが送信されていません</p>
+                <p className="text-slate-300">まだレポートが送信されていません</p>
               </div>
             ) : (
-              <div className="bg-white rounded-2xl border border-slate-200 shadow-lg overflow-hidden">
+              <div className="glass-premium rounded-2xl border border-white/20 shadow-lg overflow-hidden">
                 <div className="p-6">
-                  <h3 className="text-lg font-bold text-slate-900 mb-4 flex items-center gap-2">
+                  <h3 className="text-lg font-bold text-slate-100 mb-4 flex items-center gap-2">
                     <Trophy className="w-5 h-5" style={{ color }} />
                     メンバーランキング
                   </h3>

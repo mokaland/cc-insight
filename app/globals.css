@@ -127,10 +127,10 @@
   
   html,
   body {
-    background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 50%, #4c1d95 100%) !important;
+    background: #020617 !important;
     min-height: 100vh;
     overscroll-behavior: none;
-    color: #F8FAFC !important;
+    color: #f1f5f9 !important;
   }
 
   /* 宇宙空間の星々 */
