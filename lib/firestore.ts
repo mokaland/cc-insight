@@ -14,6 +14,32 @@ import {
   DocumentData
 } from "firebase/firestore";
 import { db } from "./firebase";
+import {
+  GuardianId,
+  GuardianInstance,
+  UserGuardianProfile,
+  UserEnergyData,
+  UserStreakData,
+  createNewUserProfile,
+  createGuardianInstance,
+  GUARDIANS,
+  canUnlockGuardian,
+  getEnergyToNextStage
+} from "./guardian-collection";
+
+// 型エイリアス（後方互換性のため）
+type Gender = 'male' | 'female' | 'other';
+type AgeGroup = '10s' | '20s' | '30s' | '40s' | '50plus';
+type GuardianData = GuardianInstance; // 旧名称との互換性
+interface CompletedSeason {
+  guardianId: GuardianId;
+  seasonNumber: number;
+  finalStage: number;
+  finalStageName: string;
+  completedAt: Timestamp;
+  totalDays: number;
+  totalBoosts: number;
+}
 
 // レポートデータの型定義
 export interface Report {
@@ -432,10 +458,19 @@ export interface User {
   approvedAt?: Timestamp;
   approvedBy?: string;
   lastLoginAt?: Timestamp;
-  // 🔥 ストリークシステム
-  currentStreak?: number; // 現在の連続日数
-  maxStreak?: number; // 過去最高記録
-  lastReportDate?: Timestamp; // 最後の報告日時
+  
+  // 🛡️ 守護神システム（新設）
+  gender?: Gender;                    // 性別
+  ageGroup?: AgeGroup;                // 年齢層
+  guardians?: GuardianData[];         // 保有している守護神（複数育成対応）
+  activeGuardianId?: string;          // 現在アクティブな守護神のID
+  completedSeasons?: CompletedSeason[]; // 殿堂入りした守護神の記録
+  profileCompleted?: boolean;         // プロフィール入力完了フラグ
+  
+  // 🔥 ストリークシステム（後方互換性のため残す）
+  currentStreak?: number; 
+  maxStreak?: number; 
+  lastReportDate?: Timestamp;
 }
 
 // 全ユーザーを取得
@@ -609,4 +644,282 @@ function calculateStreak(reports: Report[]): { currentStreak: number; longestStr
   longestStreak = Math.max(longestStreak, tempStreak);
   
   return { currentStreak, longestStreak };
+}
+
+// =====================================
+// 🛡️ 守護神システム v2.0 - CRUD関数
+// =====================================
+
+/**
+ * ユーザーの守護神プロファイルを取得（v2.0）
+ */
+export async function getUserGuardianProfile(userId: string): Promise<UserGuardianProfile | null> {
+  try {
+    const userDoc = await getDoc(doc(db, "users", userId));
+    if (!userDoc.exists()) return null;
+    
+    const userData = userDoc.data();
+    
+    // v2.0プロファイルが存在すれば返す
+    if (userData.guardianProfile) {
+      return userData.guardianProfile as UserGuardianProfile;
+    }
+    
+    // 存在しない場合は新規作成
+    const newProfile = createNewUserProfile();
+    return newProfile;
+  } catch (error) {
+    console.error("Error fetching guardian profile:", error);
+    return null;
+  }
+}
+
+/**
+ * ユーザーの守護神プロファイルを更新（v2.0）
+ */
+export async function updateUserGuardianProfile(
+  userId: string,
+  profile: Partial<UserGuardianProfile>
+): Promise<void> {
+  await setDoc(doc(db, "users", userId), {
+    guardianProfile: profile
+  }, { merge: true });
+}
+
+/**
+ * ユーザープロフィール（性別・年齢）を設定（v2.0）
+ */
+export async function setUserDemographics(
+  userId: string,
+  gender: Gender,
+  ageGroup: AgeGroup
+): Promise<void> {
+  const currentProfile = await getUserGuardianProfile(userId);
+  const updatedProfile: UserGuardianProfile = currentProfile || createNewUserProfile();
+  
+  updatedProfile.gender = gender;
+  updatedProfile.ageGroup = ageGroup;
+  
+  await setDoc(doc(db, "users", userId), {
+    guardianProfile: updatedProfile,
+    gender,  // 後方互換性のため
+    ageGroup,  // 後方互換性のため
+    profileCompleted: true
+  }, { merge: true });
+}
+
+/**
+ * 守護神を解放（v2.0）
+ */
+export async function unlockGuardian(
+  userId: string,
+  guardianId: GuardianId,
+  energyCost: number = 0
+): Promise<{ success: boolean; message: string }> {
+  try {
+    const profile = await getUserGuardianProfile(userId);
+    if (!profile) {
+      return { success: false, message: "ユーザープロファイルが見つかりません" };
+    }
+    
+    // 解放可能かチェック
+    const canUnlock = canUnlockGuardian(guardianId, profile);
+    if (!canUnlock.canUnlock) {
+      return { success: false, message: canUnlock.reason || "解放できません" };
+    }
+    
+    // エナジー消費
+    if (energyCost > 0 && profile.energy.current < energyCost) {
+      return { success: false, message: `エナジーが足りません（${energyCost}必要）` };
+    }
+    
+    // 守護神インスタンス作成
+    const instance = createGuardianInstance(guardianId);
+    
+    // プロファイル更新
+    profile.guardians[guardianId] = instance;
+    profile.energy.current -= energyCost;
+    
+    // 最初の守護神の場合、アクティブに設定
+    if (!profile.activeGuardianId) {
+      profile.activeGuardianId = guardianId;
+    }
+    
+    await updateUserGuardianProfile(userId, profile);
+    
+    return { 
+      success: true, 
+      message: `${GUARDIANS[guardianId].name}を解放しました！` 
+    };
+  } catch (error) {
+    console.error("Error unlocking guardian:", error);
+    return { success: false, message: "エラーが発生しました" };
+  }
+}
+
+/**
+ * 守護神にエナジーを投資（v2.0）
+ */
+export async function investGuardianEnergy(
+  userId: string,
+  guardianId: GuardianId,
+  amount: number
+): Promise<{ success: boolean; evolved: boolean; newStage: number; message: string }> {
+  try {
+    const profile = await getUserGuardianProfile(userId);
+    if (!profile) {
+      return { success: false, evolved: false, newStage: 0, message: "プロファイルが見つかりません" };
+    }
+    
+    const guardian = profile.guardians[guardianId];
+    if (!guardian || !guardian.unlocked) {
+      return { success: false, evolved: false, newStage: 0, message: "この守護神は解放されていません" };
+    }
+    
+    // エナジーチェック
+    if (profile.energy.current < amount) {
+      return { success: false, evolved: false, newStage: guardian.stage, message: "エナジーが足りません" };
+    }
+    
+    // 投資実行
+    const { investEnergy } = await import("./energy-system");
+    const result = investEnergy(guardian, amount, profile.energy.current);
+    
+    if (!result.success) {
+      return { 
+        success: false, 
+        evolved: false, 
+        newStage: guardian.stage, 
+        message: result.message 
+      };
+    }
+    
+    // プロファイル更新
+    profile.guardians[guardianId] = result.newGuardian;
+    profile.energy.current = result.remainingEnergy;
+    
+    await updateUserGuardianProfile(userId, profile);
+    
+    return {
+      success: true,
+      evolved: result.evolved,
+      newStage: result.newStage,
+      message: result.message
+    };
+  } catch (error) {
+    console.error("Error investing energy:", error);
+    return { success: false, evolved: false, newStage: 0, message: "エラーが発生しました" };
+  }
+}
+
+/**
+ * 報告完了時のエナジー獲得処理（v2.0）
+ */
+export async function processReportWithEnergy(
+  userId: string
+): Promise<{ energyEarned: number; messages: string[] }> {
+  try {
+    const profile = await getUserGuardianProfile(userId);
+    if (!profile) {
+      return { energyEarned: 0, messages: [] };
+    }
+    
+    const { processReportCompletion } = await import("./energy-system");
+    const result = processReportCompletion(profile);
+    
+    // プロファイル更新
+    profile.energy = result.newEnergyData;
+    profile.streak = result.newStreakData;
+    
+    await updateUserGuardianProfile(userId, profile);
+    
+    return {
+      energyEarned: result.energyEarned.totalEnergy,
+      messages: result.messages
+    };
+  } catch (error) {
+    console.error("Error processing report:", error);
+    return { energyEarned: 0, messages: [] };
+  }
+}
+
+/**
+ * アクティブな守護神を切り替え（v2.0）
+ */
+export async function switchActiveGuardian(
+  userId: string,
+  guardianId: GuardianId
+): Promise<{ success: boolean; message: string }> {
+  try {
+    const profile = await getUserGuardianProfile(userId);
+    if (!profile) {
+      return { success: false, message: "プロファイルが見つかりません" };
+    }
+    
+    const guardian = profile.guardians[guardianId];
+    if (!guardian || !guardian.unlocked) {
+      return { success: false, message: "この守護神は解放されていません" };
+    }
+    
+    profile.activeGuardianId = guardianId;
+    await updateUserGuardianProfile(userId, profile);
+    
+    return { 
+      success: true, 
+      message: `${GUARDIANS[guardianId].name}をアクティブにしました` 
+    };
+  } catch (error) {
+    console.error("Error switching guardian:", error);
+    return { success: false, message: "エラーが発生しました" };
+  }
+}
+
+/**
+ * プロファイル初期化済みかチェック（v2.0）
+ */
+export async function isGuardianProfileInitialized(userId: string): Promise<boolean> {
+  try {
+    const userDoc = await getDoc(doc(db, "users", userId));
+    if (!userDoc.exists()) return false;
+    
+    const userData = userDoc.data();
+    return userData.guardianProfile !== undefined && 
+           userData.guardianProfile.gender !== undefined;
+  } catch (error) {
+    console.error("Error checking profile:", error);
+    return false;
+  }
+}
+
+/**
+ * 守護神を保有しているかチェック（v2.0）
+ */
+export async function hasAnyGuardian(userId: string): Promise<boolean> {
+  try {
+    const profile = await getUserGuardianProfile(userId);
+    if (!profile) return false;
+    
+    return Object.values(profile.guardians).some(g => g?.unlocked);
+  } catch (error) {
+    console.error("Error checking guardians:", error);
+    return false;
+  }
+}
+
+// =====================================
+// 🔄 後方互換性関数（旧バージョン用）
+// =====================================
+
+/**
+ * @deprecated v2.0ではgetUserGuardianProfileを使用してください
+ */
+export async function hasGuardian(userId: string): Promise<boolean> {
+  return hasAnyGuardian(userId);
+}
+
+/**
+ * @deprecated v2.0ではisGuardianProfileInitializedを使用してください
+ */
+export async function isProfileCompleted(userId: string): Promise<boolean> {
+  return isGuardianProfileInitialized(userId);
 }

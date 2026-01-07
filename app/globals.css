@@ -174,3 +174,124 @@
 .dark .glass-bg {
   background: rgba(0, 0, 0, 0.2);
 }
+
+/* =====================================
+   🛡️ 守護神システム - アニメーション
+   ===================================== */
+
+/* 浮遊アニメーション（呼吸するような動き） */
+@keyframes guardian-float {
+  0%, 100% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-10px);
+  }
+}
+
+@keyframes guardian-breathe {
+  0%, 100% {
+    transform: scale(1);
+    filter: brightness(1);
+  }
+  50% {
+    transform: scale(1.02);
+    filter: brightness(1.1);
+  }
+}
+
+.guardian-floating {
+  animation: guardian-float 3s ease-in-out infinite, 
+             guardian-breathe 4s ease-in-out infinite;
+}
+
+/* 進化演出用のパルスアニメーション */
+@keyframes evolution-pulse {
+  0% {
+    transform: scale(0.95);
+    opacity: 0.7;
+  }
+  50% {
+    transform: scale(1.05);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(0.95);
+    opacity: 0.7;
+  }
+}
+
+.evolution-pulse {
+  animation: evolution-pulse 1.5s ease-in-out infinite;
+}
+
+/* エナジー注入エフェクト */
+@keyframes energy-flow {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
+.energy-flow {
+  background: linear-gradient(
+    90deg,
+    rgba(168, 85, 247, 0.4),
+    rgba(236, 72, 153, 0.6),
+    rgba(168, 85, 247, 0.4)
+  );
+  background-size: 200% 200%;
+  animation: energy-flow 2s ease infinite;
+}
+
+/* オーラ輝きエフェクト */
+@keyframes aura-glow {
+  0%, 100% {
+    box-shadow: 0 0 20px rgba(168, 85, 247, 0.3);
+  }
+  50% {
+    box-shadow: 0 0 40px rgba(236, 72, 153, 0.5),
+                0 0 60px rgba(168, 85, 247, 0.3);
+  }
+}
+
+.aura-glow {
+  animation: aura-glow 2s ease-in-out infinite;
+}
+
+/* キラキラエフェクト */
+@keyframes sparkle {
+  0%, 100% {
+    opacity: 0;
+    transform: scale(0);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.sparkle {
+  animation: sparkle 1.5s ease-in-out infinite;
+}
+
+/* 解放時の光の拡散 */
+@keyframes unlock-burst {
+  0% {
+    transform: scale(0);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(3);
+    opacity: 0;
+  }
+}
+
+.unlock-burst {
+  animation: unlock-burst 0.8s ease-out forwards;
+}
