@@ -110,6 +110,12 @@ export default function ReportPage() {
       return;
     }
     
+    // ⚠️ チーム未設定チェック（再発防止）
+    if (!selectedTeam) {
+      setError("チーム設定が必要です。管理者に連絡してチームを設定してもらってください。");
+      return;
+    }
+    
     console.log('🚀 送信開始', { name: userProfile.displayName, selectedTeam, date });
     setSubmitting(true);
     setError("");
