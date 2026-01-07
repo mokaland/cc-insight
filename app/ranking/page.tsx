@@ -279,6 +279,110 @@ export default function AllTeamsRankingPage() {
                     メンバーランキング
                   </h3>
                   <div className="space-y-3">
+                    {/* 🎨 テスト用ダミーデータ（5段階演出確認用） */}
+                    {[
+                      { name: '最強さん👑', views: 500000, posts: 50, stage: 'top10', guardianStage: 4, guardianColor: '#FFD700' },
+                      { name: '上位さん✨', views: 100000, posts: 30, stage: 'top30', guardianStage: 3, guardianColor: '#EC4899' },
+                      { name: '中堅さん', views: 50000, posts: 20, stage: 'middle', guardianStage: 2, guardianColor: '#22D3EE' },
+                      { name: '低迷さん😰', views: 10000, posts: 10, stage: 'bottom30', guardianStage: 1, guardianColor: '#94a3b8' },
+                      { name: '呪われたさん💤', views: 1000, posts: 2, stage: 'bottom10', guardianStage: 0, guardianColor: '#64748b', cursed: true },
+                    ].map((dummyMember, dummyIndex) => {
+                      const rank = dummyIndex + 1;
+                      const isTop3 = rank <= 3;
+                      
+                      return (
+                        <div
+                          key={`dummy-${dummyIndex}`}
+                          className={`flex items-center justify-between p-4 rounded-xl transition-all duration-200 cursor-pointer ranking-${dummyMember.stage} ${
+                            isTop3
+                              ? "border-2 hover:scale-[1.02]"
+                              : "border border-slate-700"
+                          }`}
+                          style={
+                            isTop3
+                              ? {
+                                  borderColor: `${color}40`,
+                                  backgroundColor: `${color}05`,
+                                  boxShadow: `0 0 20px ${color}20`,
+                                }
+                              : undefined
+                          }
+                        >
+                          <div className="flex items-center gap-4 flex-1">
+                            {/* ランク */}
+                            <div className="w-10 flex-shrink-0 flex justify-center">
+                              {getMedalIcon(rank)}
+                            </div>
+
+                            {/* 守護神アバター（ダミー） */}
+                            <div className="relative w-12 h-12 flex-shrink-0 guardian-avatar">
+                              <div 
+                                className="absolute inset-0 rounded-full animate-pulse"
+                                style={{
+                                  border: `2px solid ${dummyMember.guardianColor}`,
+                                  boxShadow: `0 0 15px ${dummyMember.guardianColor}80`,
+                                  filter: dummyMember.cursed ? 'grayscale(100%)' : 'none'
+                                }}
+                              />
+                              <div 
+                                className="absolute inset-1 rounded-full opacity-20"
+                                style={{
+                                  background: `radial-gradient(circle, ${dummyMember.guardianColor} 0%, transparent 70%)`
+                                }}
+                              />
+                              <div className="absolute inset-1 rounded-full overflow-hidden bg-black/30 flex items-center justify-center text-2xl"
+                                   style={{ filter: dummyMember.cursed ? 'grayscale(100%) brightness(0.5)' : 'none' }}>
+                                {dummyMember.cursed ? '😴' : dummyMember.guardianStage === 4 ? '👑' : dummyMember.guardianStage === 3 ? '⚔️' : dummyMember.guardianStage === 2 ? '🛡️' : dummyMember.guardianStage === 1 ? '🌱' : '🥚'}
+                              </div>
+                              {dummyMember.stage === 'bottom10' && (
+                                <div className="dust-particles" />
+                              )}
+                            </div>
+
+                            {/* メンバー情報 */}
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-2">
+                                <p className={`font-bold truncate ${dummyMember.cursed ? 'text-slate-600' : 'text-slate-100'}`}>
+                                  {dummyMember.name}
+                                </p>
+                                {rank === 1 && (
+                                  <span className="px-2 py-0.5 rounded-full text-xs font-bold text-white" style={{ backgroundColor: color }}>
+                                    👑 1st
+                                  </span>
+                                )}
+                              </div>
+                              <div className="flex items-center gap-2 text-xs text-slate-400">
+                                <span style={{ color: dummyMember.guardianColor }} className="font-medium">
+                                  {dummyMember.cursed ? '呪い（3日未提出）' : `Stage ${dummyMember.guardianStage}`}
+                                </span>
+                                <span>•</span>
+                                <span>テスト用ダミー</span>
+                              </div>
+                            </div>
+
+                            {/* KPI表示 */}
+                            <div className="flex gap-6 text-sm">
+                              <div className="text-right">
+                                <p className="text-xs text-slate-400">再生</p>
+                                <p className="text-xl font-bold" style={{ color }}>
+                                  {dummyMember.views.toLocaleString()}
+                                </p>
+                              </div>
+                              <div className="text-right">
+                                <p className="text-xs text-slate-400">投稿</p>
+                                <p className="text-xl font-bold" style={{ color }}>
+                                  {dummyMember.posts}
+                                </p>
+                              </div>
+                            </div>
+
+                            <ChevronRight className="w-5 h-5 text-slate-400" />
+                          </div>
+                        </div>
+                      );
+                    })}
+
+                    {/* 実際のメンバーデータ */}
                     {sortedMembers.map((member: any, index: number) => {
                       const rank = index + 1;
                       const isTop3 = rank <= 3;
