@@ -152,17 +152,17 @@ export default function EnergyInvestmentModal({
       onClick={onClose}
     >
       <div 
-        className="bg-gradient-to-b from-slate-900 to-slate-950 rounded-2xl p-8 max-w-2xl w-full border-2 border-purple-500/30"
+        className="bg-gradient-to-b from-slate-900 to-slate-950 rounded-2xl p-6 max-w-2xl w-full border-2 border-purple-500/30 max-h-[95vh] overflow-y-auto"
         onClick={e => e.stopPropagation()}
       >
         {/* ヘッダー */}
-        <div className="flex items-start justify-between mb-6">
+        <div className="flex items-start justify-between mb-4">
           <div>
-            <h2 className="text-3xl font-bold text-white mb-2">
+            <h2 className="text-2xl font-bold text-white mb-1">
               {guardian.name}
-              <span className="text-gray-400 text-lg ml-2">({guardian.reading})</span>
+              <span className="text-gray-400 text-sm ml-2">({guardian.reading})</span>
             </h2>
-            <p className="text-gray-400">{guardian.description}</p>
+            <p className="text-gray-400 text-sm">{guardian.description}</p>
           </div>
           <button
             onClick={onClose}
@@ -174,7 +174,7 @@ export default function EnergyInvestmentModal({
 
         {/* 守護神画像 */}
         <div 
-          className="w-full aspect-square rounded-xl mb-6 guardian-floating relative overflow-hidden"
+          className="w-full aspect-square max-h-[30vh] rounded-xl mb-4 guardian-floating relative overflow-hidden"
           style={{ background: placeholder.background }}
         >
           <img
