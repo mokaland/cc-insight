@@ -24,10 +24,11 @@ import {
   MessageCircle,
   ExternalLink,
   AlertTriangle,
-  Shield
+  Shield,
+  Settings
 } from "lucide-react";
 import { ContentLoader, ButtonLoader } from "@/components/ui/loading-spinner";
-import { getAllUsers, User as UserProfile, getReportsByPeriod, Report } from "@/lib/firestore";
+import { getAllUsers, User as UserProfile, getReportsByPeriod, Report, getUserRecentReports, detectAnomalies, AnomalyFlags } from "@/lib/firestore";
 import { 
   getTeamConfig, 
   getReportStatus, 
@@ -45,6 +46,8 @@ interface MemberStatus {
   totalReports: number;
   currentStreak: number;
   teamColor: string;
+  anomalies?: AnomalyFlags;
+  hasAnomalies?: boolean;
 }
 
 export default function ActiveMonitorPage() {
@@ -52,10 +55,21 @@ export default function ActiveMonitorPage() {
   const { user } = useAuth();
   const [members, setMembers] = useState<MemberStatus[]>([]);
   const [loading, setLoading] = useState(true);
-  const [selectedFilter, setSelectedFilter] = useState<"all" | "danger" | "warning" | "attention" | "safe">("all");
+  const [selectedFilter, setSelectedFilter] = useState<"all" | "danger" | "warning" | "attention" | "safe" | "anomaly">("all");
   const [period, setPeriod] = useState<"week" | "month" | "custom">("month");
   const [customStartDate, setCustomStartDate] = useState<string>("");
   const [customEndDate, setCustomEndDate] = useState<string>("");
+  const [showAnomalySettings, setShowAnomalySettings] = useState(false);
+
+  // 異常値判定の閾値（カスタマイズ可能）
+  const [anomalyThresholds, setAnomalyThresholds] = useState({
+    minEnergy: 300,              // エナジー下限
+    minStage: 3,                 // ステージ下限
+    maxAvgViews: 1000,           // 平均再生数上限
+    maxAvgPosts: 2,              // 平均投稿数上限
+    modifyRatio: 2,              // 修正回数比率
+    growthMultiplier: 3          // 成長倍率
+  });
 
   useEffect(() => {
     if (user) {
@@ -120,6 +134,21 @@ export default function ActiveMonitorPage() {
         // ストリーク計算（簡易版）
         const currentStreak = calculateSimpleStreak(memberReports);
 
+        // 異常値検知（過去7日間のレポート分析）
+        const recentReports = await getUserRecentReports(member.uid, 7);
+
+        // 守護神データからエナジーとステージを取得
+        const activeGuardian = member.guardians?.find(g => g.guardianId === member.activeGuardianId);
+        const energy = activeGuardian?.investedEnergy || 0;
+        const guardianStage = activeGuardian?.stage || 0;
+
+        const anomalies = detectAnomalies(
+          recentReports,
+          energy,
+          guardianStage
+        );
+        const hasAnomalies = Object.values(anomalies).some(v => v);
+
         statuses.push({
           user: member,
           status,
@@ -129,6 +158,8 @@ export default function ActiveMonitorPage() {
           totalReports: memberReports.length,
           currentStreak,
           teamColor,
+          anomalies,
+          hasAnomalies,
         });
       }
 
@@ -180,6 +211,7 @@ export default function ActiveMonitorPage() {
 
   const filteredMembers = members.filter(m => {
     if (selectedFilter === "all") return true;
+    if (selectedFilter === "anomaly") return m.hasAnomalies;
     return m.alertLevel === selectedFilter;
   });
 
@@ -187,6 +219,7 @@ export default function ActiveMonitorPage() {
   const warningCount = members.filter(m => m.alertLevel === "warning").length;
   const attentionCount = members.filter(m => m.alertLevel === "attention").length;
   const safeCount = members.filter(m => m.alertLevel === "safe").length;
+  const anomalyCount = members.filter(m => m.hasAnomalies).length;
 
   const getStatusLabel = (status: ReportStatus): string => {
     const labels = {
@@ -289,7 +322,7 @@ export default function ActiveMonitorPage() {
       </GlassCard>
 
       {/* Summary Cards */}
-      <div className="grid gap-4 md:grid-cols-4">
+      <div className="grid gap-4 md:grid-cols-5">
         <div 
           className="cursor-pointer hover:scale-[1.02] transition-transform"
           onClick={() => setSelectedFilter(selectedFilter === "danger" ? "all" : "danger")}
@@ -341,7 +374,7 @@ export default function ActiveMonitorPage() {
           </GlassCard>
         </div>
 
-        <div 
+        <div
           className="cursor-pointer hover:scale-[1.02] transition-transform"
           onClick={() => setSelectedFilter(selectedFilter === "safe" ? "all" : "safe")}
         >
@@ -357,6 +390,23 @@ export default function ActiveMonitorPage() {
             </div>
           </GlassCard>
         </div>
+
+        <div
+          className="cursor-pointer hover:scale-[1.02] transition-transform"
+          onClick={() => setSelectedFilter(selectedFilter === "anomaly" ? "all" : "anomaly")}
+        >
+          <GlassCard glowColor="#a855f7">
+            <div className="flex items-center gap-3">
+              <div className="p-3 rounded-full bg-purple-500/20">
+                <Settings className="h-6 w-6 text-purple-500" />
+              </div>
+              <div>
+                <p className="text-sm text-muted-foreground">異常値検知</p>
+                <p className="text-2xl font-bold text-purple-500">{anomalyCount}人</p>
+              </div>
+            </div>
+          </GlassCard>
+        </div>
       </div>
 
       {/* Filter Info */}
@@ -364,9 +414,11 @@ export default function ActiveMonitorPage() {
         <div className="flex items-center gap-2 text-sm text-muted-foreground">
           <Shield className="w-4 h-4" />
           <span>
-            フィルター: {selectedFilter === "danger" ? "離脱リスク" 
+            フィルター: {selectedFilter === "danger" ? "離脱リスク"
               : selectedFilter === "warning" ? "要注意"
-              : selectedFilter === "attention" ? "注意" : "正常"}
+              : selectedFilter === "attention" ? "注意"
+              : selectedFilter === "anomaly" ? "異常値検知"
+              : "正常"}
           </span>
           <Button
             variant="ghost"
@@ -467,12 +519,48 @@ export default function ActiveMonitorPage() {
                       <div className="bg-white/5 rounded-lg p-2">
                         <p className="text-xs text-muted-foreground">最終報告</p>
                         <p className="text-lg font-bold">
-                          {member.lastReportDaysAgo === 0 ? "今日" 
+                          {member.lastReportDaysAgo === 0 ? "今日"
                             : member.lastReportDaysAgo === 999 ? "-"
                             : `${member.lastReportDaysAgo}日前`}
                         </p>
                       </div>
                     </div>
+
+                    {/* 異常値フラグ表示 */}
+                    {member.hasAnomalies && member.anomalies && (
+                      <div className="mb-3 p-3 rounded-lg bg-purple-500/10 border border-purple-500/30">
+                        <div className="flex items-center gap-2 mb-2">
+                          <Settings className="w-4 h-4 text-purple-400" />
+                          <span className="text-xs font-bold text-purple-400">異常値検知</span>
+                        </div>
+                        <div className="space-y-1 text-xs text-slate-300">
+                          {member.anomalies.highEnergyLowOutput && (
+                            <div className="flex items-start gap-2">
+                              <span>⚠️</span>
+                              <span>高エナジーだが成果が低い</span>
+                            </div>
+                          )}
+                          {member.anomalies.frequentModification && (
+                            <div className="flex items-start gap-2">
+                              <span>📝</span>
+                              <span>報告の修正回数が異常に多い</span>
+                            </div>
+                          )}
+                          {member.anomalies.inconsistentGrowth && (
+                            <div className="flex items-start gap-2">
+                              <span>📈</span>
+                              <span>急激な成長（不自然な変化）</span>
+                            </div>
+                          )}
+                          {member.anomalies.suspiciousPattern && (
+                            <div className="flex items-start gap-2">
+                              <span>🔍</span>
+                              <span>怪しい数値パターン</span>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    )}
 
                     {/* Actions */}
                     <div className="flex gap-2">
