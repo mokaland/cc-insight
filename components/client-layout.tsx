@@ -24,7 +24,7 @@ function LogoutButton() {
       variant="ghost"
       size="sm"
       onClick={logout}
-      className="hidden md:flex fixed top-4 right-4 z-50 text-muted-foreground hover:text-foreground"
+      className="hidden md:flex fixed top-20 right-8 z-50 text-muted-foreground hover:text-foreground glass-bg border border-white/10"
     >
       <LogOut className="w-4 h-4 mr-2" />
       ログアウト

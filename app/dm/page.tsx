@@ -13,6 +13,7 @@ import {
   where, 
   orderBy, 
   addDoc, 
+  getDocs,
   serverTimestamp,
   onSnapshot,
   Timestamp
@@ -77,18 +78,29 @@ export default function MemberDMPage() {
     try {
       setSending(true);
       
-      // 管理者のUIDを取得（簡易版：最初の管理者に送信）
-      // 本番環境では特定の管理者を選択できるようにする
-      const adminUserId = "ADMIN_UID"; // 実際には管理者UIDを動的に取得
+      // 🔧 全管理者のUIDを取得
+      const usersSnapshot = await getDocs(collection(db, "users"));
+      const adminUsers = usersSnapshot.docs
+        .filter(doc => doc.data().role === "admin")
+        .map(doc => doc.id);
+      
+      if (adminUsers.length === 0) {
+        alert("管理者が見つかりません");
+        return;
+      }
+      
+      // 最初の管理者をメイン送信先とし、全管理者をparticipantsに含める
+      const mainAdminId = adminUsers[0];
+      const allParticipants = [user.uid, ...adminUsers];
       
       await addDoc(collection(db, "dm_messages"), {
         fromUserId: user.uid,
         fromUserName: userProfile.displayName,
-        toUserId: adminUserId,
+        toUserId: mainAdminId,
         toUserName: "運営",
         message: newMessage.trim(),
         isAdmin: false,
-        participants: [user.uid, adminUserId],
+        participants: allParticipants, // 全管理者が見えるように
         createdAt: serverTimestamp(),
       });
       setNewMessage("");
