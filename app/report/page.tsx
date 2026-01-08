@@ -32,7 +32,7 @@ import {
   TrendingUp,
   Zap
 } from "lucide-react";
-import { teams, processReportWithEnergy, getTodayReport, updateReport, Report } from "@/lib/firestore";
+import { teams, processReportWithEnergy, getTodayReport, updateReport, Report, getAllUsers } from "@/lib/firestore";
 import EnergyToast from "@/components/energy-toast";
 
 export default function ReportPage() {
@@ -246,6 +246,39 @@ export default function ReportPage() {
       }
 
       setSuccess(true);
+      
+      // 🆕 Phase 13: 「今日の一言」をDMに自動送信
+      try {
+        const commentToSend = isXTeam ? xTodayComment : todayComment;
+        if (commentToSend && commentToSend.trim() !== "" && !isEditMode) {
+          console.log('💬 今日の一言をDMに自動送信中...');
+          
+          // 全ユーザー取得 → 管理者のみフィルター
+          const allUsers = await getAllUsers();
+          const admins = allUsers.filter(u => u.role === "admin");
+          
+          if (admins.length > 0) {
+            // 各管理者にDM送信
+            for (const admin of admins) {
+              await addDoc(collection(db, "dm_messages"), {
+                fromUserId: user.uid,
+                fromUserName: userProfile.displayName,
+                toUserId: admin.uid,
+                toUserName: admin.displayName,
+                message: `【日報 - 今日の一言】\n${commentToSend}`,
+                isAdmin: false,
+                participants: [user.uid, admin.uid],
+                createdAt: serverTimestamp(),
+              });
+            }
+            console.log(`✅ ${admins.length}人の管理者にDM送信完了`);
+          }
+        }
+      } catch (dmError) {
+        console.error("DM自動送信エラー:", dmError);
+        // DM送信失敗でも日報送信は成功扱い
+      }
+      
       // フォームリセット
       resetForm();
     } catch (err: unknown) {

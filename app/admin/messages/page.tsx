@@ -6,8 +6,8 @@ import { useRouter } from "next/navigation";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { MessageCircle, Clock, User, Users } from "lucide-react";
-import { collection, query, where, orderBy, getDocs, limit } from "firebase/firestore";
+import { MessageCircle, Clock, User, Users, Send } from "lucide-react";
+import { collection, query, where, orderBy, getDocs, limit, addDoc, serverTimestamp, onSnapshot } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { teams } from "@/lib/firestore";
 
