@@ -9,7 +9,7 @@
  * 「今、誰を助けるべきか」が一目で分かる状態にする
  */
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/lib/auth-context";
 import { GlassCard } from "@/components/glass-card";
@@ -135,13 +135,7 @@ export default function ActiveMonitorPage() {
     }
   };
 
-  useEffect(() => {
-    if (user) {
-      loadMemberStatuses();
-    }
-  }, [user, period, customStartDate, customEndDate]);
-
-  const loadMemberStatuses = async () => {
+  const loadMemberStatuses = useCallback(async () => {
     setLoading(true);
     try {
       // 全ユーザーを取得
@@ -243,7 +237,14 @@ export default function ActiveMonitorPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [period, customStartDate, customEndDate]);
+
+  // 🆕 useEffectを関数定義の後に配置
+  useEffect(() => {
+    if (user) {
+      loadMemberStatuses();
+    }
+  }, [user, loadMemberStatuses]);
 
   const calculateSimpleStreak = (reports: Report[]): number => {
     if (reports.length === 0) return 0;

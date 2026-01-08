@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/lib/auth-context";
 import { 
@@ -54,29 +54,7 @@ export default function AdminAuditPage() {
   const [lastCheckTime, setLastCheckTime] = useState<Date | null>(null); // 🆕 最終チェック時刻
   const [autoRefresh, setAutoRefresh] = useState(false); // 🆕 自動更新ON/OFF
 
-  useEffect(() => {
-    // 管理者チェック
-    if (!user || userProfile?.role !== "admin") {
-      router.push("/");
-      return;
-    }
-
-    loadAuditData();
-  }, [user, userProfile]);
-
-  // 🆕 自動更新（5分ごと）
-  useEffect(() => {
-    if (!autoRefresh) return;
-
-    const interval = setInterval(() => {
-      console.log("自動更新: 監査データを再読込中...");
-      loadAuditData();
-    }, 5 * 60 * 1000); // 5分
-
-    return () => clearInterval(interval);
-  }, [autoRefresh]);
-
-  const loadAuditData = async () => {
+  const loadAuditData = useCallback(async () => {
     try {
       setLoading(true);
       const users = await getAllUsers();
@@ -147,7 +125,28 @@ export default function AdminAuditPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
+
+  // 管理者チェックとデータ読み込み
+  useEffect(() => {
+    if (!user || userProfile?.role !== "admin") {
+      router.push("/");
+      return;
+    }
+    loadAuditData();
+  }, [user, userProfile, router, loadAuditData]);
+
+  // 🆕 自動更新（5分ごと）
+  useEffect(() => {
+    if (!autoRefresh) return;
+
+    const interval = setInterval(() => {
+      console.log("自動更新: 監査データを再読込中...");
+      loadAuditData();
+    }, 5 * 60 * 1000); // 5分
+
+    return () => clearInterval(interval);
+  }, [autoRefresh, loadAuditData]);
 
   // 🆕 データ整合性チェック
   const checkDataIntegrity = (
