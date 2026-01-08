@@ -13,7 +13,8 @@ import {
   ATTRIBUTES,
   getAuraLevel,
   getPlaceholderStyle,
-  getGuardianImagePath
+  getGuardianImagePath,
+  getEnergyToNextStage
 } from "@/lib/guardian-collection";
 import { Sparkles, Crown } from "lucide-react";
 import Link from "next/link";
@@ -396,6 +397,94 @@ export default function MyPage() {
                   />
                 </div>
               </div>
+
+              {/* 🎯 進化予告表示 */}
+              {(() => {
+                const evolutionInfo = getEnergyToNextStage(investedEnergy, activeGuardianId as GuardianId);
+                if (!evolutionInfo) return null; // 究極体は進化不可
+
+                const nextStage = EVOLUTION_STAGES[stage + 1];
+                const progressPercent = Math.round((evolutionInfo.current / evolutionInfo.required) * 100);
+
+                return (
+                  <div
+                    className="mt-6 p-4 rounded-xl border-2 animate-in fade-in slide-in-from-bottom-4 duration-500"
+                    style={{
+                      backgroundColor: `${attr.color}05`,
+                      borderColor: `${attr.color}40`,
+                      boxShadow: `0 0 20px ${attr.color}20`
+                    }}
+                  >
+                    <div className="flex items-center gap-2 mb-3">
+                      <Sparkles className="w-5 h-5" style={{ color: attr.color }} />
+                      <h3 className="font-bold" style={{ color: attr.color }}>
+                        次の進化まで
+                      </h3>
+                    </div>
+
+                    <div className="space-y-3">
+                      {/* 次の進化段階情報 */}
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="text-sm text-slate-400">目標</p>
+                          <p className="font-bold text-white text-lg">
+                            {nextStage.name}
+                          </p>
+                        </div>
+                        <div className="text-right">
+                          <p className="text-sm text-slate-400">必要エナジー</p>
+                          <p className="font-bold text-yellow-400 text-2xl">
+                            {evolutionInfo.remaining}E
+                          </p>
+                        </div>
+                      </div>
+
+                      {/* プログレスバー */}
+                      <div className="space-y-2">
+                        <div className="flex justify-between text-sm">
+                          <span className="text-slate-400">進化までの進捗</span>
+                          <span className="font-bold" style={{ color: attr.color }}>
+                            {progressPercent}%
+                          </span>
+                        </div>
+                        <div className="relative w-full h-6 bg-black/40 rounded-full overflow-hidden border-2 border-white/20">
+                          <div
+                            className="h-full transition-all duration-1000 flex items-center justify-center"
+                            style={{
+                              width: `${progressPercent}%`,
+                              background: `linear-gradient(90deg, ${attr.color}, ${attr.gradientTo})`,
+                              boxShadow: `0 0 15px ${attr.color}`,
+                            }}
+                          >
+                            {progressPercent > 20 && (
+                              <span className="text-xs font-bold text-white drop-shadow-lg">
+                                {evolutionInfo.current} / {evolutionInfo.required}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* 励ましメッセージ */}
+                      <div className="text-center pt-2">
+                        {evolutionInfo.remaining <= 50 ? (
+                          <p className="text-sm font-medium" style={{ color: attr.color }}>
+                            🔥 もう少しで進化！あと {evolutionInfo.remaining}E 稼ごう！
+                          </p>
+                        ) : evolutionInfo.remaining <= 100 ? (
+                          <p className="text-sm text-slate-300">
+                            💪 着実に成長中！このペースで続けよう
+                          </p>
+                        ) : (
+                          <p className="text-sm text-slate-400">
+                            🌱 毎日の報告が成長への近道です
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                );
+              })()}
             </div>
           </div>
 
