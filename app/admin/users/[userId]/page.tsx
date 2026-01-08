@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { User, teams, Report, getUserStats } from "@/lib/firestore";
+import { User, teams, Report, getUserStats, getUserGuardianProfile } from "@/lib/firestore";
 import { getDoc, doc, collection, query, where, orderBy, getDocs } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { GlassCard } from "@/components/glass-card";
@@ -19,9 +19,11 @@ import {
   Trophy,
   Loader2,
   Shield,
-  Mail
+  Mail,
+  Zap
 } from "lucide-react";
-import { calculateLevel, getBadgeRarityColor, BADGES } from "@/lib/gamification";
+import { GUARDIANS, ATTRIBUTES, getGuardianImagePath, GuardianId, EVOLUTION_STAGES } from "@/lib/guardian-collection";
+import { getBadgeRarityColor, BADGES } from "@/lib/gamification";
 
 interface PeriodStats {
   period: string;
@@ -42,6 +44,7 @@ export default function UserDetailPage() {
   const [quarterlyStats, setQuarterlyStats] = useState<PeriodStats[]>([]);
   const [loading, setLoading] = useState(true);
   const [badges, setBadges] = useState<any[]>([]);
+  const [guardianData, setGuardianData] = useState<any>(null);
 
   useEffect(() => {
     if (userId) {
@@ -58,6 +61,33 @@ export default function UserDetailPage() {
       if (userDoc.exists()) {
         setUser({ uid: userDoc.id, ...userDoc.data() } as User);
         setBadges(userDoc.data().badges || []);
+      }
+
+      // 🔧 守護神データを取得
+      try {
+        const guardianProfile = await getUserGuardianProfile(userId);
+        if (guardianProfile && guardianProfile.activeGuardianId) {
+          const activeId = guardianProfile.activeGuardianId as GuardianId;
+          const instance = guardianProfile.guardians[activeId];
+          
+          if (instance) {
+            const guardian = GUARDIANS[activeId];
+            const attr = ATTRIBUTES[guardian.attribute];
+            const stage = EVOLUTION_STAGES[instance.stage];
+            
+            setGuardianData({
+              name: guardian.name,
+              stageName: stage.name,
+              stage: instance.stage,
+              color: attr.color,
+              emoji: attr.emoji,
+              imagePath: getGuardianImagePath(activeId, instance.stage),
+              level: instance.stage + 1
+            });
+          }
+        }
+      } catch (error) {
+        console.error("守護神データ取得エラー:", error);
       }
 
       // レポートを取得
@@ -178,8 +208,16 @@ export default function UserDetailPage() {
   const team = teams.find(t => t.id === user.team);
   const totalViews = reports.reduce((sum, r) => sum + (r.igViews || 0), 0);
   const totalReports = reports.length;
-  const level = calculateLevel(totalViews);
   const maxViews = Math.max(...weeklyStats.map(s => s.views), 1);
+
+  // 🔧 守護神データまたはフォールバック
+  const displayLevel = guardianData || {
+    name: "未召喚",
+    stageName: "守護神なし",
+    emoji: "🥚",
+    color: "#94a3b8",
+    level: 0
+  };
 
   return (
     <div className="space-y-8">
@@ -227,11 +265,17 @@ export default function UserDetailPage() {
       {/* 統計サマリー */}
       <div className="grid gap-4 md:grid-cols-4">
         <GlassCard
-          glowColor={level.color}
-          title="現在のレベル"
-          icon={<div className="text-2xl">{level.icon}</div>}
-          value={level.name}
-          subtitle={`Lv.${level.level}`}
+          glowColor={displayLevel.color}
+          title="守護神"
+          icon={
+            guardianData?.imagePath ? (
+              <img src={guardianData.imagePath} alt={guardianData.name} className="w-10 h-10 object-cover rounded-full" />
+            ) : (
+              <div className="text-2xl">{displayLevel.emoji}</div>
+            )
+          }
+          value={displayLevel.stageName}
+          subtitle={guardianData ? guardianData.name : "未召喚"}
         >
           <div></div>
         </GlassCard>

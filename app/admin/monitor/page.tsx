@@ -429,13 +429,10 @@ export default function ActiveMonitorPage() {
                             background: `linear-gradient(to right, ${alertColor}, ${member.teamColor})`,
                             color: "white"
                           }}
-                          onClick={() => {
-                            // 個別フォロー機能（将来実装）
-                            alert(`${member.user.displayName}さんへのフォローメッセージを送信します`);
-                          }}
+                          onClick={() => router.push(`/admin/dm`)}
                         >
                           <MessageCircle className="w-4 h-4 mr-2" />
-                          個別フォロー
+                          DMで連絡
                         </Button>
                       )}
                     </div>
