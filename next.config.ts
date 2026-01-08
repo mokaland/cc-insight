@@ -8,6 +8,16 @@ const nextConfig: NextConfig = {
     imageSizes: [16, 32, 48, 64, 96, 128, 256, 384], // アイコンサイズ
     minimumCacheTTL: 60 * 60 * 24 * 365, // 1年間キャッシュ
   },
+
+  // 🆕 ビルド最適化設定
+  // 本番環境でのソースマップ無効化（ビルド高速化）
+  productionBrowserSourceMaps: false,
+
+  // 実験的機能
+  experimental: {
+    // 並列ビルドの最適化（アイコンライブラリとUIライブラリ）
+    optimizePackageImports: ['lucide-react', '@radix-ui/react-tabs'],
+  },
 };
 
 export default nextConfig;

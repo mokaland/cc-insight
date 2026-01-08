@@ -7,13 +7,19 @@ import {
   Trophy, Eye, Users, TrendingUp, Heart, MessageCircle, Instagram,
   Youtube, Crown, Medal, Award, ChevronRight, Zap, Calendar, Target, Download
 } from "lucide-react";
+import dynamic from "next/dynamic";
 import { subscribeToReports, calculateTeamStats, teams, Report, getBulkUserGuardianProfiles } from "@/lib/firestore";
 import { useAuth } from "@/lib/auth-context";
 import { GUARDIANS, ATTRIBUTES, getGuardianImagePath, GuardianId, EVOLUTION_STAGES } from "@/lib/guardian-collection";
-import { MemberDetailModal } from "@/components/member-detail-modal";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ContentLoader } from "@/components/ui/loading-spinner";
 import { cachedFetch } from "@/lib/firestore-cache";
+
+// 🆕 動的インポートでCode Splitting
+const MemberDetailModal = dynamic(
+  () => import("@/components/member-detail-modal").then(mod => ({ default: mod.MemberDetailModal })),
+  { ssr: false }
+);
 
 const getMedalIcon = (rank: number) => {
   switch (rank) {
