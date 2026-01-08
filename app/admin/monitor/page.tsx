@@ -27,7 +27,8 @@ import {
   Shield,
   Settings,
   X,
-  Users
+  Users,
+  Send
 } from "lucide-react";
 import { ContentLoader, ButtonLoader } from "@/components/ui/loading-spinner";
 import { getAllUsers, User as UserProfile, getReportsByPeriod, Report, getUserRecentReports, detectAnomalies, AnomalyFlags } from "@/lib/firestore";
@@ -88,6 +89,50 @@ export default function ActiveMonitorPage() {
         return [prev[1], userId];
       }
     });
+  };
+
+  // 一斉通知機能
+  const [showBroadcast, setShowBroadcast] = useState(false);
+  const [broadcastMessage, setBroadcastMessage] = useState("");
+  const [broadcastTarget, setBroadcastTarget] = useState<"all" | "danger" | "warning" | "attention">("danger");
+  const [isSending, setIsSending] = useState(false);
+
+  const sendBroadcastNotification = async () => {
+    if (!broadcastMessage.trim()) {
+      alert("メッセージを入力してください");
+      return;
+    }
+
+    setIsSending(true);
+    try {
+      const targetMembers = broadcastTarget === "all"
+        ? members
+        : members.filter(m => m.alertLevel === broadcastTarget);
+
+      // Slack webhook経由で一斉通知
+      // 実際の実装ではバックエンドAPIを呼ぶべきだが、ここでは簡易実装
+      const slackMessage = {
+        text: `🔔 *一斉通知（${targetMembers.length}人対象）*\n\n${broadcastMessage}\n\n送信者: ${user?.displayName || "管理者"}`
+      };
+
+      // 各メンバーにSlack通知を送る（実際にはAPI経由で実装）
+      console.log("Broadcasting to:", {
+        target: broadcastTarget,
+        count: targetMembers.length,
+        message: broadcastMessage,
+        members: targetMembers.map(m => m.user.displayName)
+      });
+
+      alert(`${targetMembers.length}人に通知を送信しました！\n\n（実装完了後はSlack経由で実際に送信されます）`);
+
+      setBroadcastMessage("");
+      setShowBroadcast(false);
+    } catch (error) {
+      console.error("通知送信エラー:", error);
+      alert("通知の送信に失敗しました");
+    } finally {
+      setIsSending(false);
+    }
   };
 
   useEffect(() => {
@@ -667,6 +712,20 @@ export default function ActiveMonitorPage() {
         </div>
       )}
 
+      {/* 一斉通知ボタン（フローティング） */}
+      <div className="fixed bottom-24 left-8 z-50">
+        <Button
+          onClick={() => setShowBroadcast(true)}
+          className="bg-gradient-to-r from-cyan-600 to-blue-600 shadow-2xl h-14 px-6 text-lg font-bold"
+          style={{
+            boxShadow: "0 10px 40px rgba(6, 182, 212, 0.5)"
+          }}
+        >
+          <MessageCircle className="w-5 h-5 mr-2" />
+          一斉通知
+        </Button>
+      </div>
+
       {/* 比較モーダル */}
       {showComparison && comparisonMembers.length === 2 && (
         <div className="fixed inset-0 bg-black/70 backdrop-blur-md z-[9999] flex items-center justify-center p-4">
@@ -758,6 +817,146 @@ export default function ActiveMonitorPage() {
                   className="border-purple-500/30 text-purple-400"
                 >
                   比較を終了
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 一斉通知モーダル */}
+      {showBroadcast && (
+        <div className="fixed inset-0 bg-black/70 backdrop-blur-md z-[9999] flex items-center justify-center p-4">
+          <div className="bg-slate-900 rounded-2xl border-2 border-cyan-500/30 max-w-2xl w-full">
+            <div className="sticky top-0 bg-slate-900 border-b border-cyan-500/30 p-6 flex items-center justify-between">
+              <h2 className="text-2xl font-bold text-cyan-400 flex items-center gap-2">
+                <MessageCircle className="w-6 h-6" />
+                一斉通知を送信
+              </h2>
+              <button
+                onClick={() => setShowBroadcast(false)}
+                className="p-2 rounded-full hover:bg-white/10 transition-colors"
+              >
+                <X className="w-6 h-6" />
+              </button>
+            </div>
+
+            <div className="p-6 space-y-6">
+              {/* 対象選択 */}
+              <div>
+                <label className="block text-sm font-bold mb-3 text-slate-300">
+                  通知対象
+                </label>
+                <div className="grid grid-cols-2 gap-3">
+                  <button
+                    onClick={() => setBroadcastTarget("danger")}
+                    className={`p-4 rounded-lg border-2 transition-all ${
+                      broadcastTarget === "danger"
+                        ? "bg-red-500/20 border-red-500 text-red-400"
+                        : "bg-slate-800 border-slate-700 text-slate-400 hover:border-red-500/50"
+                    }`}
+                  >
+                    <div className="font-bold">離脱リスク</div>
+                    <div className="text-xs mt-1">
+                      {members.filter(m => m.alertLevel === "danger").length}人
+                    </div>
+                  </button>
+                  <button
+                    onClick={() => setBroadcastTarget("warning")}
+                    className={`p-4 rounded-lg border-2 transition-all ${
+                      broadcastTarget === "warning"
+                        ? "bg-orange-500/20 border-orange-500 text-orange-400"
+                        : "bg-slate-800 border-slate-700 text-slate-400 hover:border-orange-500/50"
+                    }`}
+                  >
+                    <div className="font-bold">要注意</div>
+                    <div className="text-xs mt-1">
+                      {members.filter(m => m.alertLevel === "warning").length}人
+                    </div>
+                  </button>
+                  <button
+                    onClick={() => setBroadcastTarget("attention")}
+                    className={`p-4 rounded-lg border-2 transition-all ${
+                      broadcastTarget === "attention"
+                        ? "bg-yellow-500/20 border-yellow-500 text-yellow-400"
+                        : "bg-slate-800 border-slate-700 text-slate-400 hover:border-yellow-500/50"
+                    }`}
+                  >
+                    <div className="font-bold">注意</div>
+                    <div className="text-xs mt-1">
+                      {members.filter(m => m.alertLevel === "attention").length}人
+                    </div>
+                  </button>
+                  <button
+                    onClick={() => setBroadcastTarget("all")}
+                    className={`p-4 rounded-lg border-2 transition-all ${
+                      broadcastTarget === "all"
+                        ? "bg-cyan-500/20 border-cyan-500 text-cyan-400"
+                        : "bg-slate-800 border-slate-700 text-slate-400 hover:border-cyan-500/50"
+                    }`}
+                  >
+                    <div className="font-bold">全員</div>
+                    <div className="text-xs mt-1">{members.length}人</div>
+                  </button>
+                </div>
+              </div>
+
+              {/* メッセージ入力 */}
+              <div>
+                <label className="block text-sm font-bold mb-3 text-slate-300">
+                  通知メッセージ
+                </label>
+                <textarea
+                  value={broadcastMessage}
+                  onChange={(e) => setBroadcastMessage(e.target.value)}
+                  placeholder="例: 今週の報告がまだの方は、本日中に提出をお願いします！"
+                  className="w-full h-32 px-4 py-3 rounded-lg bg-white/5 border border-white/10 text-white placeholder-slate-500 focus:border-cyan-500 focus:outline-none resize-none"
+                />
+                <p className="text-xs text-slate-500 mt-2">
+                  {broadcastMessage.length} / 500文字
+                </p>
+              </div>
+
+              {/* プレビュー */}
+              <div className="bg-cyan-500/10 border border-cyan-500/30 rounded-lg p-4">
+                <p className="text-xs text-cyan-400 font-bold mb-2">送信プレビュー</p>
+                <div className="text-sm text-slate-300 whitespace-pre-wrap">
+                  {broadcastMessage || "(メッセージを入力してください)"}
+                </div>
+                <p className="text-xs text-slate-500 mt-3">
+                  対象: {broadcastTarget === "all" ? "全メンバー" :
+                    broadcastTarget === "danger" ? "離脱リスク" :
+                    broadcastTarget === "warning" ? "要注意" : "注意"}
+                  （{(broadcastTarget === "all" ? members : members.filter(m => m.alertLevel === broadcastTarget)).length}人）
+                </p>
+              </div>
+
+              {/* 送信ボタン */}
+              <div className="flex gap-3">
+                <Button
+                  onClick={() => setShowBroadcast(false)}
+                  variant="outline"
+                  className="flex-1 border-slate-700"
+                  disabled={isSending}
+                >
+                  キャンセル
+                </Button>
+                <Button
+                  onClick={sendBroadcastNotification}
+                  disabled={isSending || !broadcastMessage.trim()}
+                  className="flex-1 bg-gradient-to-r from-cyan-600 to-blue-600"
+                >
+                  {isSending ? (
+                    <>
+                      <ButtonLoader />
+                      送信中...
+                    </>
+                  ) : (
+                    <>
+                      <Send className="w-4 h-4 mr-2" />
+                      送信する
+                    </>
+                  )}
                 </Button>
               </div>
             </div>
