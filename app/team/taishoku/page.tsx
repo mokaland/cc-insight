@@ -11,24 +11,53 @@ import { getReportsByPeriod, calculateTeamStats, teams } from "@/lib/firestore";
 const team = teams.find((t) => t.id === "taishoku")!;
 
 const periodOptions = [
+  { id: "today", label: "今日" },
   { id: "week", label: "今週" },
   { id: "month", label: "今月" },
   { id: "1q", label: "1Q" },
   { id: "2q", label: "2Q" },
   { id: "3q", label: "3Q" },
   { id: "4q", label: "4Q" },
+  { id: "custom", label: "期間指定" },
 ];
 
-export default function TaishokuTeamPage() {
+export default function FukugyouTeamPage() {
   const [period, setPeriod] = useState("week");
   const [teamStats, setTeamStats] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [customStartDate, setCustomStartDate] = useState("");
+  const [customEndDate, setCustomEndDate] = useState("");
+  const [showCustomDatePicker, setShowCustomDatePicker] = useState(false);
 
   useEffect(() => {
     const loadData = async () => {
       setLoading(true);
       try {
-        const reports = await getReportsByPeriod(period, "taishoku");
+        let reports;
+        
+        // カスタム期間の場合は特別処理
+        if (period === "custom" && customStartDate && customEndDate) {
+          // カスタム期間でデータ取得
+          const { collection: dbCollection, query, where, orderBy, getDocs } = await import("firebase/firestore");
+          const { db } = await import("@/lib/firebase");
+          
+          const q = query(
+            dbCollection(db, "reports"),
+            where("date", ">=", customStartDate),
+            where("date", "<=", customEndDate),
+            where("team", "==", "taishoku"),
+            orderBy("date", "desc")
+          );
+          
+          const snapshot = await getDocs(q);
+          reports = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as any));
+        } else if (period === "custom") {
+          // カスタム期間が未設定の場合は週間データを表示
+          reports = await getReportsByPeriod("week", "taishoku");
+        } else {
+          reports = await getReportsByPeriod(period, "taishoku");
+        }
+        
         const stats = calculateTeamStats(reports, "taishoku");
         setTeamStats(stats);
       } catch (error) {
@@ -39,7 +68,23 @@ export default function TaishokuTeamPage() {
     };
 
     loadData();
-  }, [period]);
+  }, [period, customStartDate, customEndDate]);
+
+  const handlePeriodChange = (newPeriod: string) => {
+    setPeriod(newPeriod);
+    if (newPeriod === "custom") {
+      setShowCustomDatePicker(true);
+    } else {
+      setShowCustomDatePicker(false);
+    }
+  };
+
+  const applyCustomPeriod = () => {
+    if (customStartDate && customEndDate) {
+      setPeriod("custom");
+      setShowCustomDatePicker(false);
+    }
+  };
 
   if (loading || !teamStats) {
     return (
@@ -52,6 +97,7 @@ export default function TaishokuTeamPage() {
     );
   }
 
+  // 今日の進捗（今週の投稿数を7で割る）
   const todayPosts = Math.floor(teamStats.totalPosts / 7);
   const todayTarget = team.dailyPostGoal * teamStats.memberCount;
 
@@ -68,7 +114,7 @@ export default function TaishokuTeamPage() {
             {team.name}
           </h1>
           <p className="text-muted-foreground mt-2">
-            退職・転職サポート関連のコンテンツを発信
+            退職支援コンテンツ
           </p>
         </div>
 
@@ -79,10 +125,10 @@ export default function TaishokuTeamPage() {
               key={option.id}
               variant={period === option.id ? "default" : "outline"}
               size="sm"
-              onClick={() => setPeriod(option.id)}
+              onClick={() => handlePeriodChange(option.id)}
               className={
                 period === option.id
-                  ? "bg-gradient-to-r from-cyan-500 to-blue-500 text-white border-0 shadow-[0_0_15px_rgba(6,182,212,0.5)]"
+                  ? "bg-gradient-to-r from-cyan-500 to-blue-500 text-white border-0 shadow-[0_0_15px_rgba(236,72,153,0.5)]"
                   : ""
               }
             >
@@ -91,6 +137,61 @@ export default function TaishokuTeamPage() {
           ))}
         </div>
       </div>
+
+      {/* Custom Date Picker */}
+      {showCustomDatePicker && (
+        <GlassCard glowColor={team.color} className="p-6">
+          <div className="space-y-4">
+            <div className="flex items-center gap-2 mb-4">
+              <Calendar className="w-5 h-5" style={{ color: team.color }} />
+              <h3 className="text-lg font-semibold">カスタム期間を指定</h3>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
+              <div>
+                <label className="block text-sm font-medium mb-2">開始日</label>
+                <input
+                  type="date"
+                  value={customStartDate}
+                  onChange={(e) => setCustomStartDate(e.target.value)}
+                  className="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-white focus:border-cyan-500 focus:outline-none"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-2">終了日</label>
+                <input
+                  type="date"
+                  value={customEndDate}
+                  onChange={(e) => setCustomEndDate(e.target.value)}
+                  className="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-white focus:border-cyan-500 focus:outline-none"
+                />
+              </div>
+              <div className="flex gap-2">
+                <Button
+                  onClick={applyCustomPeriod}
+                  disabled={!customStartDate || !customEndDate}
+                  className="flex-1 bg-gradient-to-r from-cyan-500 to-blue-500 text-white"
+                >
+                  適用
+                </Button>
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    setShowCustomDatePicker(false);
+                    setPeriod("week");
+                  }}
+                >
+                  キャンセル
+                </Button>
+              </div>
+            </div>
+            {period === "custom" && customStartDate && customEndDate && (
+              <p className="text-sm text-muted-foreground mt-2">
+                📅 表示期間: {customStartDate} 〜 {customEndDate}
+              </p>
+            )}
+          </div>
+        </GlassCard>
+      )}
 
       {/* Today's Progress */}
       <TodayProgress
@@ -156,10 +257,10 @@ export default function TaishokuTeamPage() {
 
       {/* Achievement & Progress */}
       <div className="grid gap-6 md:grid-cols-2">
-        {/* Circular Progress */}
+        {/* Circular Progress with Glassmorphism */}
         <GlassCard glowColor="#06b6d4" className="p-8">
           <div className="flex items-center gap-2 mb-6">
-            <Target className="h-5 w-5 text-cyan-500" />
+            <Target className="h-5 h-5 text-cyan-500" />
             <h3 className="text-lg font-semibold">目標達成率</h3>
           </div>
           <p className="text-sm text-muted-foreground mb-6">
@@ -177,6 +278,7 @@ export default function TaishokuTeamPage() {
               {teamStats.totalPosts} / {teamStats.totalTargetPosts} 件達成
             </p>
             
+            {/* Neon Progress Bar */}
             <div className="w-full mt-6">
               <NeonGauge
                 value={teamStats.totalPosts}
@@ -235,7 +337,7 @@ export default function TaishokuTeamPage() {
                   key={member.name}
                   className={`flex items-center justify-between p-4 rounded-xl border-2 transition-all hover:scale-[1.01] ${
                     member.achievementRate >= 100
-                      ? "border-cyan-500 shadow-[0_0_20px_rgba(6,182,212,0.4)] bg-cyan-500/5"
+                      ? "border-cyan-500 shadow-[0_0_20px_rgba(236,72,153,0.4)] bg-cyan-500/5"
                       : "border-transparent bg-muted/30"
                   }`}
                 >
@@ -243,11 +345,11 @@ export default function TaishokuTeamPage() {
                     <span
                       className={`w-10 h-10 rounded-full flex items-center justify-center text-lg font-bold ${
                         index === 0
-                          ? "bg-gradient-to-r from-cyan-500 to-blue-500 text-white shadow-[0_0_20px_rgba(6,182,212,0.6)]"
+                          ? "bg-gradient-to-r from-cyan-500 to-blue-500 text-white shadow-[0_0_20px_rgba(236,72,153,0.6)]"
                           : index === 1
-                          ? "bg-cyan-400 text-white shadow-[0_0_15px_rgba(6,182,212,0.4)]"
+                          ? "bg-pink-400 text-white shadow-[0_0_15px_rgba(236,72,153,0.4)]"
                           : index === 2
-                          ? "bg-cyan-300 text-white shadow-[0_0_10px_rgba(6,182,212,0.3)]"
+                          ? "bg-pink-300 text-white shadow-[0_0_10px_rgba(236,72,153,0.3)]"
                           : "bg-muted text-muted-foreground"
                       }`}
                     >
@@ -257,7 +359,7 @@ export default function TaishokuTeamPage() {
                       <p className="font-semibold flex items-center gap-2">
                         {member.name}
                         {member.achievementRate >= 100 && (
-                          <span className="text-xs px-2 py-0.5 rounded-full bg-gradient-to-r from-cyan-500 to-blue-500 text-white shadow-[0_0_10px_rgba(6,182,212,0.5)]">
+                          <span className="text-xs px-2 py-0.5 rounded-full bg-gradient-to-r from-cyan-500 to-purple-500 text-white shadow-[0_0_10px_rgba(236,72,153,0.5)]">
                             🔥 MVP
                           </span>
                         )}

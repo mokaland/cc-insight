@@ -5,30 +5,59 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { CircularProgress } from "@/components/circular-progress";
 import { GlassCard, TodayProgress, NeonGauge } from "@/components/glass-card";
-import { Heart, MessageCircle, FileText, Users, Target, Calendar } from "lucide-react";
+import { Eye, TrendingUp, Video, Users, Target, Calendar } from "lucide-react";
 import { getReportsByPeriod, calculateTeamStats, teams } from "@/lib/firestore";
 
 const team = teams.find((t) => t.id === "buppan")!;
 
 const periodOptions = [
+  { id: "today", label: "今日" },
   { id: "week", label: "今週" },
   { id: "month", label: "今月" },
   { id: "1q", label: "1Q" },
   { id: "2q", label: "2Q" },
   { id: "3q", label: "3Q" },
   { id: "4q", label: "4Q" },
+  { id: "custom", label: "期間指定" },
 ];
 
-export default function BuppanTeamPage() {
+export default function FukugyouTeamPage() {
   const [period, setPeriod] = useState("week");
   const [teamStats, setTeamStats] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [customStartDate, setCustomStartDate] = useState("");
+  const [customEndDate, setCustomEndDate] = useState("");
+  const [showCustomDatePicker, setShowCustomDatePicker] = useState(false);
 
   useEffect(() => {
     const loadData = async () => {
       setLoading(true);
       try {
-        const reports = await getReportsByPeriod(period, "buppan");
+        let reports;
+        
+        // カスタム期間の場合は特別処理
+        if (period === "custom" && customStartDate && customEndDate) {
+          // カスタム期間でデータ取得
+          const { collection: dbCollection, query, where, orderBy, getDocs } = await import("firebase/firestore");
+          const { db } = await import("@/lib/firebase");
+          
+          const q = query(
+            dbCollection(db, "reports"),
+            where("date", ">=", customStartDate),
+            where("date", "<=", customEndDate),
+            where("team", "==", "buppan"),
+            orderBy("date", "desc")
+          );
+          
+          const snapshot = await getDocs(q);
+          reports = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as any));
+        } else if (period === "custom") {
+          // カスタム期間が未設定の場合は週間データを表示
+          reports = await getReportsByPeriod("week", "buppan");
+        } else {
+          reports = await getReportsByPeriod(period, "buppan");
+        }
+        
         const stats = calculateTeamStats(reports, "buppan");
         setTeamStats(stats);
       } catch (error) {
@@ -39,7 +68,23 @@ export default function BuppanTeamPage() {
     };
 
     loadData();
-  }, [period]);
+  }, [period, customStartDate, customEndDate]);
+
+  const handlePeriodChange = (newPeriod: string) => {
+    setPeriod(newPeriod);
+    if (newPeriod === "custom") {
+      setShowCustomDatePicker(true);
+    } else {
+      setShowCustomDatePicker(false);
+    }
+  };
+
+  const applyCustomPeriod = () => {
+    if (customStartDate && customEndDate) {
+      setPeriod("custom");
+      setShowCustomDatePicker(false);
+    }
+  };
 
   if (loading || !teamStats) {
     return (
@@ -52,6 +97,7 @@ export default function BuppanTeamPage() {
     );
   }
 
+  // 今日の進捗（今週の投稿数を7で割る）
   const todayPosts = Math.floor(teamStats.totalPosts / 7);
   const todayTarget = team.dailyPostGoal * teamStats.memberCount;
 
@@ -68,7 +114,7 @@ export default function BuppanTeamPage() {
             {team.name}
           </h1>
           <p className="text-muted-foreground mt-2">
-            スマホ物販・X運用関連のコンテンツを発信
+            X運用・物販
           </p>
         </div>
 
@@ -79,10 +125,10 @@ export default function BuppanTeamPage() {
               key={option.id}
               variant={period === option.id ? "default" : "outline"}
               size="sm"
-              onClick={() => setPeriod(option.id)}
+              onClick={() => handlePeriodChange(option.id)}
               className={
                 period === option.id
-                  ? "bg-gradient-to-r from-yellow-500 to-orange-500 text-white border-0 shadow-[0_0_15px_rgba(234,179,8,0.5)]"
+                  ? "bg-gradient-to-r from-yellow-500 to-orange-500 text-white border-0 shadow-[0_0_15px_rgba(236,72,153,0.5)]"
                   : ""
               }
             >
@@ -92,6 +138,61 @@ export default function BuppanTeamPage() {
         </div>
       </div>
 
+      {/* Custom Date Picker */}
+      {showCustomDatePicker && (
+        <GlassCard glowColor={team.color} className="p-6">
+          <div className="space-y-4">
+            <div className="flex items-center gap-2 mb-4">
+              <Calendar className="w-5 h-5" style={{ color: team.color }} />
+              <h3 className="text-lg font-semibold">カスタム期間を指定</h3>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
+              <div>
+                <label className="block text-sm font-medium mb-2">開始日</label>
+                <input
+                  type="date"
+                  value={customStartDate}
+                  onChange={(e) => setCustomStartDate(e.target.value)}
+                  className="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-white focus:border-yellow-500 focus:outline-none"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-2">終了日</label>
+                <input
+                  type="date"
+                  value={customEndDate}
+                  onChange={(e) => setCustomEndDate(e.target.value)}
+                  className="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-white focus:border-yellow-500 focus:outline-none"
+                />
+              </div>
+              <div className="flex gap-2">
+                <Button
+                  onClick={applyCustomPeriod}
+                  disabled={!customStartDate || !customEndDate}
+                  className="flex-1 bg-gradient-to-r from-yellow-500 to-orange-500 text-white"
+                >
+                  適用
+                </Button>
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    setShowCustomDatePicker(false);
+                    setPeriod("week");
+                  }}
+                >
+                  キャンセル
+                </Button>
+              </div>
+            </div>
+            {period === "custom" && customStartDate && customEndDate && (
+              <p className="text-sm text-muted-foreground mt-2">
+                📅 表示期間: {customStartDate} 〜 {customEndDate}
+              </p>
+            )}
+          </div>
+        </GlassCard>
+      )}
+
       {/* Today's Progress */}
       <TodayProgress
         current={todayPosts}
@@ -100,46 +201,66 @@ export default function BuppanTeamPage() {
         teamName={team.name}
       />
 
-      {/* Glassmorphism Stats Cards */}
+      {/* 全11項目完全実装 */}
+      {/* 項目1-4: 基本指標 */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        <GlassCard glowColor="#eab308" title="総投稿数" icon={<FileText className="h-5 w-5" />} value={teamStats.totalPosts.toLocaleString()} subtitle="全メンバー合計">
+        <GlassCard glowColor="#eab308" title="総再生数" icon={<Eye className="h-5 w-5" />} value={teamStats.totalViews.toLocaleString()} subtitle="今週の合計">
           <div></div>
         </GlassCard>
 
-        <GlassCard glowColor="#eab308" title="いいね回り" icon={<Heart className="h-5 w-5" />} value={teamStats.totalLikes.toLocaleString()} subtitle="エンゲージメント">
+        <GlassCard glowColor="#eab308" title="総インプレッション" icon={<TrendingUp className="h-5 w-5" />} value={teamStats.totalImpressions.toLocaleString()} subtitle="今週の合計">
           <div></div>
         </GlassCard>
 
-        <GlassCard glowColor="#eab308" title="リプライ回り" icon={<MessageCircle className="h-5 w-5" />} value={teamStats.totalReplies.toLocaleString()} subtitle="交流活動">
+        <GlassCard glowColor="#eab308" title="総投稿数" icon={<Video className="h-5 w-5" />} value={teamStats.totalPosts.toLocaleString()} subtitle="今週の合計">
           <div></div>
         </GlassCard>
 
-        <GlassCard glowColor="#eab308" title="MVP達成者" icon={<Users className="h-5 w-5" />} value={`${teamStats.perfectMembers}人`} subtitle={`${teamStats.memberCount}人中`}>
+        <GlassCard glowColor="#eab308" title="アクティブメンバー" icon={<Users className="h-5 w-5" />} value={`${teamStats.memberCount}人`} subtitle="報告済み人数">
           <div></div>
         </GlassCard>
       </div>
 
-      {/* X（Twitter）詳細統計 */}
+      {/* 項目5-8: Instagram詳細KPI */}
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+        <GlassCard glowColor="#22c55e" title="プロフアクセス数" icon={<Users className="h-5 w-5" />} value={teamStats.totalProfileAccess.toLocaleString()} subtitle="Instagram">
+          <div></div>
+        </GlassCard>
+
+        <GlassCard glowColor="#f59e0b" title="外部タップ数" icon={<TrendingUp className="h-5 w-5" />} value={teamStats.totalExternalTaps.toLocaleString()} subtitle="リンククリック">
+          <div></div>
+        </GlassCard>
+
+        <GlassCard glowColor="#8b5cf6" title="インタラクション" icon={<Eye className="h-5 w-5" />} value={teamStats.totalInteractions.toLocaleString()} subtitle="エンゲージメント">
+          <div></div>
+        </GlassCard>
+
+        <GlassCard glowColor="#eab308" title="ストーリー投稿" icon={<Video className="h-5 w-5" />} value={teamStats.totalStories.toString()} subtitle="週間合計">
+          <div></div>
+        </GlassCard>
+      </div>
+
+      {/* 項目9-11: SNSフォロワー統計 */}
       <div className="grid gap-4 md:grid-cols-3">
-        <GlassCard glowColor="#1da1f2" title="Xフォロワー合計" icon={<Users className="h-5 w-5" />} value={(teamStats.totalXFollowers || 0).toLocaleString()} subtitle="現在の総フォロワー数">
+        <GlassCard glowColor="#e1306c" title="Instagram" icon={<Users className="h-5 w-5" />} value={teamStats.totalIgFollowers.toLocaleString()} subtitle="総フォロワー数">
           <div></div>
         </GlassCard>
 
-        <GlassCard glowColor="#1da1f2" title="いいね回り合計" icon={<Heart className="h-5 w-5" />} value={teamStats.totalLikes.toLocaleString()} subtitle="X (Twitter)">
+        <GlassCard glowColor="#ff0000" title="YouTube" icon={<Users className="h-5 w-5" />} value={teamStats.totalYtFollowers.toLocaleString()} subtitle="総フォロワー数">
           <div></div>
         </GlassCard>
 
-        <GlassCard glowColor="#1da1f2" title="リプライ回り合計" icon={<MessageCircle className="h-5 w-5" />} value={teamStats.totalReplies.toLocaleString()} subtitle="X (Twitter)">
+        <GlassCard glowColor="#000000" title="TikTok" icon={<Users className="h-5 w-5" />} value={teamStats.totalTiktokFollowers.toLocaleString()} subtitle="総フォロワー数">
           <div></div>
         </GlassCard>
       </div>
 
       {/* Achievement & Progress */}
       <div className="grid gap-6 md:grid-cols-2">
-        {/* Circular Progress */}
+        {/* Circular Progress with Glassmorphism */}
         <GlassCard glowColor="#eab308" className="p-8">
           <div className="flex items-center gap-2 mb-6">
-            <Target className="h-5 w-5 text-yellow-500" />
+            <Target className="h-5 h-5 text-yellow-500" />
             <h3 className="text-lg font-semibold">目標達成率</h3>
           </div>
           <p className="text-sm text-muted-foreground mb-6">
@@ -157,6 +278,7 @@ export default function BuppanTeamPage() {
               {teamStats.totalPosts} / {teamStats.totalTargetPosts} 件達成
             </p>
             
+            {/* Neon Progress Bar */}
             <div className="w-full mt-6">
               <NeonGauge
                 value={teamStats.totalPosts}
@@ -215,7 +337,7 @@ export default function BuppanTeamPage() {
                   key={member.name}
                   className={`flex items-center justify-between p-4 rounded-xl border-2 transition-all hover:scale-[1.01] ${
                     member.achievementRate >= 100
-                      ? "border-yellow-500 shadow-[0_0_20px_rgba(234,179,8,0.4)] bg-yellow-500/5"
+                      ? "border-yellow-500 shadow-[0_0_20px_rgba(236,72,153,0.4)] bg-yellow-500/5"
                       : "border-transparent bg-muted/30"
                   }`}
                 >
@@ -223,11 +345,11 @@ export default function BuppanTeamPage() {
                     <span
                       className={`w-10 h-10 rounded-full flex items-center justify-center text-lg font-bold ${
                         index === 0
-                          ? "bg-gradient-to-r from-yellow-500 to-orange-500 text-white shadow-[0_0_20px_rgba(234,179,8,0.6)]"
+                          ? "bg-gradient-to-r from-yellow-500 to-orange-500 text-white shadow-[0_0_20px_rgba(236,72,153,0.6)]"
                           : index === 1
-                          ? "bg-yellow-400 text-white shadow-[0_0_15px_rgba(234,179,8,0.4)]"
+                          ? "bg-pink-400 text-white shadow-[0_0_15px_rgba(236,72,153,0.4)]"
                           : index === 2
-                          ? "bg-yellow-300 text-white shadow-[0_0_10px_rgba(234,179,8,0.3)]"
+                          ? "bg-pink-300 text-white shadow-[0_0_10px_rgba(236,72,153,0.3)]"
                           : "bg-muted text-muted-foreground"
                       }`}
                     >
@@ -237,7 +359,7 @@ export default function BuppanTeamPage() {
                       <p className="font-semibold flex items-center gap-2">
                         {member.name}
                         {member.achievementRate >= 100 && (
-                          <span className="text-xs px-2 py-0.5 rounded-full bg-gradient-to-r from-yellow-500 to-orange-500 text-white shadow-[0_0_10px_rgba(234,179,8,0.5)]">
+                          <span className="text-xs px-2 py-0.5 rounded-full bg-gradient-to-r from-yellow-500 to-purple-500 text-white shadow-[0_0_10px_rgba(236,72,153,0.5)]">
                             🔥 MVP
                           </span>
                         )}
@@ -249,16 +371,16 @@ export default function BuppanTeamPage() {
                   </div>
                   <div className="flex gap-8 text-sm">
                     <div className="text-right">
-                      <p className="text-muted-foreground">投稿数</p>
-                      <p className="font-bold">{member.posts.toLocaleString()}</p>
+                      <p className="text-muted-foreground">再生数</p>
+                      <p className="font-bold">{member.views.toLocaleString()}</p>
                     </div>
                     <div className="text-right">
-                      <p className="text-muted-foreground">いいね回り</p>
-                      <p className="font-bold">{(member.likes || 0).toLocaleString()}</p>
+                      <p className="text-muted-foreground">投稿</p>
+                      <p className="font-bold">{member.posts}</p>
                     </div>
                     <div className="text-right">
-                      <p className="text-muted-foreground">リプライ回り</p>
-                      <p className="font-bold">{(member.replies || 0).toLocaleString()}</p>
+                      <p className="text-muted-foreground">インプレッション</p>
+                      <p className="font-bold">{member.impressions.toLocaleString()}</p>
                     </div>
                   </div>
                 </div>
