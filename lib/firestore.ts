@@ -1424,3 +1424,160 @@ export async function clearFalseReportFlag(
     return { success: false, message: "フラグ解除に失敗しました" };
   }
 }
+
+// ========================================
+// 🆕 エラーログ管理
+// ========================================
+
+export interface ErrorLog {
+  id: string;
+  timestamp: Timestamp;
+  level: "error" | "warning" | "info";
+  source: string; // ページ名やコンポーネント名
+  message: string;
+  stack?: string;
+  userId?: string;
+  userEmail?: string;
+  userAgent?: string;
+  url?: string;
+  additionalData?: Record<string, any>;
+}
+
+/**
+ * エラーログを記録
+ */
+export async function logError(
+  level: "error" | "warning" | "info",
+  source: string,
+  message: string,
+  options?: {
+    stack?: string;
+    userId?: string;
+    userEmail?: string;
+    additionalData?: Record<string, any>;
+  }
+): Promise<void> {
+  try {
+    const errorLogRef = doc(collection(db, "errorLogs"));
+
+    const logData: Omit<ErrorLog, "id"> = {
+      timestamp: Timestamp.now(),
+      level,
+      source,
+      message,
+      stack: options?.stack,
+      userId: options?.userId,
+      userEmail: options?.userEmail,
+      userAgent: typeof navigator !== "undefined" ? navigator.userAgent : undefined,
+      url: typeof window !== "undefined" ? window.location.href : undefined,
+      additionalData: options?.additionalData,
+    };
+
+    await setDoc(errorLogRef, logData);
+  } catch (error) {
+    console.error("Failed to log error to Firestore:", error);
+  }
+}
+
+/**
+ * エラーログを取得（最新N件）
+ */
+export async function getErrorLogs(limitCount: number = 100): Promise<ErrorLog[]> {
+  try {
+    const q = query(
+      collection(db, "errorLogs"),
+      orderBy("timestamp", "desc"),
+      limit(limitCount)
+    );
+
+    const snapshot = await getDocs(q);
+    return snapshot.docs.map(doc => ({
+      id: doc.id,
+      ...doc.data(),
+    } as ErrorLog));
+  } catch (error) {
+    console.error("Error fetching error logs:", error);
+    return [];
+  }
+}
+
+/**
+ * 特定レベルのエラーログを取得
+ */
+export async function getErrorLogsByLevel(
+  level: "error" | "warning" | "info",
+  limitCount: number = 100
+): Promise<ErrorLog[]> {
+  try {
+    const q = query(
+      collection(db, "errorLogs"),
+      where("level", "==", level),
+      orderBy("timestamp", "desc"),
+      limit(limitCount)
+    );
+
+    const snapshot = await getDocs(q);
+    return snapshot.docs.map(doc => ({
+      id: doc.id,
+      ...doc.data(),
+    } as ErrorLog));
+  } catch (error) {
+    console.error("Error fetching error logs by level:", error);
+    return [];
+  }
+}
+
+/**
+ * 特定ユーザーのエラーログを取得
+ */
+export async function getErrorLogsByUser(
+  userId: string,
+  limitCount: number = 50
+): Promise<ErrorLog[]> {
+  try {
+    const q = query(
+      collection(db, "errorLogs"),
+      where("userId", "==", userId),
+      orderBy("timestamp", "desc"),
+      limit(limitCount)
+    );
+
+    const snapshot = await getDocs(q);
+    return snapshot.docs.map(doc => ({
+      id: doc.id,
+      ...doc.data(),
+    } as ErrorLog));
+  } catch (error) {
+    console.error("Error fetching error logs by user:", error);
+    return [];
+  }
+}
+
+/**
+ * エラーログを削除（古いログのクリーンアップ用）
+ */
+export async function deleteOldErrorLogs(daysOld: number = 30): Promise<number> {
+  try {
+    const cutoffDate = new Date();
+    cutoffDate.setDate(cutoffDate.getDate() - daysOld);
+    const cutoffTimestamp = Timestamp.fromDate(cutoffDate);
+
+    const q = query(
+      collection(db, "errorLogs"),
+      where("timestamp", "<", cutoffTimestamp)
+    );
+
+    const snapshot = await getDocs(q);
+    let deletedCount = 0;
+
+    for (const docSnapshot of snapshot.docs) {
+      await deleteDoc(docSnapshot.ref);
+      deletedCount++;
+    }
+
+    return deletedCount;
+  } catch (error) {
+    console.error("Error deleting old error logs:", error);
+    return 0;
+  }
+}
