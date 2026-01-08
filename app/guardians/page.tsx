@@ -142,7 +142,7 @@ export default function GuardiansPage() {
   const completionPercentage = Math.round((unlockedStagesCount / totalStages) * 100);
 
   return (
-    <div className="space-y-8 pb-12">
+    <div className="space-y-8 pb-28 md:pb-12">
       {/* ヘッダー */}
       <div className="flex items-center justify-between">
         <div>

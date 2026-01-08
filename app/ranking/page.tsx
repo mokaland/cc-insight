@@ -147,14 +147,14 @@ export default function AllTeamsRankingPage() {
           <TabsList className="grid w-full grid-cols-2 glass-bg border border-white/10">
             <TabsTrigger 
               value="week"
-              className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-pink-500 data-[state=active]:to-purple-600 data-[state=active]:text-white"
+              className="bg-white/10 text-white/70 data-[state=active]:bg-gradient-to-r data-[state=active]:from-pink-500 data-[state=active]:to-purple-600 data-[state=active]:text-white"
             >
               <Calendar className="w-4 h-4 mr-2" />
               週間ランキング
             </TabsTrigger>
             <TabsTrigger 
               value="month"
-              className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-pink-500 data-[state=active]:to-purple-600 data-[state=active]:text-white"
+              className="bg-white/10 text-white/70 data-[state=active]:bg-gradient-to-r data-[state=active]:from-pink-500 data-[state=active]:to-purple-600 data-[state=active]:text-white"
             >
               <Calendar className="w-4 h-4 mr-2" />
               月間ランキング
