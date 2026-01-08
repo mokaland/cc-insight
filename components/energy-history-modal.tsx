@@ -38,13 +38,13 @@ function ModalWrapper({ isOpen, onClose, children }: ModalWrapperProps) {
           />
 
           {/* モーダルコンテンツ */}
-          <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4">
+          <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 md:pb-4 pb-[calc(var(--bottom-nav-height)+1rem)]">
             <motion.div
               initial={{ scale: 0.9, opacity: 0, y: 20 }}
               animate={{ scale: 1, opacity: 1, y: 0 }}
               exit={{ scale: 0.9, opacity: 0, y: 20 }}
               transition={{ type: "spring", damping: 25, stiffness: 300 }}
-              className="relative w-full max-w-lg max-h-[90vh] overflow-y-auto"
+              className="relative w-full max-w-lg max-h-[calc(100vh-var(--bottom-nav-height)-2rem)] md:max-h-[90vh] overflow-y-auto"
               onClick={(e) => e.stopPropagation()}
             >
               {children}
