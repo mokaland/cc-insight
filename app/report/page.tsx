@@ -230,10 +230,10 @@ export default function ReportPage() {
   // ローディング中の表示
   if (authLoading) {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-br from-slate-50 to-slate-100">
-        <div className="w-16 h-16 border-4 border-pink-500 border-t-transparent rounded-full animate-spin mb-4" />
-        <p className="text-slate-900 text-lg font-medium">読み込み中...</p>
-        <p className="text-slate-600 text-sm mt-2">チーム情報を取得しています</p>
+      <div className="min-h-screen flex flex-col items-center justify-center cosmic-bg relative overflow-hidden">
+        <div className="w-16 h-16 border-4 border-pink-500 border-t-transparent rounded-full animate-spin mb-4 relative z-10" />
+        <p className="text-slate-100 text-lg font-medium relative z-10">読み込み中...</p>
+        <p className="text-slate-400 text-sm mt-2 relative z-10">チーム情報を取得しています</p>
       </div>
     );
   }
@@ -241,11 +241,11 @@ export default function ReportPage() {
   // 未ログインの場合
   if (!user || !userProfile) {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-br from-slate-50 to-slate-100 p-4">
-        <div className="text-center">
+      <div className="min-h-screen flex flex-col items-center justify-center cosmic-bg relative overflow-hidden p-4">
+        <div className="text-center relative z-10">
           <AlertCircle className="w-16 h-16 mx-auto mb-4 text-red-500" />
-          <h1 className="text-2xl font-bold text-slate-900 mb-2">ログインが必要です</h1>
-          <p className="text-slate-600 mb-6">報告するにはログインしてください</p>
+          <h1 className="text-2xl font-bold text-slate-100 mb-2">ログインが必要です</h1>
+          <p className="text-slate-400 mb-6">報告するにはログインしてください</p>
           <Button
             onClick={() => router.push("/login")}
             className="bg-gradient-to-r from-pink-500 to-purple-600 text-white"
@@ -258,17 +258,37 @@ export default function ReportPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 p-4 md:p-8">
-      {/* Background Effects */}
+    <div className="min-h-screen cosmic-bg relative overflow-hidden p-4 md:p-8">
+      {/* 星雲背景エフェクト */}
       <div className="fixed inset-0 overflow-hidden pointer-events-none">
-        <div 
-          className="absolute top-1/4 left-1/4 w-96 h-96 rounded-full blur-3xl transition-colors duration-500"
-          style={{ backgroundColor: `${teamColor}10` }}
+        <div className="nebula-bg absolute top-0 left-1/4 w-[600px] h-[600px] rounded-full blur-3xl opacity-30" 
+             style={{
+               background: `radial-gradient(ellipse at center, ${teamColor}30, ${teamColor}20 40%, transparent 70%)`
+             }} 
         />
-        <div 
-          className="absolute bottom-1/4 right-1/4 w-96 h-96 rounded-full blur-3xl transition-colors duration-500"
-          style={{ backgroundColor: `${teamColor}05` }}
+        <div className="nebula-bg absolute bottom-0 right-1/4 w-[500px] h-[500px] rounded-full blur-3xl opacity-20"
+             style={{
+               background: 'radial-gradient(ellipse at center, rgba(34, 211, 238, 0.2) 0%, rgba(168, 85, 247, 0.15) 40%, transparent 70%)',
+               animationDelay: '5s'
+             }} 
         />
+      </div>
+
+      {/* 星々パーティクル */}
+      <div className="fixed inset-0 overflow-hidden pointer-events-none">
+        {[...Array(20)].map((_, i) => (
+          <div
+            key={i}
+            className="absolute w-1 h-1 bg-white rounded-full animate-pulse"
+            style={{
+              top: `${Math.random() * 100}%`,
+              left: `${Math.random() * 100}%`,
+              opacity: Math.random() * 0.3 + 0.2,
+              animationDelay: `${Math.random() * 3}s`,
+              animationDuration: `${Math.random() * 2 + 2}s`
+            }}
+          />
+        ))}
       </div>
 
       <div className="max-w-2xl mx-auto relative">
