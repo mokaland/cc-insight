@@ -10,16 +10,16 @@ import { getReportsByPeriod, calculateTeamStats, teams } from "@/lib/firestore";
 
 const team = teams.find((t) => t.id === "fukugyou")!;
 
-// 🔥 Vercel Force Rebuild: 2026-01-09 01:15 (今日/期間指定バグ修正)
+// 🔥 Vercel Force Rebuild: 2026-01-09 01:30 (oklch直接指定で完全修正)
 const periodOptions = [
-  { id: "today", label: "TODAY" },
+  { id: "today", label: "今日" },
   { id: "week", label: "今週" },
   { id: "month", label: "今月" },
   { id: "1q", label: "1Q" },
   { id: "2q", label: "2Q" },
   { id: "3q", label: "3Q" },
   { id: "4q", label: "4Q" },
-  { id: "custom", label: "CUSTOM" },
+  { id: "custom", label: "期間指定" },
 ];
 
 export default function FukugyouTeamPage() {
