@@ -72,6 +72,7 @@ export interface Report {
   postUrls?: string[];
   likeCount?: number;
   replyCount?: number;
+  xFollowers?: number;  // 現在のXフォロワー数
 }
 
 
@@ -225,7 +226,7 @@ export function calculateTeamStats(reports: Report[], teamId: string) {
   let totalReplies = 0;
   
   // 最新フォロワー数（メンバーごと）
-  const latestFollowers: { [name: string]: { ig: number; yt: number; tiktok: number } } = {};
+  const latestFollowers: { [name: string]: { ig: number; yt: number; tiktok: number; x: number } } = {};
   
   teamReports.forEach(report => {
     if (!memberStats[report.name]) {
@@ -259,7 +260,7 @@ export function calculateTeamStats(reports: Report[], teamId: string) {
       
       // 最新フォロワー数を保持
       if (!latestFollowers[report.name]) {
-        latestFollowers[report.name] = { ig: 0, yt: 0, tiktok: 0 };
+        latestFollowers[report.name] = { ig: 0, yt: 0, tiktok: 0, x: 0 };
       }
       latestFollowers[report.name].ig = report.igFollowers || 0;
       latestFollowers[report.name].yt = report.ytFollowers || 0;
@@ -272,6 +273,12 @@ export function calculateTeamStats(reports: Report[], teamId: string) {
       // X（Twitter）統計
       totalLikes += report.likeCount || 0;
       totalReplies += report.replyCount || 0;
+      
+      // X（Twitter）フォロワー数を保持
+      if (!latestFollowers[report.name]) {
+        latestFollowers[report.name] = { ig: 0, yt: 0, tiktok: 0, x: 0 };
+      }
+      latestFollowers[report.name].x = report.xFollowers || 0;
     }
   });
 
@@ -292,10 +299,12 @@ export function calculateTeamStats(reports: Report[], teamId: string) {
   let totalIgFollowers = 0;
   let totalYtFollowers = 0;
   let totalTiktokFollowers = 0;
+  let totalXFollowers = 0;
   Object.values(latestFollowers).forEach(f => {
     totalIgFollowers += f.ig;
     totalYtFollowers += f.yt;
     totalTiktokFollowers += f.tiktok;
+    totalXFollowers += f.x;
   });
 
   return {
@@ -317,6 +326,7 @@ export function calculateTeamStats(reports: Report[], teamId: string) {
     totalIgFollowers,
     totalYtFollowers,
     totalTiktokFollowers,
+    totalXFollowers,  // ✅ X（Twitter）フォロワー合計
   };
 }
 

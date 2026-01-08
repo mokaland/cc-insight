@@ -120,7 +120,11 @@ export default function BuppanTeamPage() {
       </div>
 
       {/* X（Twitter）詳細統計 */}
-      <div className="grid gap-4 md:grid-cols-2">
+      <div className="grid gap-4 md:grid-cols-3">
+        <GlassCard glowColor="#1da1f2" title="Xフォロワー合計" icon={<Users className="h-5 w-5" />} value={(teamStats.totalXFollowers || 0).toLocaleString()} subtitle="現在の総フォロワー数">
+          <div></div>
+        </GlassCard>
+
         <GlassCard glowColor="#1da1f2" title="いいね回り合計" icon={<Heart className="h-5 w-5" />} value={teamStats.totalLikes.toLocaleString()} subtitle="X (Twitter)">
           <div></div>
         </GlassCard>

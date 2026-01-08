@@ -328,20 +328,20 @@ function GuardianGridItem({ guardian, instance, isUnlocked, isActive, onClick }:
             }}
           />
         ) : (
-          // モザイクエフェクト（未解放）
+          // 未解放：全て卵（stage0）を暗く表示
           <div className="relative w-full h-full">
             <img
-              src={getGuardianImagePath(guardian.id, 0)}
+              src="/images/guardians/horyu/stage0.png"
               alt="???"
-              className="w-full h-full object-contain blur-md opacity-40"
+              className="w-full h-full object-contain opacity-30 grayscale"
             />
-            <div className="absolute inset-0 bg-black/40" />
+            <div className="absolute inset-0 bg-black/50" />
             <Lock className="absolute inset-0 m-auto w-12 h-12 text-white/80" />
           </div>
         )}
 
-        {/* プレースホルダー絵文字（画像失敗時） */}
-        <div className={`absolute inset-0 flex items-center justify-center text-6xl ${isUnlocked ? 'hidden' : ''}`}>
+        {/* プレースホルダー絵文字（画像失敗時・非表示） */}
+        <div className="absolute inset-0 flex items-center justify-center text-6xl hidden">
           {placeholder.emoji}
         </div>
 
