@@ -73,7 +73,7 @@ function LayoutContent({ children }: { children: React.ReactNode }) {
   // 保護されたページ（認証必須）
   return (
     <AuthGuard>
-      <div className="flex min-h-screen cosmic-bg relative overflow-hidden">
+      <div className="flex min-h-screen cosmic-bg relative">
         {/* 星雲背景レイヤー */}
         <div className="absolute inset-0 pointer-events-none">
           <div className="nebula-bg absolute top-0 left-1/4 w-[600px] h-[600px] rounded-full blur-3xl opacity-30" 
@@ -112,7 +112,7 @@ function LayoutContent({ children }: { children: React.ReactNode }) {
         </div>
 
         {/* メインコンテンツ */}
-        <main className="flex-1 md:ml-64 pb-[calc(8rem+env(safe-area-inset-bottom,0px))] md:pb-8 p-4 md:p-8 pt-[env(safe-area-inset-top,1rem)] w-full relative z-10">
+        <main className="flex-1 md:ml-64 pb-[calc(5.5rem+env(safe-area-inset-bottom,1.5rem))] md:pb-8 p-4 md:p-8 pt-[env(safe-area-inset-top,1rem)] w-full z-10">
           <LogoutButton />
           {children}
         </main>
