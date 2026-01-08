@@ -52,7 +52,7 @@ export function StreakCelebration({ isOpen, onClose, streakData }: StreakCelebra
   const { newStreak, isNewRecord, xpBonus, celebrationMessage } = streakData;
 
   return (
-    <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 md:pb-4 pb-[calc(var(--bottom-nav-height)+1rem)]">
+    <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 md:pb-4 pb-[calc(var(--bottom-nav-height)+3rem)]">
       {/* 背景オーバーレイ */}
       <div 
         className={`absolute inset-0 bg-black transition-opacity duration-300 ${

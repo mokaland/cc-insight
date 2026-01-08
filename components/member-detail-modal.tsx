@@ -72,16 +72,16 @@ export function MemberDetailModal({
   const hasAnomalies = anomalies && Object.values(anomalies).some(v => v);
 
   return (
-    <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 md:pb-4 pb-[calc(var(--bottom-nav-height)+1rem)]">
+    <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 md:pb-4 pb-[calc(var(--bottom-nav-height)+3rem)]">
       {/* 背景オーバーレイ */}
-      <div 
+      <div
         className="absolute inset-0 bg-black/70 backdrop-blur-md"
         onClick={onClose}
       />
-      
+
       {/* モーダルカード */}
       <div
-        className="relative glass-premium rounded-2xl p-8 max-w-md w-full max-h-[calc(100vh-var(--bottom-nav-height)-2rem)] md:max-h-[90vh] overflow-y-auto border-2 animate-in fade-in zoom-in duration-200"
+        className="relative glass-premium rounded-2xl p-8 max-w-md w-full max-h-[calc(100vh-var(--bottom-nav-height)-6rem)] md:max-h-[90vh] overflow-y-auto border-2 animate-in fade-in zoom-in duration-200"
         style={{
           borderColor: `${teamColor}40`,
           boxShadow: `0 0 60px ${teamColor}30`

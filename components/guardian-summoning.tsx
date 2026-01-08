@@ -76,7 +76,7 @@ export default function GuardianSummoning({ userId, onComplete }: GuardianSummon
   // =====================================
   if (step === 'demographics') {
     return (
-      <div className="fixed inset-0 bg-gradient-to-b from-slate-950 via-purple-950 to-slate-950 flex items-center justify-center p-4 md:pb-4 pb-[calc(var(--bottom-nav-height)+1rem)] z-[9999]">
+      <div className="fixed inset-0 bg-gradient-to-b from-slate-950 via-purple-950 to-slate-950 flex items-center justify-center p-4 md:pb-4 pb-[calc(var(--bottom-nav-height)+3rem)] z-[9999]">
         <div className="bg-slate-900/90 backdrop-blur-xl rounded-2xl p-8 max-w-md w-full border-2 border-purple-500/30">
           <h2 className="text-3xl font-bold text-white mb-2 text-center">
             🛡️ 守護神との契約
@@ -170,8 +170,8 @@ export default function GuardianSummoning({ userId, onComplete }: GuardianSummon
   // =====================================
   if (step === 'selection') {
     return (
-      <div className="fixed inset-0 bg-gradient-to-b from-slate-950 via-purple-950 to-slate-950 flex items-center justify-center p-4 md:pb-4 pb-[calc(var(--bottom-nav-height)+1rem)] z-[9999] overflow-y-auto">
-        <div className="max-w-6xl w-full max-h-[calc(100vh-var(--bottom-nav-height)-2rem)] md:max-h-[90vh] overflow-y-auto py-4">
+      <div className="fixed inset-0 bg-gradient-to-b from-slate-950 via-purple-950 to-slate-950 flex items-center justify-center p-4 md:pb-4 pb-[calc(var(--bottom-nav-height)+3rem)] z-[9999] overflow-y-auto">
+        <div className="max-w-6xl w-full max-h-[calc(100vh-var(--bottom-nav-height)-6rem)] md:max-h-[90vh] overflow-y-auto py-4">
           <div className="text-center mb-4">
             <h2 className="text-2xl font-bold text-white mb-1">
               ⚡ 守護神召喚の儀式

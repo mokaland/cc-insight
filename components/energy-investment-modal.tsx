@@ -148,11 +148,11 @@ export default function EnergyInvestmentModal({
 
   return (
     <div
-      className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 md:pb-4 pb-[calc(var(--bottom-nav-height)+1rem)] z-[9999]"
+      className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 md:pb-4 pb-[calc(var(--bottom-nav-height)+3rem)] z-[9999]"
       onClick={onClose}
     >
       <div
-        className="bg-gradient-to-b from-slate-900 to-slate-950 rounded-2xl p-6 max-w-2xl w-full border-2 border-purple-500/30 max-h-[calc(100vh-var(--bottom-nav-height)-2rem)] md:max-h-[95vh] overflow-y-auto"
+        className="bg-gradient-to-b from-slate-900 to-slate-950 rounded-2xl p-6 max-w-2xl w-full border-2 border-purple-500/30 max-h-[calc(100vh-var(--bottom-nav-height)-6rem)] md:max-h-[95vh] overflow-y-auto"
         onClick={e => e.stopPropagation()}
       >
         {/* ヘッダー */}
