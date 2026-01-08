@@ -14,7 +14,8 @@ import {
   User,
   Users,
   Settings,
-  Shield
+  Shield,
+  Search
 } from "lucide-react";
 import { getUserGuardianProfile } from "@/lib/firestore";
 import { GUARDIANS, ATTRIBUTES, EVOLUTION_STAGES, getGuardianImagePath, GuardianId } from "@/lib/guardian-collection";
@@ -52,6 +53,12 @@ const adminNavItems = [
     subtitle: "離脱防止監視",
     href: "/admin/monitor",
     icon: Shield,
+  },
+  {
+    title: "監査ダッシュボード",
+    subtitle: "異常値・言行一致",
+    href: "/admin/audit",
+    icon: Search,
   },
   {
     title: "副業チーム",
