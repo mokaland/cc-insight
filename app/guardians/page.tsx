@@ -7,7 +7,6 @@ import {
   getUserGuardianProfile,
   unlockGuardian,
   switchActiveGuardian,
-  setUserDemographics
 } from "@/lib/firestore";
 import {
   GUARDIANS,
@@ -20,9 +19,61 @@ import {
   getPlaceholderStyle,
   getGuardianImagePath
 } from "@/lib/guardian-collection";
-import { Lock, Zap, Star, ChevronRight } from "lucide-react";
+import { Lock, Zap, Star, ChevronRight, X, Heart, Sparkles } from "lucide-react";
 import EnergyInvestmentModal from "@/components/energy-investment-modal";
 import GuardianSummoning from "@/components/guardian-summoning";
+
+// 守護神の性格・特徴データ
+const GUARDIAN_PERSONALITIES: Record<GuardianId, {
+  personality: string;
+  traits: string[];
+  backstory: string;
+  favoriteThings: string[];
+  quote: string;
+}> = {
+  horyu: {
+    personality: "勇敢で正義感が強い",
+    traits: ["リーダーシップ", "決断力", "熱血"],
+    backstory: "古来より炎の山に住む伝説の龍。困難に立ち向かう者を守護する。",
+    favoriteThings: ["挑戦", "成長", "仲間"],
+    quote: "炎のように燃え上がれ！君の可能性は無限大だ！"
+  },
+  shishimaru: {
+    personality: "冷静沈着で知恵に溢れる",
+    traits: ["戦略性", "忍耐力", "洞察力"],
+    backstory: "森の奥深くで瞑想する白獅子。静かな力で導く賢者。",
+    favoriteThings: ["思考", "計画", "瞑想"],
+    quote: "焦らず、着実に。真の強さは心の平穏から生まれる。"
+  },
+  hanase: {
+    personality: "優しく穏やかで癒しの存在",
+    traits: ["共感力", "包容力", "癒し"],
+    backstory: "花園に住む精霊。疲れた心を癒し、再び歩む力を与える。",
+    favoriteThings: ["自然", "調和", "笑顔"],
+    quote: "大丈夫、一歩ずつでいいの。あなたは一人じゃないわ。"
+  },
+  shiroko: {
+    personality: "神秘的で直感力が鋭い",
+    traits: ["直感", "神秘", "変化適応"],
+    backstory: "月光に照らされた湖に現れる白狐。未来を予見し導く。",
+    favoriteThings: ["月夜", "静寂", "変化"],
+    quote: "運命は変えられる。君の選択が未来を創る。"
+  },
+  kitama: {
+    personality: "好奇心旺盛でエネルギッシュ",
+    traits: ["活発", "創造性", "楽観性"],
+    backstory: "黄金の森で踊る妖精。笑顔と希望を運ぶ使者。",
+    favoriteThings: ["冒険", "発見", "お祭り"],
+    quote: "楽しもう！人生は一度きりの大冒険だよ！"
+  },
+  hoshimaru: {
+    personality: "高貴で威厳があり完璧主義",
+    traits: ["完璧主義", "野心", "カリスマ"],
+    backstory: "星々の彼方から降臨した究極の守護神。選ばれし者のみと契約する。",
+    favoriteThings: ["完璧", "達成", "栄光"],
+    quote: "限界など存在しない。我と共に頂へ登るのだ。"
+  },
+};
 
 export default function GuardiansPage() {
   const { user } = useAuth();
@@ -30,6 +81,8 @@ export default function GuardiansPage() {
   const [profile, setProfile] = useState<UserGuardianProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [selectedGuardian, setSelectedGuardian] = useState<GuardianId | null>(null);
+  const [showDetailModal, setShowDetailModal] = useState(false);
+  const [showEnergyModal, setShowEnergyModal] = useState(false);
   const [showSummoning, setShowSummoning] = useState(false);
 
   useEffect(() => {
@@ -49,10 +102,8 @@ export default function GuardiansPage() {
       if (data) {
         setProfile(data);
         
-        // 初回チェック: 守護神が1体も解放されていない場合は召喚フロー表示
         const hasAnyGuardian = Object.values(data.guardians).some(g => g?.unlocked);
         if (!hasAnyGuardian && !data.gender) {
-          // プロフィール未設定 = 完全な初回ユーザー
           setShowSummoning(true);
         }
       }
@@ -63,40 +114,9 @@ export default function GuardiansPage() {
     }
   }
 
-  async function handleUnlock(guardianId: GuardianId) {
-    if (!user || !profile) return;
-    
-    const guardian = GUARDIANS[guardianId];
-    const condition = guardian.unlockCondition;
-    const energyCost = condition.energyCost || 0;
-    
-    if (confirm(`${guardian.name}を${energyCost}エナジーで解放しますか？`)) {
-      const result = await unlockGuardian(user.uid, guardianId, energyCost);
-      
-      if (result.success) {
-        alert(result.message);
-        await loadProfile();
-      } else {
-        alert(result.message);
-      }
-    }
-  }
-
-  async function handleSetActive(guardianId: GuardianId) {
-    if (!user) return;
-    
-    const result = await switchActiveGuardian(user.uid, guardianId);
-    
-    if (result.success) {
-      await loadProfile();
-    } else {
-      alert(result.message);
-    }
-  }
-
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-b from-slate-950 via-purple-950 to-slate-950 flex items-center justify-center">
+      <div className="min-h-screen flex items-center justify-center">
         <div className="text-white text-xl">読み込み中...</div>
       </div>
     );
@@ -104,129 +124,134 @@ export default function GuardiansPage() {
 
   if (!profile) {
     return (
-      <div className="min-h-screen bg-gradient-to-b from-slate-950 via-purple-950 to-slate-950 flex items-center justify-center">
+      <div className="min-h-screen flex items-center justify-center">
         <div className="text-white text-xl">プロファイルが見つかりません</div>
       </div>
     );
   }
 
-  const tier1 = Object.values(GUARDIANS).filter(g => g.tier === 1);
-  const tier2 = Object.values(GUARDIANS).filter(g => g.tier === 2);
+  const allGuardians = Object.values(GUARDIANS);
+  const unlockedCount = Object.values(profile.guardians).filter(g => g?.unlocked).length;
+  const totalCount = allGuardians.length;
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-slate-950 via-purple-950 to-slate-950 text-white p-4">
-      <div className="max-w-7xl mx-auto">
-        {/* ヘッダー */}
-        <div className="mb-4">
-          <h1 className="text-2xl font-bold mb-1 bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">
-            🛡️ 守護神コレクション
+    <div className="space-y-8 pb-12">
+      {/* ヘッダー */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-3xl font-bold bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent mb-2">
+            🛡️ 守護神図鑑
           </h1>
-          <p className="text-gray-400 text-sm">
-            守護神を集め、育て、最強のパートナーに
+          <p className="text-slate-300">
+            コレクション進捗: <span className="text-2xl font-bold text-purple-400">{unlockedCount}</span>
+            <span className="text-slate-400"> / {totalCount}</span>
           </p>
         </div>
-
-        {/* エナジー表示 */}
-        <div className="mb-4 p-4 bg-slate-900/50 backdrop-blur-sm rounded-xl border border-purple-500/30">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-gray-400 text-sm mb-1">保有エナジー</p>
-              <p className="text-4xl font-bold text-yellow-400">
-                <Zap className="inline-block w-8 h-8 mr-2" />
-                {profile.energy.current}
-              </p>
-            </div>
-            <div>
-              <p className="text-gray-400 text-sm mb-1">累計獲得</p>
-              <p className="text-2xl font-bold text-purple-400">
-                {profile.energy.totalEarned}
-              </p>
-            </div>
-            <div>
-              <p className="text-gray-400 text-sm mb-1">ストリーク</p>
-              <p className="text-2xl font-bold text-orange-400">
-                🔥 {profile.streak.current}日
-              </p>
-            </div>
-          </div>
-        </div>
-
-        {/* Tier 1: 御三家 */}
-        <div className="mb-12">
-          <h2 className="text-2xl font-bold mb-4 flex items-center">
-            <Star className="w-6 h-6 mr-2 text-yellow-400" />
-            御三家（初期選択可能）
-          </h2>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {tier1.map(guardian => {
-              const instance = profile.guardians[guardian.id];
-              const isUnlocked = instance?.unlocked || false;
-              const isActive = profile.activeGuardianId === guardian.id;
-              const attr = ATTRIBUTES[guardian.attribute];
-              const placeholder = getPlaceholderStyle(guardian.id);
-              
-              return (
-                <GuardianCard
-                  key={guardian.id}
-                  guardian={guardian}
-                  instance={instance}
-                  isUnlocked={isUnlocked}
-                  isActive={isActive}
-                  profile={profile}
-                  onUnlock={() => handleUnlock(guardian.id)}
-                  onSetActive={() => handleSetActive(guardian.id)}
-                  onClick={() => setSelectedGuardian(guardian.id)}
-                />
-              );
-            })}
-          </div>
-        </div>
-
-        {/* Tier 2: 条件解放 */}
-        <div>
-          <h2 className="text-2xl font-bold mb-4 flex items-center">
-            <Lock className="w-6 h-6 mr-2 text-purple-400" />
-            特別な守護神（条件解放）
-          </h2>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {tier2.map(guardian => {
-              const instance = profile.guardians[guardian.id];
-              const isUnlocked = instance?.unlocked || false;
-              const isActive = profile.activeGuardianId === guardian.id;
-              
-              return (
-                <GuardianCard
-                  key={guardian.id}
-                  guardian={guardian}
-                  instance={instance}
-                  isUnlocked={isUnlocked}
-                  isActive={isActive}
-                  profile={profile}
-                  onUnlock={() => handleUnlock(guardian.id)}
-                  onSetActive={() => handleSetActive(guardian.id)}
-                  onClick={() => setSelectedGuardian(guardian.id)}
-                />
-              );
-            })}
-          </div>
+        <div className="text-right">
+          <p className="text-sm text-slate-400 mb-1">保有エナジー</p>
+          <p className="text-3xl font-bold text-yellow-400 flex items-center gap-2">
+            <Zap className="w-8 h-8" />
+            {profile.energy.current}
+          </p>
         </div>
       </div>
 
+      {/* プログレスバー */}
+      <div className="glass-premium p-4 rounded-xl">
+        <div className="flex items-center justify-between mb-2">
+          <span className="text-sm text-slate-300">図鑑完成度</span>
+          <span className="text-sm font-bold text-purple-400">
+            {Math.round((unlockedCount / totalCount) * 100)}%
+          </span>
+        </div>
+        <div className="w-full h-3 bg-slate-700 rounded-full overflow-hidden">
+          <div 
+            className="h-full bg-gradient-to-r from-purple-500 via-pink-500 to-blue-500 transition-all duration-1000"
+            style={{ width: `${(unlockedCount / totalCount) * 100}%` }}
+          />
+        </div>
+      </div>
+
+      {/* 守護神グリッド */}
+      <div className="grid grid-cols-3 gap-4">
+        {allGuardians.map(guardian => {
+          const instance = profile.guardians[guardian.id];
+          const isUnlocked = instance?.unlocked || false;
+          const isActive = profile.activeGuardianId === guardian.id;
+          
+          return (
+            <GuardianGridItem
+              key={guardian.id}
+              guardian={guardian}
+              instance={instance}
+              isUnlocked={isUnlocked}
+              isActive={isActive}
+              onClick={() => {
+                setSelectedGuardian(guardian.id);
+                setShowDetailModal(true);
+              }}
+            />
+          );
+        })}
+      </div>
+
+      {/* 詳細モーダル */}
+      {selectedGuardian && showDetailModal && (
+        <GuardianDetailModal
+          guardianId={selectedGuardian}
+          profile={profile}
+          onClose={() => {
+            setShowDetailModal(false);
+            setSelectedGuardian(null);
+          }}
+          onUnlock={async () => {
+            if (!user) return;
+            const guardian = GUARDIANS[selectedGuardian];
+            const energyCost = guardian.unlockCondition.energyCost || 0;
+            
+            if (confirm(`${guardian.name}を${energyCost}エナジーで解放しますか？`)) {
+              const result = await unlockGuardian(user.uid, selectedGuardian, energyCost);
+              if (result.success) {
+                alert(result.message);
+                await loadProfile();
+                setShowDetailModal(false);
+              } else {
+                alert(result.message);
+              }
+            }
+          }}
+          onSetActive={async () => {
+            if (!user) return;
+            await switchActiveGuardian(user.uid, selectedGuardian);
+            await loadProfile();
+            setShowDetailModal(false);
+          }}
+          onInvestEnergy={() => {
+            setShowDetailModal(false);
+            setShowEnergyModal(true);
+          }}
+        />
+      )}
+
       {/* エナジー投資モーダル */}
-      {selectedGuardian && user && profile && (
+      {selectedGuardian && showEnergyModal && user && (
         <EnergyInvestmentModal
           guardianId={selectedGuardian}
           profile={profile}
           userId={user.uid}
-          onClose={() => setSelectedGuardian(null)}
+          onClose={() => {
+            setShowEnergyModal(false);
+            setSelectedGuardian(null);
+          }}
           onSuccess={() => {
+            setShowEnergyModal(false);
             setSelectedGuardian(null);
             loadProfile();
           }}
         />
       )}
 
-      {/* 召喚の儀式（初回ユーザー） */}
+      {/* 召喚の儀式 */}
       {showSummoning && user && (
         <GuardianSummoning
           userId={user.uid}
@@ -241,187 +266,321 @@ export default function GuardiansPage() {
 }
 
 // =====================================
-// 🎴 守護神カード
+// 🎴 守護神グリッドアイテム（円形）
 // =====================================
 
-interface GuardianCardProps {
+interface GuardianGridItemProps {
   guardian: typeof GUARDIANS[GuardianId];
   instance: any;
   isUnlocked: boolean;
   isActive: boolean;
-  profile: UserGuardianProfile;
-  onUnlock: () => void;
-  onSetActive: () => void;
   onClick: () => void;
 }
 
-function GuardianCard({
-  guardian,
-  instance,
-  isUnlocked,
-  isActive,
-  profile,
-  onUnlock,
-  onSetActive,
-  onClick
-}: GuardianCardProps) {
+function GuardianGridItem({ guardian, instance, isUnlocked, isActive, onClick }: GuardianGridItemProps) {
   const attr = ATTRIBUTES[guardian.attribute];
   const placeholder = getPlaceholderStyle(guardian.id);
-  const canUnlock = canUnlockGuardian(guardian.id, profile);
+  const stage = instance?.stage || 0;
+
+  return (
+    <div
+      onClick={onClick}
+      className="relative cursor-pointer group"
+    >
+      {/* 円形フレーム */}
+      <div 
+        className={`
+          aspect-square rounded-full overflow-hidden relative
+          border-4 transition-all duration-300
+          ${isUnlocked 
+            ? `border-${attr.color} shadow-lg group-hover:scale-110` 
+            : 'border-slate-600 group-hover:scale-105'
+          }
+          ${isActive ? 'ring-4 ring-purple-400 ring-offset-4 ring-offset-slate-900' : ''}
+        `}
+        style={{
+          borderColor: isUnlocked ? attr.color : '#475569',
+          boxShadow: isUnlocked ? `0 0 30px ${attr.color}80` : 'none',
+        }}
+      >
+        {/* 背景 */}
+        <div 
+          className="absolute inset-0"
+          style={{ background: placeholder.background }}
+        />
+
+        {/* 守護神画像 */}
+        {isUnlocked ? (
+          <img
+            src={getGuardianImagePath(guardian.id, stage)}
+            alt={guardian.name}
+            className="w-full h-full object-contain relative z-10"
+            onError={(e) => {
+              e.currentTarget.style.display = 'none';
+              e.currentTarget.nextElementSibling?.classList.remove('hidden');
+            }}
+          />
+        ) : (
+          // モザイクエフェクト（未解放）
+          <div className="relative w-full h-full">
+            <img
+              src={getGuardianImagePath(guardian.id, 0)}
+              alt="???"
+              className="w-full h-full object-contain blur-md opacity-40"
+            />
+            <div className="absolute inset-0 bg-black/40" />
+            <Lock className="absolute inset-0 m-auto w-12 h-12 text-white/80" />
+          </div>
+        )}
+
+        {/* プレースホルダー絵文字（画像失敗時） */}
+        <div className={`absolute inset-0 flex items-center justify-center text-6xl ${isUnlocked ? 'hidden' : ''}`}>
+          {placeholder.emoji}
+        </div>
+
+        {/* アクティブマーク */}
+        {isActive && (
+          <div className="absolute top-2 right-2 w-8 h-8 bg-purple-500 rounded-full flex items-center justify-center z-20 animate-pulse">
+            <Star className="w-5 h-5 text-white fill-white" />
+          </div>
+        )}
+
+        {/* ホバーオーバーレイ */}
+        <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity z-10 flex items-end justify-center pb-2">
+          <span className="text-white text-xs font-bold">詳細を見る</span>
+        </div>
+      </div>
+
+      {/* 名前 */}
+      <p className={`text-center mt-2 text-sm font-bold ${isUnlocked ? 'text-white' : 'text-slate-500'}`}>
+        {isUnlocked ? guardian.name : '???'}
+      </p>
+
+      {/* Stage表示 */}
+      {isUnlocked && (
+        <p className="text-center text-xs text-slate-400">
+          Stage {stage}
+        </p>
+      )}
+    </div>
+  );
+}
+
+// =====================================
+// 📋 守護神詳細モーダル
+// =====================================
+
+interface GuardianDetailModalProps {
+  guardianId: GuardianId;
+  profile: UserGuardianProfile;
+  onClose: () => void;
+  onUnlock: () => void;
+  onSetActive: () => void;
+  onInvestEnergy: () => void;
+}
+
+function GuardianDetailModal({ 
+  guardianId, 
+  profile, 
+  onClose, 
+  onUnlock, 
+  onSetActive,
+  onInvestEnergy 
+}: GuardianDetailModalProps) {
+  const guardian = GUARDIANS[guardianId];
+  const instance = profile.guardians[guardianId];
+  const isUnlocked = instance?.unlocked || false;
+  const isActive = profile.activeGuardianId === guardianId;
+  const attr = ATTRIBUTES[guardian.attribute];
+  const personality = GUARDIAN_PERSONALITIES[guardianId];
+  const canUnlock = canUnlockGuardian(guardianId, profile);
   
   const stage = instance?.stage || 0;
   const stageName = EVOLUTION_STAGES[stage]?.name || "未解放";
   const investedEnergy = instance?.investedEnergy || 0;
   const auraLevel = isUnlocked ? getAuraLevel(investedEnergy, stage) : 0;
-  
+
   return (
-    <div
-      className={`
-        relative p-6 rounded-2xl border-2 transition-all duration-300 cursor-pointer
-        ${isActive 
-          ? 'bg-gradient-to-br from-purple-900/50 to-pink-900/50 border-purple-400 shadow-lg shadow-purple-500/50' 
-          : 'bg-slate-900/50 border-slate-700 hover:border-purple-500/50'
-        }
-        ${!isUnlocked && 'opacity-60'}
-      `}
-      onClick={onClick}
+    <div 
+      className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+      onClick={onClose}
     >
-      {/* アクティブバッジ */}
-      {isActive && (
-        <div className="absolute top-3 right-3 px-3 py-1 bg-purple-500 text-white text-xs font-bold rounded-full">
-          ACTIVE
-        </div>
-      )}
-
-      {/* 属性アイコン */}
-      <div className="flex items-center justify-between mb-4">
-        <span className="text-3xl">{attr.emoji}</span>
-        {isUnlocked && (
-          <div className="text-right">
-            <p className="text-xs text-gray-400">Stage {stage}</p>
-            <p className="text-sm font-bold" style={{ color: attr.color }}>
-              {stageName}
-            </p>
-          </div>
-        )}
-      </div>
-
-      {/* 守護神画像 */}
       <div 
-        className="w-full aspect-square rounded-xl mb-4 relative guardian-floating overflow-hidden"
-        style={{ background: placeholder.background }}
+        className="glass-premium rounded-2xl border border-white/20 max-w-2xl w-full max-h-[90vh] overflow-y-auto"
+        onClick={(e) => e.stopPropagation()}
       >
-        {isUnlocked ? (
-          <img
-            src={getGuardianImagePath(guardian.id, stage)}
-            alt={guardian.name}
-            className="w-full h-full object-contain"
-            onError={(e) => {
-              // 画像読み込み失敗時はプレースホルダー表示
-              e.currentTarget.style.display = 'none';
-              e.currentTarget.nextElementSibling?.classList.remove('hidden');
-            }}
-          />
-        ) : null}
-        <div className={`absolute inset-0 flex items-center justify-center ${isUnlocked ? 'hidden' : ''}`}>
-          <span className="text-8xl">{placeholder.emoji}</span>
+        {/* ヘッダー */}
+        <div className="sticky top-0 glass-premium border-b border-white/10 p-6 flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            <span className="text-4xl">{attr.emoji}</span>
+            <div>
+              <h2 className="text-3xl font-bold text-white">{guardian.name}</h2>
+              <p className="text-slate-400">{guardian.reading}</p>
+            </div>
+          </div>
+          <button onClick={onClose} className="p-2 hover:bg-white/10 rounded-full transition-colors">
+            <X className="w-6 h-6 text-white" />
+          </button>
         </div>
-        {!isUnlocked && (
-          <div className="absolute inset-0 bg-black/60 backdrop-blur-sm rounded-xl flex items-center justify-center">
-            <Lock className="w-16 h-16 text-gray-400" />
-          </div>
-        )}
-      </div>
 
-      {/* 名前 */}
-      <h3 className="text-2xl font-bold mb-1">
-        {guardian.name}
-        <span className="text-sm text-gray-400 ml-2">({guardian.reading})</span>
-      </h3>
-
-      {/* 説明 */}
-      <p className="text-sm text-gray-400 mb-4 line-clamp-2">
-        {guardian.description}
-      </p>
-
-      {/* 特性 */}
-      <div className="mb-4 p-3 bg-slate-800/50 rounded-lg">
-        <p className="text-xs text-purple-400 mb-1">⚡ 特性: {guardian.ability.name}</p>
-        <p className="text-xs text-gray-400">{guardian.ability.description}</p>
-        {isUnlocked && stage >= 3 && (
-          <p className="text-xs text-green-400 mt-1">✓ 発動中</p>
-        )}
-        {isUnlocked && stage < 3 && (
-          <p className="text-xs text-yellow-400 mt-1">Stage 3で解放</p>
-        )}
-      </div>
-
-      {/* オーラレベル */}
-      {isUnlocked && (
-        <div className="mb-4">
-          <div className="flex items-center justify-between mb-1">
-            <span className="text-xs text-gray-400">オーラLv</span>
-            <span className="text-xs font-bold text-purple-400">{auraLevel}%</span>
-          </div>
-          <div className="w-full h-2 bg-slate-700 rounded-full overflow-hidden">
-            <div 
-              className="h-full bg-gradient-to-r from-purple-500 to-pink-500 transition-all duration-500"
-              style={{ width: `${auraLevel}%` }}
+        <div className="p-6 space-y-6">
+          {/* 守護神画像 */}
+          <div 
+            className="w-64 h-64 mx-auto rounded-2xl overflow-hidden relative"
+            style={{ background: getPlaceholderStyle(guardianId).background }}
+          >
+            <img
+              src={getGuardianImagePath(guardianId, stage)}
+              alt={guardian.name}
+              className={`w-full h-full object-contain ${!isUnlocked && 'blur-sm opacity-40'}`}
             />
+            {!isUnlocked && (
+              <div className="absolute inset-0 flex items-center justify-center">
+                <Lock className="w-20 h-20 text-white/60" />
+              </div>
+            )}
+          </div>
+
+          {/* ステータス */}
+          {isUnlocked && (
+            <div className="grid grid-cols-3 gap-4">
+              <div className="glass-bg p-4 rounded-xl text-center">
+                <p className="text-xs text-slate-400 mb-1">Stage</p>
+                <p className="text-2xl font-bold text-white">{stage}</p>
+                <p className="text-xs text-slate-400">{stageName}</p>
+              </div>
+              <div className="glass-bg p-4 rounded-xl text-center">
+                <p className="text-xs text-slate-400 mb-1">投資済み</p>
+                <p className="text-2xl font-bold text-purple-400">{investedEnergy}E</p>
+              </div>
+              <div className="glass-bg p-4 rounded-xl text-center">
+                <p className="text-xs text-slate-400 mb-1">オーラLv</p>
+                <p className="text-2xl font-bold text-pink-400">{auraLevel}%</p>
+              </div>
+            </div>
+          )}
+
+          {/* 説明 */}
+          <div className="glass-bg p-4 rounded-xl">
+            <h3 className="text-lg font-bold text-white mb-2">📖 説明</h3>
+            <p className="text-slate-300 text-sm">{guardian.description}</p>
+          </div>
+
+          {/* 性格・特徴 */}
+          <div className="glass-bg p-4 rounded-xl">
+            <h3 className="text-lg font-bold text-white mb-3 flex items-center gap-2">
+              <Heart className="w-5 h-5 text-pink-400" />
+              性格・特徴
+            </h3>
+            <div className="space-y-3">
+              <div>
+                <p className="text-xs text-slate-400 mb-1">性格</p>
+                <p className="text-white">{personality.personality}</p>
+              </div>
+              <div>
+                <p className="text-xs text-slate-400 mb-1">特性</p>
+                <div className="flex flex-wrap gap-2">
+                  {personality.traits.map(trait => (
+                    <span key={trait} className="px-3 py-1 bg-purple-500/20 text-purple-300 rounded-full text-sm">
+                      {trait}
+                    </span>
+                  ))}
+                </div>
+              </div>
+              <div>
+                <p className="text-xs text-slate-400 mb-1">好きなこと</p>
+                <div className="flex flex-wrap gap-2">
+                  {personality.favoriteThings.map(thing => (
+                    <span key={thing} className="text-sm text-slate-300">💖 {thing}</span>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* バックストーリー */}
+          <div className="glass-bg p-4 rounded-xl">
+            <h3 className="text-lg font-bold text-white mb-2 flex items-center gap-2">
+              <Sparkles className="w-5 h-5 text-yellow-400" />
+              バックストーリー
+            </h3>
+            <p className="text-slate-300 text-sm mb-3">{personality.backstory}</p>
+            <div className="p-3 bg-slate-800/50 rounded-lg border-l-4 border-purple-500">
+              <p className="text-sm text-purple-300 italic">"{personality.quote}"</p>
+            </div>
+          </div>
+
+          {/* 特性スキル */}
+          <div className="glass-bg p-4 rounded-xl">
+            <h3 className="text-lg font-bold text-white mb-2">⚡ 特性スキル</h3>
+            <p className="text-sm font-bold text-purple-400 mb-1">{guardian.ability.name}</p>
+            <p className="text-sm text-slate-300 mb-2">{guardian.ability.description}</p>
+            {isUnlocked && stage >= 3 && (
+              <p className="text-sm text-green-400">✓ 発動中</p>
+            )}
+            {isUnlocked && stage < 3 && (
+              <p className="text-sm text-yellow-400">⚠️ Stage 3で解放</p>
+            )}
+            {!isUnlocked && (
+              <p className="text-sm text-slate-500">解放後に使用可能</p>
+            )}
+          </div>
+
+          {/* 解放条件 */}
+          {!isUnlocked && (
+            <div className="glass-bg p-4 rounded-xl border border-yellow-500/30">
+              <h3 className="text-lg font-bold text-white mb-2">🔓 解放条件</h3>
+              <p className="text-sm text-slate-300">{canUnlock.reason || '条件を満たしていません'}</p>
+              {guardian.unlockCondition.energyCost && (
+                <p className="text-sm text-yellow-400 mt-2">
+                  必要エナジー: {guardian.unlockCondition.energyCost}E
+                </p>
+              )}
+            </div>
+          )}
+
+          {/* アクションボタン */}
+          <div className="space-y-3">
+            {!isUnlocked && (
+              <button
+                onClick={onUnlock}
+                disabled={!canUnlock.canUnlock}
+                className={`
+                  w-full py-4 rounded-xl font-bold text-lg transition-all flex items-center justify-center gap-2
+                  ${canUnlock.canUnlock
+                    ? 'bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white'
+                    : 'bg-slate-700 text-slate-500 cursor-not-allowed'
+                  }
+                `}
+              >
+                <Lock className="w-5 h-5" />
+                {canUnlock.canUnlock ? '解放する' : canUnlock.reason}
+              </button>
+            )}
+
+            {isUnlocked && !isActive && (
+              <button
+                onClick={onSetActive}
+                className="w-full py-4 rounded-xl font-bold text-lg bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 text-white transition-all flex items-center justify-center gap-2"
+              >
+                <Star className="w-5 h-5" />
+                アクティブにする
+              </button>
+            )}
+
+            {isUnlocked && isActive && (
+              <button
+                onClick={onInvestEnergy}
+                className="w-full py-4 rounded-xl font-bold text-lg bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white transition-all flex items-center justify-center gap-2"
+              >
+                <Zap className="w-5 h-5" />
+                エナジーを注入
+                <ChevronRight className="w-5 h-5" />
+              </button>
+            )}
           </div>
         </div>
-      )}
-
-      {/* アクションボタン */}
-      {!isUnlocked && (
-        <button
-          onClick={(e) => {
-            e.stopPropagation();
-            if (canUnlock.canUnlock) {
-              onUnlock();
-            } else {
-              alert(canUnlock.reason);
-            }
-          }}
-          disabled={!canUnlock.canUnlock}
-          className={`
-            w-full py-3 rounded-lg font-bold transition-all flex items-center justify-center
-            ${canUnlock.canUnlock
-              ? 'bg-purple-600 hover:bg-purple-700 text-white'
-              : 'bg-slate-700 text-gray-500 cursor-not-allowed'
-            }
-          `}
-        >
-          <Lock className="w-4 h-4 mr-2" />
-          {canUnlock.canUnlock ? '解放する' : 'ロック中'}
-        </button>
-      )}
-
-      {isUnlocked && !isActive && (
-        <button
-          onClick={(e) => {
-            e.stopPropagation();
-            onSetActive();
-          }}
-          className="w-full py-3 rounded-lg font-bold bg-slate-700 hover:bg-slate-600 text-white transition-all flex items-center justify-center"
-        >
-          <Star className="w-4 h-4 mr-2" />
-          アクティブにする
-        </button>
-      )}
-
-      {isUnlocked && isActive && (
-        <button
-          onClick={(e) => {
-            e.stopPropagation();
-            onClick();
-          }}
-          className="w-full py-3 rounded-lg font-bold bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white transition-all flex items-center justify-center"
-        >
-          エナジーを注入
-          <ChevronRight className="w-4 h-4 ml-2" />
-        </button>
-      )}
+      </div>
     </div>
   );
 }
