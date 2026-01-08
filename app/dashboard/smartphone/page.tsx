@@ -100,8 +100,11 @@ export default function SmartphoneTeamPage() {
       />
 
       {/* Stats Cards */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-5">
         <GlassCard glowColor="#eab308" title="総投稿数" icon={<FileText className="h-5 w-5" />} value={teamStats.totalPosts.toLocaleString()} subtitle="全メンバー合計">
+          <div></div>
+        </GlassCard>
+        <GlassCard glowColor="#eab308" title="Xフォロワー" icon={<Twitter className="h-5 w-5" />} value={teamStats.totalXFollowers.toLocaleString()} subtitle="現在の総数">
           <div></div>
         </GlassCard>
         <GlassCard glowColor="#eab308" title="いいね回り" icon={<Heart className="h-5 w-5" />} value={teamStats.members.reduce((sum: number, m: any) => sum + (m.likes || 0), 0).toLocaleString()} subtitle="エンゲージメント">
@@ -197,6 +200,7 @@ export default function SmartphoneTeamPage() {
                   </div>
                 </div>
                 <div className="flex gap-6 text-sm">
+                  <div className="text-right"><p className="text-muted-foreground">Xフォロワー</p><p className="font-bold">{(member.xFollowers || 0).toLocaleString()}</p></div>
                   <div className="text-right"><p className="text-muted-foreground">投稿数</p><p className="font-bold">{member.posts.toLocaleString()}</p></div>
                   <div className="text-right"><p className="text-muted-foreground">いいね</p><p className="font-bold">{(member.likes || 0).toLocaleString()}</p></div>
                   <div className="text-right"><p className="text-muted-foreground">リプライ</p><p className="font-bold">{(member.replies || 0).toLocaleString()}</p></div>
