@@ -25,7 +25,9 @@ import {
   ExternalLink,
   AlertTriangle,
   Shield,
-  Settings
+  Settings,
+  X,
+  Users
 } from "lucide-react";
 import { ContentLoader, ButtonLoader } from "@/components/ui/loading-spinner";
 import { getAllUsers, User as UserProfile, getReportsByPeriod, Report, getUserRecentReports, detectAnomalies, AnomalyFlags } from "@/lib/firestore";
@@ -70,6 +72,23 @@ export default function ActiveMonitorPage() {
     modifyRatio: 2,              // 修正回数比率
     growthMultiplier: 3          // 成長倍率
   });
+
+  // メンバー比較機能
+  const [comparisonMembers, setComparisonMembers] = useState<string[]>([]);
+  const [showComparison, setShowComparison] = useState(false);
+
+  const toggleMemberForComparison = (userId: string) => {
+    setComparisonMembers(prev => {
+      if (prev.includes(userId)) {
+        return prev.filter(id => id !== userId);
+      } else if (prev.length < 2) {
+        return [...prev, userId];
+      } else {
+        // すでに2人選択済みの場合、最初のを削除して新しいのを追加
+        return [prev[1], userId];
+      }
+    });
+  };
 
   useEffect(() => {
     if (user) {
@@ -474,23 +493,34 @@ export default function ActiveMonitorPage() {
                   {/* Member Info */}
                   <div className="flex-1 min-w-0">
                     <div className="flex items-start justify-between gap-4 mb-2">
-                      <div className="flex-1 min-w-0">
-                        <h3 className="text-lg font-bold truncate flex items-center gap-2">
-                          {member.user.displayName}
-                          <span 
-                            className="px-2 py-0.5 text-xs rounded-full"
-                            style={{ 
-                              backgroundColor: `${member.teamColor}20`,
-                              color: member.teamColor,
-                              border: `1px solid ${member.teamColor}40`
-                            }}
-                          >
-                            {getTeamConfig(member.user.team)?.name}
-                          </span>
-                        </h3>
-                        <p className="text-sm text-muted-foreground">
-                          {member.user.realName} ({member.user.email})
-                        </p>
+                      <div className="flex-1 min-w-0 flex items-center gap-3">
+                        {/* 比較チェックボックス */}
+                        <input
+                          type="checkbox"
+                          checked={comparisonMembers.includes(member.user.uid)}
+                          onChange={() => toggleMemberForComparison(member.user.uid)}
+                          className="w-5 h-5 rounded border-2 border-purple-500 bg-transparent checked:bg-purple-500 cursor-pointer"
+                          title="比較対象に追加"
+                        />
+
+                        <div className="flex-1 min-w-0">
+                          <h3 className="text-lg font-bold truncate flex items-center gap-2">
+                            {member.user.displayName}
+                            <span
+                              className="px-2 py-0.5 text-xs rounded-full"
+                              style={{
+                                backgroundColor: `${member.teamColor}20`,
+                                color: member.teamColor,
+                                border: `1px solid ${member.teamColor}40`
+                              }}
+                            >
+                              {getTeamConfig(member.user.team)?.name}
+                            </span>
+                          </h3>
+                          <p className="text-sm text-muted-foreground">
+                            {member.user.realName} ({member.user.email})
+                          </p>
+                        </div>
                       </div>
                       
                       <div className="text-right flex-shrink-0">
@@ -620,6 +650,120 @@ export default function ActiveMonitorPage() {
           )}
         </Button>
       </div>
+
+      {/* 比較ボタン（フローティング） */}
+      {comparisonMembers.length === 2 && (
+        <div className="fixed bottom-24 right-8 z-50 animate-in slide-in-from-bottom-4">
+          <Button
+            onClick={() => setShowComparison(true)}
+            className="bg-gradient-to-r from-purple-600 to-pink-600 shadow-2xl h-14 px-6 text-lg font-bold"
+            style={{
+              boxShadow: "0 10px 40px rgba(168, 85, 247, 0.5)"
+            }}
+          >
+            <Users className="w-5 h-5 mr-2" />
+            2人を比較する
+          </Button>
+        </div>
+      )}
+
+      {/* 比較モーダル */}
+      {showComparison && comparisonMembers.length === 2 && (
+        <div className="fixed inset-0 bg-black/70 backdrop-blur-md z-[9999] flex items-center justify-center p-4">
+          <div className="bg-slate-900 rounded-2xl border-2 border-purple-500/30 max-w-6xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="sticky top-0 bg-slate-900 border-b border-purple-500/30 p-6 flex items-center justify-between">
+              <h2 className="text-2xl font-bold text-purple-400 flex items-center gap-2">
+                <Users className="w-6 h-6" />
+                メンバー比較
+              </h2>
+              <button
+                onClick={() => setShowComparison(false)}
+                className="p-2 rounded-full hover:bg-white/10 transition-colors"
+              >
+                <X className="w-6 h-6" />
+              </button>
+            </div>
+
+            <div className="p-6">
+              <div className="grid md:grid-cols-2 gap-6">
+                {comparisonMembers.map(userId => {
+                  const member = members.find(m => m.user.uid === userId);
+                  if (!member) return null;
+
+                  const alertColor = getAlertColor(member.alertLevel);
+
+                  return (
+                    <div key={userId} className="space-y-4">
+                      <div className="text-center pb-4 border-b border-white/10">
+                        <h3 className="text-2xl font-bold mb-1">{member.user.displayName}</h3>
+                        <p className="text-sm text-slate-400">{member.user.realName}</p>
+                        <p className="text-xs text-slate-500">{getTeamConfig(member.user.team)?.name}</p>
+                      </div>
+
+                      <div className="space-y-3">
+                        <div className="bg-white/5 rounded-lg p-4">
+                          <p className="text-xs text-slate-400 mb-2">ステータス</p>
+                          <p className="text-lg font-bold" style={{ color: alertColor }}>
+                            {getStatusLabel(member.status)}
+                          </p>
+                          <p className="text-sm text-slate-400 mt-1">
+                            {getStatusDescription(member)}
+                          </p>
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-3">
+                          <div className="bg-white/5 rounded-lg p-3">
+                            <p className="text-xs text-slate-400">総報告数</p>
+                            <p className="text-2xl font-bold">{member.totalReports}件</p>
+                          </div>
+                          <div className="bg-white/5 rounded-lg p-3">
+                            <p className="text-xs text-slate-400">継続日数</p>
+                            <p className="text-2xl font-bold">{member.currentStreak}日</p>
+                          </div>
+                        </div>
+
+                        <div className="bg-white/5 rounded-lg p-3">
+                          <p className="text-xs text-slate-400 mb-1">最終報告</p>
+                          <p className="text-lg font-bold">
+                            {member.lastReportDaysAgo === 0 ? "今日"
+                              : member.lastReportDaysAgo === 999 ? "報告なし"
+                              : `${member.lastReportDaysAgo}日前`}
+                          </p>
+                        </div>
+
+                        {member.hasAnomalies && member.anomalies && (
+                          <div className="bg-orange-500/10 border border-orange-500/30 rounded-lg p-3">
+                            <p className="text-xs text-orange-400 font-bold mb-2">異常値検知</p>
+                            <div className="space-y-1 text-xs text-slate-300">
+                              {member.anomalies.highEnergyLowOutput && <div>⚠️ 高エナジーだが成果が低い</div>}
+                              {member.anomalies.frequentModification && <div>📝 修正回数が異常に多い</div>}
+                              {member.anomalies.inconsistentGrowth && <div>📈 急激な成長</div>}
+                              {member.anomalies.suspiciousPattern && <div>🔍 怪しいパターン</div>}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+
+              <div className="mt-6 pt-6 border-t border-white/10 flex justify-center">
+                <Button
+                  onClick={() => {
+                    setShowComparison(false);
+                    setComparisonMembers([]);
+                  }}
+                  variant="outline"
+                  className="border-purple-500/30 text-purple-400"
+                >
+                  比較を終了
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
