@@ -2,6 +2,7 @@
 
 import { X, AlertTriangle, TrendingUp, Calendar, MessageCircle } from "lucide-react";
 import { useEffect, useState } from "react";
+import Image from "next/image";
 import { getUserRecentReports, detectAnomalies, Report, AnomalyFlags } from "@/lib/firestore";
 
 interface MemberDetailModalProps {
@@ -136,10 +137,15 @@ export function MemberDetailModal({
 
             {/* 守護神画像 */}
             <div className="absolute inset-2 rounded-full overflow-hidden bg-black/40">
-              <img
+              <Image
                 src={member.guardianData.imagePath}
                 alt={member.guardianData.name}
+                width={144}
+                height={144}
                 className="w-full h-full object-contain guardian-floating"
+                loading="lazy"
+                placeholder="blur"
+                blurDataURL="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTQ0IiBoZWlnaHQ9IjE0NCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTQ0IiBoZWlnaHQ9IjE0NCIgZmlsbD0iIzIyMiIvPjwvc3ZnPg=="
                 onError={(e) => {
                   e.currentTarget.style.display = 'none';
                   e.currentTarget.nextElementSibling?.classList.remove('hidden');

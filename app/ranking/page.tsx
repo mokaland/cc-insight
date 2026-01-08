@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
+import Image from "next/image";
 import {
   Trophy, Eye, Users, TrendingUp, Heart, MessageCircle, Instagram,
   Youtube, Crown, Medal, Award, ChevronRight, Zap, Calendar, Target, Download
@@ -609,10 +610,15 @@ export default function AllTeamsRankingPage() {
                                 }}
                               />
                               <div className="guardian-avatar-inner">
-                                <img
+                                <Image
                                   src={guardianData.imagePath}
                                   alt={guardianData.name}
+                                  width={64}
+                                  height={64}
                                   className="w-full h-full object-cover"
+                                  loading="lazy"
+                                  placeholder="blur"
+                                  blurDataURL="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjQiIGhlaWdodD0iNjQiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PHJlY3Qgd2lkdGg9IjY0IiBoZWlnaHQ9IjY0IiBmaWxsPSIjMjIyIi8+PC9zdmc+"
                                   onError={(e) => {
                                     e.currentTarget.style.display = 'none';
                                     e.currentTarget.nextElementSibling?.classList.remove('hidden');
