@@ -390,12 +390,27 @@ export default function AllTeamsRankingPage() {
                             {getMedalIcon(rank)}
                           </div>
 
-                          {/* 守護神アバター - 新構造 */}
+                          {/* 守護神アバター - PNG画像表示 */}
                           <div className={`guardian-avatar ranking-${dummyMember.stage}`}>
+                            <div 
+                              className="absolute inset-0 rounded-full animate-pulse"
+                              style={{
+                                border: `2px solid ${dummyMember.guardianColor}`,
+                                boxShadow: `0 0 15px ${dummyMember.guardianColor}80`,
+                              }}
+                            />
+                            <div 
+                              className="absolute inset-1 rounded-full opacity-20"
+                              style={{
+                                background: `radial-gradient(circle, ${dummyMember.guardianColor} 0%, transparent 70%)`
+                              }}
+                            />
                             <div className="guardian-avatar-inner">
-                              <div className="absolute inset-0 flex items-center justify-center text-2xl">
-                                {dummyMember.cursed ? '😴' : dummyMember.guardianStage === 4 ? '👑' : dummyMember.guardianStage === 3 ? '⚔️' : dummyMember.guardianStage === 2 ? '🛡️' : dummyMember.guardianStage === 1 ? '🌱' : '🥚'}
-                              </div>
+                              <img
+                                src={`/images/guardians/hoshimaru/stage${dummyMember.guardianStage}.png`}
+                                alt={`Stage ${dummyMember.guardianStage}`}
+                                className="w-full h-full object-cover"
+                              />
                             </div>
                             {/* 💤オーバーレイ */}
                             {dummyMember.stage === 'bottom10' && (
@@ -409,11 +424,6 @@ export default function AllTeamsRankingPage() {
                               <p className={`font-bold truncate ${dummyMember.cursed ? 'text-slate-500' : 'text-slate-100'}`}>
                                 {dummyMember.name}
                               </p>
-                              {rank === 1 && (
-                                <span className="px-2 py-0.5 rounded-full text-xs font-bold text-white" style={{ backgroundColor: color }}>
-                                  👑 1st
-                                </span>
-                              )}
                             </div>
                             <div className="flex items-center gap-2 text-xs text-slate-400">
                               <span style={{ color: dummyMember.guardianColor }} className="font-medium">
@@ -562,11 +572,6 @@ export default function AllTeamsRankingPage() {
                               <p className="font-bold text-slate-100 truncate">
                                 {member.name}
                               </p>
-                              {rank === 1 && (
-                                <span className="px-2 py-0.5 rounded-full text-xs font-bold text-white" style={{ backgroundColor: color }}>
-                                  👑 1st
-                                </span>
-                              )}
                             </div>
                             <div className="flex items-center gap-2 text-xs text-slate-400">
                               <span style={{ color: guardianData ? guardianData.color : fallbackGuardian.color }} className="font-medium">

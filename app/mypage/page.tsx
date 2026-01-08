@@ -399,7 +399,7 @@ export default function MyPage() {
       </GlassCard>
 
       {/* エナジー＆ストリーク（ジュエル化 + カウントアップ） */}
-      <div className="grid gap-6 md:grid-cols-3">
+      <div className="grid gap-6 grid-cols-3">
         {/* 保有エナジー */}
         <motion.div
           initial={{ scale: 0, rotateY: -180 }}
@@ -420,7 +420,9 @@ export default function MyPage() {
             </div>
             
             {/* ラベル */}
-            <p className="stat-label text-sm mb-2 text-gray-300">保有エナジー</p>
+            <p className="stat-label text-sm mb-1 text-gray-300">保有エナジー</p>
+            {/* 世界観テキスト */}
+            <p className="text-[10px] text-gray-500 mb-2">守護神の進化に捧げる聖なる力</p>
             
             {/* カウントアップ数値 */}
             <motion.p 
@@ -457,7 +459,9 @@ export default function MyPage() {
             </div>
             
             {/* ラベル */}
-            <p className="stat-label text-sm mb-2 text-gray-300">累計獲得</p>
+            <p className="stat-label text-sm mb-1 text-gray-300">累計獲得</p>
+            {/* 世界観テキスト */}
+            <p className="text-[10px] text-gray-500 mb-2">これまでの貢献と冒険の証</p>
             
             {/* カウントアップ数値 */}
             <motion.p 
@@ -494,7 +498,9 @@ export default function MyPage() {
             </div>
             
             {/* ラベル */}
-            <p className="stat-label text-sm mb-2 text-gray-300">ストリーク</p>
+            <p className="stat-label text-sm mb-1 text-gray-300">ストリーク</p>
+            {/* 世界観テキスト */}
+            <p className="text-[10px] text-gray-500 mb-2">連続報告による守護神との絆</p>
             
             {/* カウントアップ数値 */}
             <motion.div
@@ -518,7 +524,7 @@ export default function MyPage() {
       </div>
 
       {/* クイックアクション */}
-      <div className="grid gap-4 md:grid-cols-3">
+      <div className="grid gap-4 grid-cols-3">
         <Link href="/report">
           <GlassCard glowColor="#22C55E" className="p-6 cursor-pointer hover:scale-[1.02] transition-transform">
             <div className="text-center">
