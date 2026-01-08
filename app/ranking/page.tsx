@@ -9,6 +9,7 @@ import {
 import { subscribeToReports, calculateTeamStats, teams, Report, getUserGuardianProfile } from "@/lib/firestore";
 import { useAuth } from "@/lib/auth-context";
 import { GUARDIANS, ATTRIBUTES, getGuardianImagePath, GuardianId, EVOLUTION_STAGES } from "@/lib/guardian-collection";
+import { MemberDetailModal } from "@/components/member-detail-modal";
 
 const getMedalIcon = (rank: number) => {
   switch (rank) {
@@ -30,6 +31,8 @@ export default function AllTeamsRankingPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [guardianProfiles, setGuardianProfiles] = useState<{ [userId: string]: any }>({});
+  const [selectedMember, setSelectedMember] = useState<any>(null);
+  const [selectedTeam, setSelectedTeam] = useState<any>(null);
 
   useEffect(() => {
     const timeout = setTimeout(() => {
@@ -84,7 +87,7 @@ export default function AllTeamsRankingPage() {
     return (
       <div className="min-h-[50vh] flex flex-col items-center justify-center">
         <Trophy className="w-16 h-16 text-slate-400 mb-4" />
-        <h2 className="text-2xl font-bold text-slate-900 mb-2">ログインが必要です</h2>
+        <h2 className="text-2xl font-bold text-slate-100 mb-2">ログインが必要です</h2>
         <p className="text-slate-300 mb-6">ランキングを表示するにはログインしてください</p>
       </div>
     );
@@ -115,7 +118,7 @@ export default function AllTeamsRankingPage() {
         <h1 className="text-4xl font-bold mb-3 bg-gradient-to-r from-pink-500 via-purple-500 to-cyan-500 bg-clip-text text-transparent">
           🏆 全チームランキング
         </h1>
-        <p className="text-slate-300">全メンバーのパフォーマンスを一覧表示</p>
+        <p className="text-slate-300">タップで詳細を表示</p>
       </div>
 
       {error && (
@@ -124,7 +127,7 @@ export default function AllTeamsRankingPage() {
         </div>
       )}
 
-      {/* 副業チーム（Shorts系） */}
+      {/* チームごとのランキング */}
       {teamStats.map((teamData) => {
         const { id, name, color, type, stats } = teamData;
         const isShorts = type === "shorts";
@@ -267,7 +270,7 @@ export default function AllTeamsRankingPage() {
 
             {/* メンバーランキング */}
             {sortedMembers.length === 0 ? (
-              <div className="bg-white rounded-2xl p-12 text-center border border-slate-200">
+              <div className="glass-premium rounded-2xl p-12 text-center border border-white/20">
                 <div className="text-4xl mb-4">📊</div>
                 <p className="text-slate-300">まだレポートが送信されていません</p>
               </div>
@@ -281,11 +284,72 @@ export default function AllTeamsRankingPage() {
                   <div className="space-y-3">
                     {/* 🎨 テスト用ダミーデータ（5段階演出確認用） */}
                     {[
-                      { name: '最強さん👑', views: 500000, posts: 50, stage: 'top10', guardianStage: 4, guardianColor: '#FFD700' },
-                      { name: '上位さん✨', views: 100000, posts: 30, stage: 'top30', guardianStage: 3, guardianColor: '#EC4899' },
-                      { name: '中堅さん', views: 50000, posts: 20, stage: 'middle', guardianStage: 2, guardianColor: '#22D3EE' },
-                      { name: '低迷さん😰', views: 10000, posts: 10, stage: 'bottom30', guardianStage: 1, guardianColor: '#94a3b8' },
-                      { name: '呪われたさん💤', views: 1000, posts: 2, stage: 'bottom10', guardianStage: 0, guardianColor: '#64748b', cursed: true },
+                      { 
+                        name: '最強さん👑', 
+                        views: 500000, 
+                        posts: 50, 
+                        energy: 3570,
+                        stage: 'top10', 
+                        guardianStage: 4, 
+                        guardianColor: '#FFD700',
+                        interactions: 50000,
+                        profileAccess: 5000,
+                        reports: 30,
+                        achievementRate: 150
+                      },
+                      { 
+                        name: '上位さん✨', 
+                        views: 100000, 
+                        posts: 30, 
+                        energy: 326,
+                        stage: 'top30', 
+                        guardianStage: 3, 
+                        guardianColor: '#EC4899',
+                        interactions: 10000,
+                        profileAccess: 1000,
+                        reports: 20,
+                        achievementRate: 120
+                      },
+                      { 
+                        name: '中堅さん', 
+                        views: 50000, 
+                        posts: 20, 
+                        energy: 60,
+                        stage: 'middle', 
+                        guardianStage: 2, 
+                        guardianColor: '#22D3EE',
+                        interactions: 5000,
+                        profileAccess: 500,
+                        reports: 15,
+                        achievementRate: 100
+                      },
+                      { 
+                        name: '低迷さん😰', 
+                        views: 10000, 
+                        posts: 10, 
+                        energy: 10,
+                        stage: 'bottom30', 
+                        guardianStage: 1, 
+                        guardianColor: '#94a3b8',
+                        interactions: 1000,
+                        profileAccess: 100,
+                        reports: 8,
+                        achievementRate: 60
+                      },
+                      { 
+                        name: '呪われたさん💤', 
+                        views: 1000, 
+                        posts: 2, 
+                        energy: 5,
+                        stage: 'bottom10', 
+                        guardianStage: 0, 
+                        guardianColor: '#64748b', 
+                        cursed: true,
+                        interactions: 100,
+                        profileAccess: 10,
+                        reports: 2,
+                        achievementRate: 20
+                      },
                     ].map((dummyMember, dummyIndex) => {
                       const rank = dummyIndex + 1;
                       const isTop3 = rank <= 3;
@@ -293,9 +357,22 @@ export default function AllTeamsRankingPage() {
                       return (
                         <div
                           key={`dummy-${dummyIndex}`}
-                          className={`flex items-center justify-between p-4 rounded-xl transition-all duration-200 cursor-pointer ranking-${dummyMember.stage} ${
+                          onClick={() => {
+                            setSelectedMember({
+                              ...dummyMember,
+                              guardianData: {
+                                color: dummyMember.guardianColor,
+                                stageName: `Stage ${dummyMember.guardianStage}`,
+                                name: "テスト守護神",
+                                emoji: dummyMember.cursed ? '😴' : '⚔️',
+                                imagePath: '/images/guardians/hoshimaru/stage0.png'
+                              }
+                            });
+                            setSelectedTeam({ name, color, isShorts });
+                          }}
+                          className={`flex items-center gap-4 p-4 rounded-xl transition-all duration-200 cursor-pointer ranking-${dummyMember.stage} hover:-translate-y-1 hover:shadow-xl ${
                             isTop3
-                              ? "border-2 hover:scale-[1.02]"
+                              ? "border-2"
                               : "border border-slate-700"
                           }`}
                           style={
@@ -308,77 +385,54 @@ export default function AllTeamsRankingPage() {
                               : undefined
                           }
                         >
-                          <div className="flex items-center gap-4 flex-1">
-                            {/* ランク */}
-                            <div className="w-10 flex-shrink-0 flex justify-center">
-                              {getMedalIcon(rank)}
-                            </div>
+                          {/* ランク */}
+                          <div className="w-10 flex-shrink-0 flex justify-center">
+                            {getMedalIcon(rank)}
+                          </div>
 
-                            {/* 守護神アバター（ダミー） */}
-                            <div className="relative w-12 h-12 flex-shrink-0 guardian-avatar">
-                              <div 
-                                className="absolute inset-0 rounded-full animate-pulse"
-                                style={{
-                                  border: `2px solid ${dummyMember.guardianColor}`,
-                                  boxShadow: `0 0 15px ${dummyMember.guardianColor}80`,
-                                  filter: dummyMember.cursed ? 'grayscale(100%)' : 'none'
-                                }}
-                              />
-                              <div 
-                                className="absolute inset-1 rounded-full opacity-20"
-                                style={{
-                                  background: `radial-gradient(circle, ${dummyMember.guardianColor} 0%, transparent 70%)`
-                                }}
-                              />
-                              <div className="absolute inset-1 rounded-full overflow-hidden bg-black/30 flex items-center justify-center text-2xl"
-                                   style={{ filter: dummyMember.cursed ? 'grayscale(100%) brightness(0.5)' : 'none' }}>
+                          {/* 守護神アバター - 新構造 */}
+                          <div className={`guardian-avatar ranking-${dummyMember.stage}`}>
+                            <div className="guardian-avatar-inner">
+                              <div className="absolute inset-0 flex items-center justify-center text-2xl">
                                 {dummyMember.cursed ? '😴' : dummyMember.guardianStage === 4 ? '👑' : dummyMember.guardianStage === 3 ? '⚔️' : dummyMember.guardianStage === 2 ? '🛡️' : dummyMember.guardianStage === 1 ? '🌱' : '🥚'}
                               </div>
-                              {/* 💤オーバーレイ */}
-                              {dummyMember.stage === 'bottom10' && (
-                                <div className="sleep-overlay">💤</div>
+                            </div>
+                            {/* 💤オーバーレイ */}
+                            {dummyMember.stage === 'bottom10' && (
+                              <div className="sleep-overlay">💤</div>
+                            )}
+                          </div>
+
+                          {/* メンバー情報 */}
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2">
+                              <p className={`font-bold truncate ${dummyMember.cursed ? 'text-slate-500' : 'text-slate-100'}`}>
+                                {dummyMember.name}
+                              </p>
+                              {rank === 1 && (
+                                <span className="px-2 py-0.5 rounded-full text-xs font-bold text-white" style={{ backgroundColor: color }}>
+                                  👑 1st
+                                </span>
                               )}
                             </div>
-
-                            {/* メンバー情報 */}
-                            <div className="flex-1 min-w-0">
-                              <div className="flex items-center gap-2">
-                                <p className={`font-bold truncate ${dummyMember.cursed ? 'text-slate-600' : 'text-slate-100'}`}>
-                                  {dummyMember.name}
-                                </p>
-                                {rank === 1 && (
-                                  <span className="px-2 py-0.5 rounded-full text-xs font-bold text-white" style={{ backgroundColor: color }}>
-                                    👑 1st
-                                  </span>
-                                )}
-                              </div>
-                              <div className="flex items-center gap-2 text-xs text-slate-400">
-                                <span style={{ color: dummyMember.guardianColor }} className="font-medium">
-                                  {dummyMember.cursed ? '呪い（3日未提出）' : `Stage ${dummyMember.guardianStage}`}
-                                </span>
-                                <span>•</span>
-                                <span>テスト用ダミー</span>
-                              </div>
+                            <div className="flex items-center gap-2 text-xs text-slate-400">
+                              <span style={{ color: dummyMember.guardianColor }} className="font-medium">
+                                {dummyMember.cursed ? '呪い状態' : `Stage ${dummyMember.guardianStage}`}
+                              </span>
+                              <span>•</span>
+                              <span>テスト用</span>
                             </div>
-
-                            {/* KPI表示 */}
-                            <div className="flex gap-3 md:gap-4 text-sm flex-shrink-0">
-                              <div className="text-right min-w-[60px]">
-                                <p className="text-xs text-slate-400 mb-0.5">再生</p>
-                                <p className="text-base font-bold" style={{ color }}>
-                                  {dummyMember.views.toLocaleString()}
-                                </p>
-                              </div>
-                              <div className="text-right min-w-[50px]">
-                                <p className="text-xs text-slate-400 mb-0.5">投稿</p>
-                                <p className="text-base font-bold" style={{ color }}>
-                                  {dummyMember.posts}
-                                </p>
-                              </div>
-                            </div>
-
-                            <ChevronRight className="w-5 h-5 text-slate-400" />
                           </div>
+
+                          {/* エナジー表示（メインKPI） */}
+                          <div className="text-right">
+                            <p className="text-xs text-slate-400 mb-0.5">エナジー</p>
+                            <p className="text-xl font-bold" style={{ color }}>
+                              {dummyMember.energy}E
+                            </p>
+                          </div>
+
+                          <ChevronRight className="w-5 h-5 text-slate-400" />
                         </div>
                       );
                     })}
@@ -394,7 +448,6 @@ export default function AllTeamsRankingPage() {
                       
                       // 守護神データ取得
                       let guardianData: any = null;
-                      let guardianInfo: any = null;
                       
                       if (userId && guardianProfiles[userId]) {
                         const profile = guardianProfiles[userId];
@@ -425,21 +478,24 @@ export default function AllTeamsRankingPage() {
                         color: "#94a3b8"
                       };
 
-                      // 表示する主要数値
-                      const mainValue = isShorts ? member.views : (member.likes || 0) + (member.replies || 0);
-                      const mainLabel = isShorts ? "再生" : "活動量";
+                      // エナジー計算（仮）
+                      const energy = Math.floor(member.views / 100 + member.posts * 2);
 
                       return (
                         <div
                           key={member.name}
                           onClick={() => {
-                            // TODO: ユーザーIDがあれば詳細ページへ遷移
-                            // router.push(`/dashboard/user/${member.userId}`);
+                            setSelectedMember({
+                              ...member,
+                              energy,
+                              guardianData
+                            });
+                            setSelectedTeam({ name, color, isShorts });
                           }}
-                          className={`flex items-center justify-between p-4 rounded-xl transition-all duration-200 cursor-pointer ${
+                          className={`flex items-center gap-4 p-4 rounded-xl transition-all duration-200 cursor-pointer hover:-translate-y-1 hover:shadow-xl ${
                             isTop3
-                              ? "border-2 hover:scale-[1.02]"
-                              : "border border-slate-100 hover:bg-slate-50"
+                              ? "border-2"
+                              : "border border-slate-700"
                           }`}
                           style={
                             isTop3
@@ -451,138 +507,85 @@ export default function AllTeamsRankingPage() {
                               : undefined
                           }
                         >
-                          <div className="flex items-center gap-4 flex-1">
-                            {/* ランク */}
-                            <div className="w-10 flex-shrink-0 flex justify-center">
-                              {getMedalIcon(rank)}
-                            </div>
+                          {/* ランク */}
+                          <div className="w-10 flex-shrink-0 flex justify-center">
+                            {getMedalIcon(rank)}
+                          </div>
 
-                            {/* ガーディアン - ポータル型表示 */}
-                            {guardianData ? (
-                              <div className="relative w-12 h-12 flex-shrink-0">
-                                {/* オーラリング */}
-                                <div 
-                                  className="absolute inset-0 rounded-full animate-pulse"
-                                  style={{
-                                    border: `2px solid ${guardianData.color}`,
-                                    boxShadow: `0 0 15px ${guardianData.color}80`,
+                          {/* 守護神アバター - 新構造 */}
+                          {guardianData ? (
+                            <div className="guardian-avatar">
+                              <div 
+                                className="absolute inset-0 rounded-full animate-pulse"
+                                style={{
+                                  border: `2px solid ${guardianData.color}`,
+                                  boxShadow: `0 0 15px ${guardianData.color}80`,
+                                }}
+                              />
+                              <div 
+                                className="absolute inset-1 rounded-full opacity-20"
+                                style={{
+                                  background: `radial-gradient(circle, ${guardianData.color} 0%, transparent 70%)`
+                                }}
+                              />
+                              <div className="guardian-avatar-inner">
+                                <img
+                                  src={guardianData.imagePath}
+                                  alt={guardianData.name}
+                                  className="w-full h-full object-cover"
+                                  onError={(e) => {
+                                    e.currentTarget.style.display = 'none';
+                                    e.currentTarget.nextElementSibling?.classList.remove('hidden');
                                   }}
                                 />
-                                
-                                {/* 内側のグロー */}
-                                <div 
-                                  className="absolute inset-1 rounded-full opacity-20"
-                                  style={{
-                                    background: `radial-gradient(circle, ${guardianData.color} 0%, transparent 70%)`
-                                  }}
-                                />
-
-                                {/* 守護神画像 */}
-                                <div className="absolute inset-1 rounded-full overflow-hidden bg-black/30">
-                                  <img
-                                    src={guardianData.imagePath}
-                                    alt={guardianData.name}
-                                    className="w-full h-full object-contain"
-                                    onError={(e) => {
-                                      e.currentTarget.style.display = 'none';
-                                      e.currentTarget.nextElementSibling?.classList.remove('hidden');
-                                    }}
-                                  />
-                                  {/* フォールバック絵文字 */}
-                                  <div className="hidden absolute inset-0 flex items-center justify-center text-xl">
-                                    {guardianData.emoji}
-                                  </div>
+                                <div className="hidden absolute inset-0 flex items-center justify-center text-2xl">
+                                  {guardianData.emoji}
                                 </div>
                               </div>
-                            ) : (
-                              <div
-                                className="w-12 h-12 rounded-full flex items-center justify-center text-2xl flex-shrink-0"
-                                style={{
-                                  backgroundColor: `${fallbackGuardian.color}20`,
-                                  boxShadow: `0 0 15px ${fallbackGuardian.color}`,
-                                  border: `2px solid ${fallbackGuardian.color}`,
-                                }}
-                              >
-                                {fallbackGuardian.emoji}
-                              </div>
-                            )}
-
-                            {/* メンバー情報 */}
-                            <div className="flex-1 min-w-0">
-                              <div className="flex items-center gap-2">
-                                <p className="font-bold text-slate-900 truncate">
-                                  {member.name}
-                                </p>
-                                {rank === 1 && (
-                                  <span className="px-2 py-0.5 rounded-full text-xs font-bold text-white" style={{ backgroundColor: color }}>
-                                    👑 1st
-                                  </span>
-                                )}
-                              </div>
-                              <div className="flex items-center gap-2 text-xs text-slate-500">
-                                <span style={{ color: guardianData ? guardianData.color : fallbackGuardian.color }} className="font-medium">
-                                  {guardianData ? guardianData.stageName : fallbackGuardian.name}
-                                </span>
-                                <span>•</span>
-                                <span>{member.reports}回報告</span>
-                                {member.achievementRate >= 100 && (
-                                  <>
-                                    <span>•</span>
-                                    <span className="text-green-600 font-medium">達成率{member.achievementRate}%</span>
-                                  </>
-                                )}
-                              </div>
                             </div>
+                          ) : (
+                            <div
+                              className="w-12 h-12 rounded-full flex items-center justify-center text-2xl flex-shrink-0"
+                              style={{
+                                backgroundColor: `${fallbackGuardian.color}20`,
+                                boxShadow: `0 0 15px ${fallbackGuardian.color}`,
+                                border: `2px solid ${fallbackGuardian.color}`,
+                              }}
+                            >
+                              {fallbackGuardian.emoji}
+                            </div>
+                          )}
 
-                            {/* KPI表示 */}
-                            <div className="flex gap-3 md:gap-4 text-sm flex-shrink-0">
-                              {isShorts ? (
-                                <>
-                                  <div className="text-right min-w-[60px]">
-                                    <p className="text-xs text-slate-500 mb-0.5">再生</p>
-                                    <p className="text-base font-bold" style={{ color }}>
-                                      {member.views.toLocaleString()}
-                                    </p>
-                                  </div>
-                                  <div className="text-right min-w-[50px]">
-                                    <p className="text-xs text-slate-500 mb-0.5">投稿</p>
-                                    <p className="text-base font-bold" style={{ color }}>
-                                      {member.posts}
-                                    </p>
-                                  </div>
-                                  <div className="text-right min-w-[50px]">
-                                    <p className="text-xs text-slate-500 mb-0.5">交流</p>
-                                    <p className="text-base font-bold" style={{ color }}>
-                                      {(member.interactions || 0).toLocaleString()}
-                                    </p>
-                                  </div>
-                                </>
-                              ) : (
-                                <>
-                                  <div className="text-right min-w-[60px]">
-                                    <p className="text-xs text-slate-500 mb-0.5">いいね</p>
-                                    <p className="text-base font-bold" style={{ color }}>
-                                      {(member.likes || 0).toLocaleString()}
-                                    </p>
-                                  </div>
-                                  <div className="text-right min-w-[60px]">
-                                    <p className="text-xs text-slate-500 mb-0.5">リプライ</p>
-                                    <p className="text-base font-bold" style={{ color }}>
-                                      {(member.replies || 0).toLocaleString()}
-                                    </p>
-                                  </div>
-                                  <div className="text-right min-w-[50px]">
-                                    <p className="text-xs text-slate-500 mb-0.5">投稿</p>
-                                    <p className="text-base font-bold" style={{ color }}>
-                                      {member.posts}
-                                    </p>
-                                  </div>
-                                </>
+                          {/* メンバー情報 */}
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2">
+                              <p className="font-bold text-slate-100 truncate">
+                                {member.name}
+                              </p>
+                              {rank === 1 && (
+                                <span className="px-2 py-0.5 rounded-full text-xs font-bold text-white" style={{ backgroundColor: color }}>
+                                  👑 1st
+                                </span>
                               )}
                             </div>
-
-                            <ChevronRight className="w-5 h-5 text-slate-400" />
+                            <div className="flex items-center gap-2 text-xs text-slate-400">
+                              <span style={{ color: guardianData ? guardianData.color : fallbackGuardian.color }} className="font-medium">
+                                {guardianData ? guardianData.stageName : fallbackGuardian.name}
+                              </span>
+                              <span>•</span>
+                              <span>{member.reports}回報告</span>
+                            </div>
                           </div>
+
+                          {/* エナジー表示（メインKPI） */}
+                          <div className="text-right">
+                            <p className="text-xs text-slate-400 mb-0.5">エナジー</p>
+                            <p className="text-xl font-bold" style={{ color }}>
+                              {energy}E
+                            </p>
+                          </div>
+
+                          <ChevronRight className="w-5 h-5 text-slate-400" />
                         </div>
                       );
                     })}
@@ -593,6 +596,16 @@ export default function AllTeamsRankingPage() {
           </section>
         );
       })}
+
+      {/* 詳細モーダル */}
+      <MemberDetailModal
+        member={selectedMember}
+        isOpen={!!selectedMember}
+        onClose={() => setSelectedMember(null)}
+        teamColor={selectedTeam?.color || '#EC4899'}
+        teamName={selectedTeam?.name || ''}
+        isShorts={selectedTeam?.isShorts || true}
+      />
     </div>
   );
 }

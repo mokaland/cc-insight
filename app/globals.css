@@ -568,6 +568,32 @@
    🏆 ランキング表 - 動的オーラ・ポーズ（PNG画像対応版）
    ===================================== */
 
+/* 守護神アバター - 完全な正円ポータル */
+.guardian-avatar {
+  width: 48px;
+  height: 48px;
+  border-radius: 9999px;
+  position: relative;
+  overflow: visible; /* リングを外側に表示 */
+  flex-shrink: 0;
+}
+
+/* 画像コンテナ（正円クリップ） */
+.guardian-avatar-inner {
+  position: absolute;
+  inset: 0;
+  border-radius: 9999px;
+  overflow: hidden;
+  background: rgba(0, 0, 0, 0.3);
+}
+
+.guardian-avatar-inner img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+}
+
 /* TOP 10%: 勝利ポーズ + リング状光彩 */
 @keyframes triumphant-pose {
   0%, 100% {
@@ -598,7 +624,7 @@
   content: '';
   position: absolute;
   inset: -4px;
-  border-radius: inherit;
+  border-radius: 9999px;
   animation: rainbow-ring 3s ease-in-out infinite;
   pointer-events: none;
   z-index: -1;
@@ -622,7 +648,7 @@
   content: '';
   position: absolute;
   inset: -3px;
-  border-radius: inherit;
+  border-radius: 9999px;
   animation: golden-ring 2s ease-in-out infinite;
   pointer-events: none;
   z-index: -1;
@@ -648,8 +674,7 @@
   transform-origin: bottom center;
 }
 
-.ranking-bottom30 .guardian-avatar img,
-.ranking-bottom30 .guardian-avatar > div:first-child {
+.ranking-bottom30 .guardian-avatar-inner {
   filter: grayscale(50%) brightness(0.8);
 }
 
@@ -667,8 +692,7 @@
   animation: sleeping-zzz 4s ease-in-out infinite;
 }
 
-.ranking-bottom10 .guardian-avatar img,
-.ranking-bottom10 .guardian-avatar > div:first-child {
+.ranking-bottom10 .guardian-avatar-inner {
   filter: grayscale(80%) brightness(0.5);
 }
 
