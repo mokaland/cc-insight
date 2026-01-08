@@ -523,6 +523,102 @@ export default function MyPage() {
         </motion.div>
       </div>
 
+      {/* 💎 エナジー獲得の内訳 */}
+      <GlassCard glowColor="#F59E0B" className="p-6">
+        <div className="flex items-center gap-3 mb-6">
+          <Sparkles className="w-6 h-6 text-yellow-400" />
+          <h2 className="text-2xl font-bold text-white">エナジー獲得の内訳</h2>
+        </div>
+
+        <div className="space-y-3">
+          {/* ベースエナジー */}
+          <div className="glass-bg p-4 rounded-xl border border-yellow-500/20">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-full bg-green-500/20 flex items-center justify-center">
+                  <span className="text-xl">📝</span>
+                </div>
+                <div>
+                  <p className="font-bold text-white">日報提出</p>
+                  <p className="text-xs text-gray-400">毎日の基本報酬</p>
+                </div>
+              </div>
+              <p className="text-2xl font-bold text-green-400">+10E</p>
+            </div>
+          </div>
+
+          {/* ストリークボーナス */}
+          {profile.streak.current >= 3 && (
+            <div className="glass-bg p-4 rounded-xl border border-orange-500/20">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-full bg-orange-500/20 flex items-center justify-center">
+                    <Flame className="w-5 h-5 text-orange-400" />
+                  </div>
+                  <div>
+                    <p className="font-bold text-white">ストリークボーナス</p>
+                    <p className="text-xs text-gray-400">
+                      {profile.streak.current}日連続報告中 🔥
+                    </p>
+                  </div>
+                </div>
+                <p className="text-2xl font-bold text-orange-400">
+                  +{Math.min(profile.streak.current * 2, 20)}E
+                </p>
+              </div>
+            </div>
+          )}
+
+          {/* 成果ボーナス */}
+          <div className="glass-bg p-4 rounded-xl border border-purple-500/20">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-full bg-purple-500/20 flex items-center justify-center">
+                  <TrendingUp className="w-5 h-5 text-purple-400" />
+                </div>
+                <div>
+                  <p className="font-bold text-white">成果ボーナス</p>
+                  <p className="text-xs text-gray-400">
+                    再生数・活動量に応じて変動
+                  </p>
+                </div>
+              </div>
+              <p className="text-2xl font-bold text-purple-400">変動</p>
+            </div>
+          </div>
+
+          {/* 週次ボーナス */}
+          <div className="glass-bg p-4 rounded-xl border border-blue-500/20">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-full bg-blue-500/20 flex items-center justify-center">
+                  <Crown className="w-5 h-5 text-blue-400" />
+                </div>
+                <div>
+                  <p className="font-bold text-white">週次ボーナス</p>
+                  <p className="text-xs text-gray-400">
+                    週間目標達成時
+                  </p>
+                </div>
+              </div>
+              <p className="text-2xl font-bold text-blue-400">+50E</p>
+            </div>
+          </div>
+        </div>
+
+        {/* エナジー獲得のヒント */}
+        <div className="mt-6 p-4 rounded-xl bg-gradient-to-r from-yellow-500/10 to-orange-500/10 border border-yellow-500/20">
+          <p className="text-sm text-gray-300 mb-2">
+            💡 <span className="font-bold">エナジーを効率よく獲得するコツ</span>
+          </p>
+          <ul className="text-xs text-gray-400 space-y-1 ml-4">
+            <li>• 毎日報告を続けてストリークボーナスを最大化</li>
+            <li>• 高い成果（再生数・活動量）で追加ボーナス獲得</li>
+            <li>• 週間目標を達成して大量エナジーを獲得</li>
+          </ul>
+        </div>
+      </GlassCard>
+
       {/* クイックアクション */}
       <div className="grid gap-4 grid-cols-3">
         <Link href="/report">
