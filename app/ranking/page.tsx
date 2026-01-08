@@ -1,10 +1,10 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import {
   Trophy, Eye, Users, TrendingUp, Heart, MessageCircle, Instagram,
-  Youtube, Crown, Medal, Award, ChevronRight, Zap, Calendar
+  Youtube, Crown, Medal, Award, ChevronRight, Zap, Calendar, Target
 } from "lucide-react";
 import { subscribeToReports, calculateTeamStats, teams, Report, getBulkUserGuardianProfiles } from "@/lib/firestore";
 import { useAuth } from "@/lib/auth-context";
@@ -37,6 +37,8 @@ export default function AllTeamsRankingPage() {
   const [selectedMember, setSelectedMember] = useState<any>(null);
   const [selectedTeam, setSelectedTeam] = useState<any>(null);
   const [period, setPeriod] = useState<"week" | "month">("week");
+  const [userRankInfo, setUserRankInfo] = useState<{ teamName: string; rank: number; totalMembers: number; color: string } | null>(null);
+  const userRowRef = useRef<HTMLDivElement>(null);
 
   // 📅 期間でフィルタリング
   const filteredReports = reports.filter(report => {
@@ -120,6 +122,60 @@ export default function AllTeamsRankingPage() {
     };
   });
 
+  // 🎯 自分の順位を計算
+  useEffect(() => {
+    if (!user || !guardianProfiles[user.uid]) {
+      setUserRankInfo(null);
+      return;
+    }
+
+    // ユーザーのレポートを検索
+    const userReport = reports.find(r => r.userId === user.uid);
+    if (!userReport) {
+      setUserRankInfo(null);
+      return;
+    }
+
+    // ユーザーが所属するチームを特定
+    const userTeamData = teamStats.find(t => t.id === userReport.team);
+    if (!userTeamData) {
+      setUserRankInfo(null);
+      return;
+    }
+
+    const isShorts = userTeamData.type === "shorts";
+
+    // メンバーをソート
+    const sortedMembers = [...userTeamData.stats.members].sort((a: any, b: any) => {
+      if (isShorts) {
+        return b.views - a.views;
+      } else {
+        const aActivity = (a.likes || 0) + (a.replies || 0);
+        const bActivity = (b.likes || 0) + (b.replies || 0);
+        return bActivity - aActivity;
+      }
+    });
+
+    // ユーザーのランクを検索
+    const userRank = sortedMembers.findIndex((m: any) => m.name === userReport.name) + 1;
+
+    if (userRank > 0) {
+      setUserRankInfo({
+        teamName: userTeamData.name,
+        rank: userRank,
+        totalMembers: sortedMembers.length,
+        color: userTeamData.color
+      });
+    }
+  }, [user, reports, guardianProfiles, teamStats]);
+
+  // 📍 自分の位置にスクロール
+  const scrollToMyRank = () => {
+    if (userRowRef.current) {
+      userRowRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+  };
+
   return (
     <div className="space-y-12 pb-[calc(var(--bottom-nav-height)+1rem)] md:pb-12">
       {/* Page Header */}
@@ -153,6 +209,58 @@ export default function AllTeamsRankingPage() {
           </TabsList>
         </Tabs>
       </div>
+
+      {/* 🎯 自分の順位表示（Sticky Header） */}
+      {userRankInfo && (
+        <div className="sticky top-0 z-50 animate-in fade-in slide-in-from-top-4 duration-500">
+          <div
+            className="glass-premium rounded-2xl p-4 border-2 shadow-2xl backdrop-blur-xl"
+            style={{
+              borderColor: `${userRankInfo.color}60`,
+              background: `linear-gradient(135deg, ${userRankInfo.color}15 0%, rgba(15, 23, 42, 0.95) 50%)`,
+              boxShadow: `0 8px 32px ${userRankInfo.color}40, 0 0 0 1px ${userRankInfo.color}20`
+            }}
+          >
+            <div className="flex items-center justify-between">
+              {/* 左: ランク情報 */}
+              <div className="flex items-center gap-4">
+                <div
+                  className="w-12 h-12 rounded-full flex items-center justify-center font-bold text-xl border-2"
+                  style={{
+                    backgroundColor: `${userRankInfo.color}20`,
+                    borderColor: userRankInfo.color,
+                    color: userRankInfo.color,
+                    boxShadow: `0 0 20px ${userRankInfo.color}60`
+                  }}
+                >
+                  #{userRankInfo.rank}
+                </div>
+                <div>
+                  <p className="text-xs text-slate-400 mb-1">あなたの順位</p>
+                  <p className="font-bold text-slate-100">
+                    {userRankInfo.teamName} - {userRankInfo.rank}/{userRankInfo.totalMembers}位
+                  </p>
+                </div>
+              </div>
+
+              {/* 右: スクロールボタン */}
+              <button
+                onClick={scrollToMyRank}
+                className="flex items-center gap-2 px-4 py-2 rounded-xl font-medium transition-all duration-200 hover:scale-105 active:scale-95"
+                style={{
+                  backgroundColor: `${userRankInfo.color}20`,
+                  color: userRankInfo.color,
+                  border: `2px solid ${userRankInfo.color}40`
+                }}
+              >
+                <Target className="w-4 h-4" />
+                <span className="hidden sm:inline">自分の位置へ</span>
+                <span className="sm:hidden">移動</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {error && (
         <div className="bg-red-500/10 border border-red-500/20 rounded-xl p-4 text-red-600 text-center">
@@ -319,10 +427,13 @@ export default function AllTeamsRankingPage() {
                     {sortedMembers.map((member: any, index: number) => {
                       const rank = index + 1;
                       const isTop3 = rank <= 3;
-                      
+
                       // ユーザーIDからレポートを逆引き
                       const memberReport = reports.find(r => r.name === member.name && r.team === id);
                       const userId = memberReport?.userId;
+
+                      // 🎯 現在のユーザーかどうかをチェック
+                      const isCurrentUser = user && userId === user.uid;
                       
                       // 守護神データ取得
                       let guardianData: any = null;
@@ -364,6 +475,7 @@ export default function AllTeamsRankingPage() {
                       return (
                         <div
                           key={userId || member.name}
+                          ref={isCurrentUser ? userRowRef : null}
                           onClick={() => {
                             setSelectedMember({
                               ...member,
@@ -373,12 +485,21 @@ export default function AllTeamsRankingPage() {
                             setSelectedTeam({ name, color, isShorts });
                           }}
                           className={`flex items-center gap-4 p-4 rounded-xl transition-all duration-200 cursor-pointer hover:-translate-y-1 hover:shadow-xl ${
-                            isTop3
+                            isCurrentUser
+                              ? "border-3 animate-pulse"
+                              : isTop3
                               ? "border-2"
                               : "border border-slate-700"
                           }`}
                           style={
-                            isTop3
+                            isCurrentUser
+                              ? {
+                                  borderColor: color,
+                                  borderWidth: '3px',
+                                  backgroundColor: `${color}15`,
+                                  boxShadow: `0 0 30px ${color}60, inset 0 0 20px ${color}20, 0 0 0 4px ${color}20`
+                                }
+                              : isTop3
                               ? {
                                   borderColor: `${color}40`,
                                   backgroundColor: `${color}05`,
@@ -442,6 +563,18 @@ export default function AllTeamsRankingPage() {
                               <p className="font-bold text-slate-100 truncate">
                                 {member.name}
                               </p>
+                              {isCurrentUser && (
+                                <span
+                                  className="text-xs font-bold px-2 py-0.5 rounded-full animate-pulse"
+                                  style={{
+                                    backgroundColor: `${color}30`,
+                                    color: color,
+                                    border: `1px solid ${color}`
+                                  }}
+                                >
+                                  YOU
+                                </span>
+                              )}
                             </div>
                             <div className="flex items-center gap-2 text-xs text-slate-400">
                               <span style={{ color: guardianData ? guardianData.color : fallbackGuardian.color }} className="font-medium">
