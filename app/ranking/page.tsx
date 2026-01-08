@@ -6,7 +6,7 @@ import {
   Trophy, Eye, Users, TrendingUp, Heart, MessageCircle, Instagram, 
   Youtube, Loader2, Crown, Medal, Award, ChevronRight, Zap, Calendar
 } from "lucide-react";
-import { subscribeToReports, calculateTeamStats, teams, Report, getUserGuardianProfile } from "@/lib/firestore";
+import { subscribeToReports, calculateTeamStats, teams, Report, getBulkUserGuardianProfiles } from "@/lib/firestore";
 import { useAuth } from "@/lib/auth-context";
 import { GUARDIANS, ATTRIBUTES, getGuardianImagePath, GuardianId, EVOLUTION_STAGES } from "@/lib/guardian-collection";
 import { MemberDetailModal } from "@/components/member-detail-modal";
@@ -66,25 +66,12 @@ export default function AllTeamsRankingPage() {
       const unsubscribe = subscribeToReports(async (data) => {
         setReports(data);
         
-        // 各レポートのuserIdから守護神データを取得
-        const profiles: { [userId: string]: any } = {};
+        // 🔧 N+1問題解決: 各レポートのuserIdから守護神データを一括取得
         const uniqueUserIds = Array.from(new Set(data.map(r => r.userId).filter(Boolean)));
-        
-        await Promise.all(
-          uniqueUserIds.map(async (userId) => {
-            if (userId) {
-              try {
-                const profile = await getUserGuardianProfile(userId);
-                if (profile) {
-                  profiles[userId] = profile;
-                }
-              } catch (error) {
-                console.error(`Failed to fetch guardian for user ${userId}:`, error);
-              }
-            }
-          })
-        );
-        
+
+        // 一括取得関数を使用（Firestoreクエリ数を大幅削減）
+        const profiles = await getBulkUserGuardianProfiles(uniqueUserIds);
+
         setGuardianProfiles(profiles);
         setLoading(false);
         setError(null);

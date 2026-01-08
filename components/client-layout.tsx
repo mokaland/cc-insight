@@ -43,17 +43,22 @@ function LayoutContent({ children }: { children: React.ReactNode }) {
 
   // ログインボーナスチェック（ページロード時に1回のみ）
   useEffect(() => {
+    let isMounted = true; // 🔧 メモリリーク防止: マウント状態を追跡
+
     const checkBonus = async () => {
       if (!user || isPublicPage) return;
-      
+
       try {
         const result = await checkDailyLoginBonus(user.uid);
-        
+
+        // 🔧 マウント解除後のState更新を防止
+        if (!isMounted) return;
+
         // 初回ログインの場合のみ表示
         if (result.isFirstLoginToday && result.energyEarned > 0) {
           setLoginBonus(result);
           setShowLoginModal(true);
-          
+
           // エナジーを守護神プロフィールに追加
           await addLoginBonusToProfile(user.uid, result.energyEarned);
         }
@@ -63,6 +68,11 @@ function LayoutContent({ children }: { children: React.ReactNode }) {
     };
 
     checkBonus();
+
+    // 🔧 クリーンアップ: マウント解除時にフラグをfalseに
+    return () => {
+      isMounted = false;
+    };
   }, [user, isPublicPage]);
 
   // 公開ページは認証なしで表示

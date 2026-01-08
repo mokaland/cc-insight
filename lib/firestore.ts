@@ -668,20 +668,69 @@ export async function getUserGuardianProfile(userId: string): Promise<UserGuardi
   try {
     const userDoc = await getDoc(doc(db, "users", userId));
     if (!userDoc.exists()) return null;
-    
+
     const userData = userDoc.data();
-    
+
     // v2.0プロファイルが存在すれば返す
     if (userData.guardianProfile) {
       return userData.guardianProfile as UserGuardianProfile;
     }
-    
+
     // 存在しない場合は新規作成
     const newProfile = createNewUserProfile();
     return newProfile;
   } catch (error) {
     console.error("Error fetching guardian profile:", error);
     return null;
+  }
+}
+
+/**
+ * 🔧 N+1問題解決: 複数ユーザーの守護神プロファイルを一括取得
+ * Firestoreの`in`クエリ制限(10件)に対応し、バッチ処理で取得
+ *
+ * @param userIds ユーザーIDの配列
+ * @returns { userId: UserGuardianProfile } の形式のオブジェクト
+ */
+export async function getBulkUserGuardianProfiles(
+  userIds: string[]
+): Promise<{ [userId: string]: UserGuardianProfile }> {
+  const profiles: { [userId: string]: UserGuardianProfile } = {};
+
+  if (userIds.length === 0) return profiles;
+
+  try {
+    // Firestoreの`in`クエリは最大10件までなので、10件ずつバッチ処理
+    const batchSize = 10;
+    const batches: string[][] = [];
+
+    for (let i = 0; i < userIds.length; i += batchSize) {
+      batches.push(userIds.slice(i, i + batchSize));
+    }
+
+    // 各バッチを並列処理
+    await Promise.all(
+      batches.map(async (batch) => {
+        const usersRef = collection(db, "users");
+        const q = query(usersRef, where("__name__", "in", batch));
+        const snapshot = await getDocs(q);
+
+        snapshot.forEach((doc) => {
+          const userData = doc.data();
+          if (userData.guardianProfile) {
+            profiles[doc.id] = userData.guardianProfile as UserGuardianProfile;
+          } else {
+            // プロファイルがない場合は新規作成
+            profiles[doc.id] = createNewUserProfile();
+          }
+        });
+      })
+    );
+
+    return profiles;
+  } catch (error) {
+    console.error("Error fetching bulk guardian profiles:", error);
+    return profiles;
   }
 }
 
