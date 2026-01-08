@@ -18,6 +18,11 @@ import {
 import { Loader2, Sparkles, Zap, Crown, Flame, TrendingUp } from "lucide-react";
 import Link from "next/link";
 import { motion, useSpring, useTransform } from "framer-motion";
+import {
+  EnergyHistoryModal,
+  TotalEarnedModal,
+  StreakHistoryModal,
+} from "@/components/energy-history-modal";
 
 // カウントアップコンポーネント
 function AnimatedNumber({ value }: { value: number }) {
@@ -41,6 +46,11 @@ export default function MyPage() {
   const { user } = useAuth();
   const [loading, setLoading] = useState(true);
   const [profile, setProfile] = useState<UserGuardianProfile | null>(null);
+  
+  // モーダル状態管理
+  const [energyModalOpen, setEnergyModalOpen] = useState(false);
+  const [totalModalOpen, setTotalModalOpen] = useState(false);
+  const [streakModalOpen, setStreakModalOpen] = useState(false);
 
   useEffect(() => {
     const loadData = async () => {
@@ -405,7 +415,8 @@ export default function MyPage() {
           initial={{ scale: 0, rotateY: -180 }}
           animate={{ scale: 1, rotateY: 0 }}
           transition={{ duration: 0.6, delay: 0 }}
-          className="jewel-card glass-premium p-4 rounded-2xl border border-white/20"
+          onClick={() => setEnergyModalOpen(true)}
+          className="jewel-card glass-premium p-4 rounded-2xl border border-white/20 cursor-pointer hover:scale-105 transition-transform"
         >
           <div className="text-center relative">
             {/* ネオンアイコン */}
@@ -444,7 +455,8 @@ export default function MyPage() {
           initial={{ scale: 0, rotateY: -180 }}
           animate={{ scale: 1, rotateY: 0 }}
           transition={{ duration: 0.6, delay: 0.1 }}
-          className="jewel-card glass-premium p-4 rounded-2xl border border-white/20"
+          onClick={() => setTotalModalOpen(true)}
+          className="jewel-card glass-premium p-4 rounded-2xl border border-white/20 cursor-pointer hover:scale-105 transition-transform"
         >
           <div className="text-center relative">
             {/* ネオンアイコン */}
@@ -483,7 +495,8 @@ export default function MyPage() {
           initial={{ scale: 0, rotateY: -180 }}
           animate={{ scale: 1, rotateY: 0 }}
           transition={{ duration: 0.6, delay: 0.2 }}
-          className="jewel-card glass-premium p-4 rounded-2xl border border-white/20"
+          onClick={() => setStreakModalOpen(true)}
+          className="jewel-card glass-premium p-4 rounded-2xl border border-white/20 cursor-pointer hover:scale-105 transition-transform"
         >
           <div className="text-center relative">
             {/* ネオンアイコン */}
@@ -657,6 +670,28 @@ export default function MyPage() {
           </GlassCard>
         </Link>
       </div>
+
+      {/* モーダル */}
+      <EnergyHistoryModal
+        isOpen={energyModalOpen}
+        onClose={() => setEnergyModalOpen(false)}
+        userId={user.uid}
+      />
+      
+      <TotalEarnedModal
+        isOpen={totalModalOpen}
+        onClose={() => setTotalModalOpen(false)}
+        userId={user.uid}
+        totalEarned={profile.energy.totalEarned}
+      />
+      
+      <StreakHistoryModal
+        isOpen={streakModalOpen}
+        onClose={() => setStreakModalOpen(false)}
+        userId={user.uid}
+        currentStreak={profile.streak.current}
+        maxStreak={profile.streak.max}
+      />
     </div>
   );
 }

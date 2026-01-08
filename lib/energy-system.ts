@@ -22,6 +22,7 @@ import {
   getCurrentStage,
   EVOLUTION_STAGES
 } from "./guardian-collection";
+import { recordEnergyHistory, EnergyBreakdown } from "./energy-history";
 
 // =====================================
 // 💰 エナジー獲得システム
@@ -323,6 +324,10 @@ export interface ReportCompletionResult {
   newEnergyData: UserEnergyData;
   newStreakData: UserStreakData;
   messages: string[];
+  historyData: {
+    breakdown: EnergyBreakdown;
+    streakDay: number;
+  };
 }
 
 /**
@@ -370,11 +375,23 @@ export function processReportCompletion(
     lastEarnedAt: Timestamp.fromDate(now)
   };
   
+  // 4. 履歴記録用データ
+  const historyBreakdown: EnergyBreakdown = {
+    dailyReport: BASE_ENERGY_PER_REPORT,
+    streakBonus: Math.floor(BASE_ENERGY_PER_REPORT * (energyEarned.streakMultiplier - 1)),
+    performanceBonus: Math.floor(energyEarned.abilityBonus),
+    weeklyBonus: 0, // 週次ボーナスは別途実装
+  };
+  
   return {
     energyEarned,
     newEnergyData,
     newStreakData,
-    messages
+    messages,
+    historyData: {
+      breakdown: historyBreakdown,
+      streakDay: newStreakData.current,
+    }
   };
 }
 
