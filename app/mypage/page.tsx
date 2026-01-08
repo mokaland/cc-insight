@@ -48,7 +48,9 @@ export default function MyPage() {
   const { user } = useAuth();
   const [loading, setLoading] = useState(true);
   const [profile, setProfile] = useState<UserGuardianProfile | null>(null);
-  
+  const [todayReported, setTodayReported] = useState(false);
+  const [todayEnergy, setTodayEnergy] = useState(0);
+
   // モーダル状態管理
   const [energyModalOpen, setEnergyModalOpen] = useState(false);
   const [totalModalOpen, setTotalModalOpen] = useState(false);
@@ -63,6 +65,17 @@ export default function MyPage() {
         const data = await getUserGuardianProfile(user.uid);
         if (data) {
           setProfile(data);
+        }
+
+        // 今日の報告チェック
+        const { getTodayReport } = await import("@/lib/firestore");
+        const today = new Date().toISOString().split("T")[0];
+        const todayReport = await getTodayReport(user.uid, today);
+
+        if (todayReport) {
+          setTodayReported(true);
+          // 今日のエナジー取得（報告から計算）
+          setTodayEnergy((todayReport as any).earnedEnergy || 0);
         }
       } catch (error) {
         console.error("データ取得エラー:", error);
@@ -254,6 +267,29 @@ export default function MyPage() {
           {user.displayName || user.email}さんの冒険の記録
         </p>
       </div>
+
+      {/* 📅 今日の報告ステータス */}
+      {todayReported ? (
+        <div className="bg-green-500/20 border-2 border-green-500 rounded-xl p-6 text-center animate-in fade-in duration-500">
+          <span className="text-6xl mb-4 block animate-bounce">✅</span>
+          <h3 className="text-2xl font-bold text-green-400 mb-2">今日の報告完了！</h3>
+          <p className="text-slate-300 text-lg mb-1">獲得エナジー: <span className="text-yellow-400 font-bold">+{todayEnergy}E</span></p>
+          <p className="text-sm text-slate-400 mt-3">
+            次の報告: 明日の0時以降
+          </p>
+        </div>
+      ) : (
+        <div className="bg-red-500/20 border-2 border-red-500 rounded-xl p-6 text-center animate-pulse">
+          <span className="text-6xl mb-4 block">⚠️</span>
+          <h3 className="text-2xl font-bold text-red-400 mb-2">今日の報告がまだです</h3>
+          <p className="text-slate-300 mb-4">ストリークを維持するために報告しましょう</p>
+          <Link href="/report">
+            <Button className="bg-gradient-to-r from-red-500 to-orange-500 hover:from-red-600 hover:to-orange-600 text-white font-bold px-8 py-3 text-lg">
+              今すぐ報告する 🔥
+            </Button>
+          </Link>
+        </div>
+      )}
 
       {/* 守護神エリア */}
       <GlassCard glowColor={attr.color} className="p-6">

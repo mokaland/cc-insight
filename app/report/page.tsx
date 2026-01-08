@@ -85,6 +85,79 @@ export default function ReportPage() {
   const isXTeam = selectedTeamData?.type === "x";
   const teamColor = selectedTeamData?.color || "#ec4899";
 
+  // 🔄 自動保存機能（エラー時のデータ保護）
+  useEffect(() => {
+    if (!user) return;
+
+    const draftKey = `report-draft-${user.uid}-${date}`;
+    const draft = {
+      // Shorts系データ
+      accountId, igViews, igProfileAccess, igExternalTaps, igInteractions,
+      weeklyStories, igFollowers, ytFollowers, tiktokFollowers,
+      igPosts, ytPosts, tiktokPosts, todayComment,
+      // X系データ
+      xPostCount, xPostUrls, xLikeCount, xReplyCount, xFollowers, xTodayComment,
+      // メタ情報
+      savedAt: Date.now(),
+      isXTeam
+    };
+
+    // 1秒ごとに自動保存
+    const timer = setTimeout(() => {
+      localStorage.setItem(draftKey, JSON.stringify(draft));
+    }, 1000);
+
+    return () => clearTimeout(timer);
+  }, [
+    user, date, accountId, igViews, igProfileAccess, igExternalTaps, igInteractions,
+    weeklyStories, igFollowers, ytFollowers, tiktokFollowers,
+    igPosts, ytPosts, tiktokPosts, todayComment,
+    xPostCount, xPostUrls, xLikeCount, xReplyCount, xFollowers, xTodayComment, isXTeam
+  ]);
+
+  // 📥 下書き復元機能
+  useEffect(() => {
+    if (!user) return;
+
+    const draftKey = `report-draft-${user.uid}-${date}`;
+    const savedDraft = localStorage.getItem(draftKey);
+
+    if (savedDraft && !existingReport) {
+      try {
+        const draft = JSON.parse(savedDraft);
+        // 24時間以内の下書きのみ復元
+        if (Date.now() - draft.savedAt < 24 * 60 * 60 * 1000) {
+          // Shorts系データ復元
+          if (!isXTeam) {
+            setAccountId(draft.accountId || "");
+            setIgViews(draft.igViews || "");
+            setIgProfileAccess(draft.igProfileAccess || "");
+            setIgExternalTaps(draft.igExternalTaps || "");
+            setIgInteractions(draft.igInteractions || "");
+            setWeeklyStories(draft.weeklyStories || "");
+            setIgFollowers(draft.igFollowers || "");
+            setYtFollowers(draft.ytFollowers || "");
+            setTiktokFollowers(draft.tiktokFollowers || "");
+            setIgPosts(draft.igPosts || "");
+            setYtPosts(draft.ytPosts || "");
+            setTiktokPosts(draft.tiktokPosts || "");
+            setTodayComment(draft.todayComment || "");
+          } else {
+            // X系データ復元
+            setXPostCount(draft.xPostCount || "");
+            setXPostUrls(draft.xPostUrls || [""]);
+            setXLikeCount(draft.xLikeCount || "");
+            setXReplyCount(draft.xReplyCount || "");
+            setXFollowers(draft.xFollowers || "");
+            setXTodayComment(draft.xTodayComment || "");
+          }
+        }
+      } catch (e) {
+        console.error("下書き復元エラー:", e);
+      }
+    }
+  }, [user, date, existingReport, isXTeam]);
+
   // 🔒 既存レポートチェック（デイリーロック）
   useEffect(() => {
     const checkExistingReport = async () => {
@@ -145,17 +218,20 @@ export default function ReportPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     // ログインチェック
     if (!user || !userProfile) {
-      setError("ログインが必要です");
-      router.push("/login");
+      setError("ログインが必要です。ログインページへ移動します。");
+      // 3秒後にログインページへ（データは保持される）
+      setTimeout(() => router.push("/login"), 3000);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
       return;
     }
-    
+
     // ⚠️ チーム未設定チェック（再発防止）
     if (!selectedTeam) {
       setError("チーム設定が必要です。管理者に連絡してチームを設定してもらってください。");
+      window.scrollTo({ top: 0, behavior: 'smooth' });
       return;
     }
 
@@ -322,7 +398,13 @@ export default function ReportPage() {
       }
 
       setSuccess(true);
-      
+
+      // 🗑️ 下書き削除（報告成功時）
+      if (user) {
+        const draftKey = `report-draft-${user.uid}-${date}`;
+        localStorage.removeItem(draftKey);
+      }
+
       // 🆕 Phase 13: 「今日の一言」をDMに自動送信
       try {
         const commentToSend = isXTeam ? xTodayComment : todayComment;
