@@ -10,7 +10,7 @@ import { getReportsByPeriod, calculateTeamStats, teams } from "@/lib/firestore";
 
 const team = teams.find((t) => t.id === "buppan")!;
 
-// 🔥 Vercel Force Rebuild: 2026-01-09 00:08
+// 🔥 Vercel Force Rebuild: 2026-01-09 00:27 (Cache Clear)
 const periodOptions = [
   { id: "today", label: "今日" },
   { id: "week", label: "今週" },
