@@ -4,12 +4,13 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { 
   Trophy, Eye, Users, TrendingUp, Heart, MessageCircle, Instagram, 
-  Youtube, Loader2, Crown, Medal, Award, ChevronRight, Zap
+  Youtube, Loader2, Crown, Medal, Award, ChevronRight, Zap, Calendar
 } from "lucide-react";
 import { subscribeToReports, calculateTeamStats, teams, Report, getUserGuardianProfile } from "@/lib/firestore";
 import { useAuth } from "@/lib/auth-context";
 import { GUARDIANS, ATTRIBUTES, getGuardianImagePath, GuardianId, EVOLUTION_STAGES } from "@/lib/guardian-collection";
 import { MemberDetailModal } from "@/components/member-detail-modal";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 const getMedalIcon = (rank: number) => {
   switch (rank) {
@@ -33,6 +34,25 @@ export default function AllTeamsRankingPage() {
   const [guardianProfiles, setGuardianProfiles] = useState<{ [userId: string]: any }>({});
   const [selectedMember, setSelectedMember] = useState<any>(null);
   const [selectedTeam, setSelectedTeam] = useState<any>(null);
+  const [period, setPeriod] = useState<"week" | "month">("week");
+
+  // 📅 期間でフィルタリング
+  const filteredReports = reports.filter(report => {
+    const reportDate = new Date(report.date);
+    const now = new Date();
+    
+    if (period === "week") {
+      // 過去7日間
+      const weekAgo = new Date(now);
+      weekAgo.setDate(now.getDate() - 7);
+      return reportDate >= weekAgo;
+    } else {
+      // 過去30日間
+      const monthAgo = new Date(now);
+      monthAgo.setDate(now.getDate() - 30);
+      return reportDate >= monthAgo;
+    }
+  });
 
   useEffect(() => {
     const timeout = setTimeout(() => {
@@ -102,9 +122,9 @@ export default function AllTeamsRankingPage() {
     );
   }
 
-  // チームごとの統計を計算
+  // チームごとの統計を計算（filteredReportsを使用）
   const teamStats = teams.map(team => {
-    const stats = calculateTeamStats(reports, team.id);
+    const stats = calculateTeamStats(filteredReports, team.id);
     return {
       ...team,
       stats
@@ -119,6 +139,28 @@ export default function AllTeamsRankingPage() {
           🏆 全チームランキング
         </h1>
         <p className="text-slate-300">タップで詳細を表示</p>
+      </div>
+
+      {/* 📅 期間切り替えタブ */}
+      <div className="flex justify-center">
+        <Tabs value={period} onValueChange={(v) => setPeriod(v as "week" | "month")} className="w-full max-w-md">
+          <TabsList className="grid w-full grid-cols-2 glass-bg border border-white/10">
+            <TabsTrigger 
+              value="week"
+              className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-pink-500 data-[state=active]:to-purple-600 data-[state=active]:text-white"
+            >
+              <Calendar className="w-4 h-4 mr-2" />
+              週間ランキング
+            </TabsTrigger>
+            <TabsTrigger 
+              value="month"
+              className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-pink-500 data-[state=active]:to-purple-600 data-[state=active]:text-white"
+            >
+              <Calendar className="w-4 h-4 mr-2" />
+              月間ランキング
+            </TabsTrigger>
+          </TabsList>
+        </Tabs>
       </div>
 
       {error && (
