@@ -53,12 +53,15 @@ export default function ActiveMonitorPage() {
   const [members, setMembers] = useState<MemberStatus[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedFilter, setSelectedFilter] = useState<"all" | "danger" | "warning" | "attention" | "safe">("all");
+  const [period, setPeriod] = useState<"week" | "month" | "custom">("month");
+  const [customStartDate, setCustomStartDate] = useState<string>("");
+  const [customEndDate, setCustomEndDate] = useState<string>("");
 
   useEffect(() => {
     if (user) {
       loadMemberStatuses();
     }
-  }, [user]);
+  }, [user, period, customStartDate, customEndDate]);
 
   const loadMemberStatuses = async () => {
     setLoading(true);
@@ -67,8 +70,22 @@ export default function ActiveMonitorPage() {
       const allUsers = await getAllUsers();
       const memberUsers = allUsers.filter(u => u.role === "member" && u.status === "approved");
 
-      // 全レポートを取得
-      const reports = await getReportsByPeriod("month");
+      // 期間に応じてレポートを取得
+      let reports: Report[];
+      if (period === "custom" && customStartDate && customEndDate) {
+        // カスタム期間でフィルタリング
+        const allReports = await getReportsByPeriod("month"); // まず全期間取得
+        const start = new Date(customStartDate);
+        const end = new Date(customEndDate);
+        end.setHours(23, 59, 59, 999); // 終了日の最後まで含める
+
+        reports = allReports.filter(r => {
+          const reportDate = new Date(r.date);
+          return reportDate >= start && reportDate <= end;
+        });
+      } else {
+        reports = await getReportsByPeriod(period);
+      }
 
       // 各メンバーの状況を分析
       const statuses: MemberStatus[] = [];
@@ -209,6 +226,67 @@ export default function ActiveMonitorPage() {
           離脱防止監視パネル - リアルタイム報告状況
         </p>
       </div>
+
+      {/* 📅 期間選択UI */}
+      <GlassCard glowColor="#8b5cf6">
+        <div className="space-y-4">
+          <h3 className="text-lg font-bold flex items-center gap-2">
+            <Calendar className="w-5 h-5 text-purple-400" />
+            データ期間
+          </h3>
+
+          <div className="flex flex-wrap gap-3">
+            <Button
+              variant={period === "week" ? "default" : "outline"}
+              onClick={() => setPeriod("week")}
+              className={period === "week" ? "bg-purple-500 hover:bg-purple-600" : ""}
+            >
+              週間 (7日)
+            </Button>
+            <Button
+              variant={period === "month" ? "default" : "outline"}
+              onClick={() => setPeriod("month")}
+              className={period === "month" ? "bg-purple-500 hover:bg-purple-600" : ""}
+            >
+              月間 (30日)
+            </Button>
+            <Button
+              variant={period === "custom" ? "default" : "outline"}
+              onClick={() => setPeriod("custom")}
+              className={period === "custom" ? "bg-purple-500 hover:bg-purple-600" : ""}
+            >
+              カスタム期間
+            </Button>
+          </div>
+
+          {period === "custom" && (
+            <div className="flex flex-col sm:flex-row gap-4 pt-4 border-t border-white/10">
+              <div className="flex-1">
+                <label className="block text-sm font-medium text-slate-300 mb-2">
+                  開始日
+                </label>
+                <input
+                  type="date"
+                  value={customStartDate}
+                  onChange={(e) => setCustomStartDate(e.target.value)}
+                  className="w-full px-3 py-2 rounded-lg bg-white/5 border border-white/10 text-white focus:border-purple-500 focus:outline-none"
+                />
+              </div>
+              <div className="flex-1">
+                <label className="block text-sm font-medium text-slate-300 mb-2">
+                  終了日
+                </label>
+                <input
+                  type="date"
+                  value={customEndDate}
+                  onChange={(e) => setCustomEndDate(e.target.value)}
+                  className="w-full px-3 py-2 rounded-lg bg-white/5 border border-white/10 text-white focus:border-purple-500 focus:outline-none"
+                />
+              </div>
+            </div>
+          )}
+        </div>
+      </GlassCard>
 
       {/* Summary Cards */}
       <div className="grid gap-4 md:grid-cols-4">
