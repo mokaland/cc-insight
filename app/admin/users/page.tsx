@@ -139,7 +139,7 @@ export default function AdminUsersPage() {
   }
 
   return (
-    <div className="space-y-8 pb-24 md:pb-8">
+    <div className="space-y-8 pb-[calc(var(--bottom-nav-height)+1rem)] md:pb-8">
       {/* ヘッダー */}
       <div>
         <h1 className="text-3xl font-bold bg-gradient-to-r from-purple-500 via-indigo-500 to-blue-500 bg-clip-text text-transparent">

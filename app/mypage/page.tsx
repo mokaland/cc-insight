@@ -244,7 +244,7 @@ export default function MyPage() {
   const auraLevel = getAuraLevel(investedEnergy, stage);
 
   return (
-    <div className="space-y-8 pb-8 md:pb-8 sm:pb-32">
+    <div className="space-y-8 pb-[calc(var(--bottom-nav-height)+1rem)] md:pb-8">
       {/* ヘッダー */}
       <div className="flex flex-col gap-2">
         <h1 className="text-3xl font-bold bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">

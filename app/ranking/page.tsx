@@ -115,7 +115,7 @@ export default function AllTeamsRankingPage() {
   });
 
   return (
-    <div className="space-y-12 pb-12 md:pb-12 sm:pb-32">
+    <div className="space-y-12 pb-[calc(var(--bottom-nav-height)+1rem)] md:pb-12">
       {/* Page Header */}
       <div className="text-center">
         <h1 className="text-4xl font-bold mb-3 bg-gradient-to-r from-pink-500 via-purple-500 to-cyan-500 bg-clip-text text-transparent">
@@ -515,12 +515,14 @@ export default function AllTeamsRankingPage() {
                         color: "#94a3b8"
                       };
 
-                      // エナジー計算（仮）
-                      const energy = Math.floor(member.views / 100 + member.posts * 2);
+                      // エナジー取得（Firestoreから取得した正式な値を使用）
+                      const energy = userId && guardianProfiles[userId]
+                        ? guardianProfiles[userId].energy?.current || 0
+                        : 0;
 
                       return (
                         <div
-                          key={member.name}
+                          key={userId || member.name}
                           onClick={() => {
                             setSelectedMember({
                               ...member,
