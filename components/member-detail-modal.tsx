@@ -1,6 +1,6 @@
 "use client";
 
-import { X, AlertTriangle, TrendingUp, Calendar } from "lucide-react";
+import { X, AlertTriangle, TrendingUp, Calendar, MessageCircle } from "lucide-react";
 import { useEffect, useState } from "react";
 import { getUserRecentReports, detectAnomalies, Report, AnomalyFlags } from "@/lib/firestore";
 
@@ -87,14 +87,32 @@ export function MemberDetailModal({
           boxShadow: `0 0 60px ${teamColor}30`
         }}
       >
-        {/* 閉じるボタン */}
-        <button
-          onClick={onClose}
-          className="absolute top-4 right-4 w-8 h-8 rounded-full glass-bg flex items-center justify-center hover:bg-white/20 transition-colors"
-          aria-label="閉じる"
-        >
-          <X className="w-5 h-5" />
-        </button>
+        {/* ヘッダーボタン */}
+        <div className="absolute top-4 right-4 flex items-center gap-2">
+          {/* 即座DMボタン */}
+          {member.slackId && (
+            <button
+              onClick={() => {
+                // Slackアプリでダイレクトメッセージを開く
+                window.open(`slack://user?team=T07QUNB641Y&id=${member.slackId}`, '_blank');
+              }}
+              className="w-8 h-8 rounded-full glass-bg flex items-center justify-center hover:bg-purple-500/30 transition-all hover:scale-110 group"
+              aria-label="Slackでメッセージを送る"
+              title="Slackでメッセージを送る"
+            >
+              <MessageCircle className="w-4 h-4 text-purple-400 group-hover:text-purple-300" />
+            </button>
+          )}
+
+          {/* 閉じるボタン */}
+          <button
+            onClick={onClose}
+            className="w-8 h-8 rounded-full glass-bg flex items-center justify-center hover:bg-white/20 transition-colors"
+            aria-label="閉じる"
+          >
+            <X className="w-5 h-5" />
+          </button>
+        </div>
 
         {/* 守護神フルサイズ画像 */}
         {member.guardianData ? (
