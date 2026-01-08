@@ -15,8 +15,9 @@ import {
   getPlaceholderStyle,
   getGuardianImagePath
 } from "@/lib/guardian-collection";
-import { Loader2, Sparkles, Zap, Crown, Flame, TrendingUp } from "lucide-react";
+import { Loader2, Sparkles, Crown } from "lucide-react";
 import Link from "next/link";
+import Image from "next/image";
 import { motion, useSpring, useTransform } from "framer-motion";
 import {
   EnergyHistoryModal,
@@ -419,15 +420,19 @@ export default function MyPage() {
           className="jewel-card glass-premium p-4 rounded-2xl border border-white/20 cursor-pointer hover:scale-105 transition-transform"
         >
           <div className="text-center relative">
-            {/* ネオンアイコン */}
-            <div className="neon-icon-wrapper mx-auto mb-2">
-              <Zap 
-                className="w-10 h-10 text-yellow-400 relative z-10" 
+            {/* 神聖アセット: エナジーオーブ */}
+            <div className="neon-icon-wrapper mx-auto mb-2 relative w-12 h-12">
+              <Image
+                src="/images/ui/energy-orb.png"
+                alt="Energy"
+                width={48}
+                height={48}
+                className="relative z-10 guardian-floating"
                 style={{
                   filter: 'drop-shadow(0 0 15px rgba(250, 204, 21, 0.8))'
                 }}
               />
-              <div className="neon-glow absolute inset-0 bg-yellow-400/50" />
+              <div className="neon-glow absolute inset-0 bg-yellow-400/50 rounded-full" />
             </div>
             
             {/* ラベル */}
@@ -459,15 +464,19 @@ export default function MyPage() {
           className="jewel-card glass-premium p-4 rounded-2xl border border-white/20 cursor-pointer hover:scale-105 transition-transform"
         >
           <div className="text-center relative">
-            {/* ネオンアイコン */}
-            <div className="neon-icon-wrapper mx-auto mb-2">
-              <TrendingUp 
-                className="w-10 h-10 text-purple-400 relative z-10" 
+            {/* 神聖アセット: ジェム */}
+            <div className="neon-icon-wrapper mx-auto mb-2 relative w-12 h-12">
+              <Image
+                src="/images/ui/gem.png"
+                alt="Gem"
+                width={48}
+                height={48}
+                className="relative z-10 guardian-floating"
                 style={{
                   filter: 'drop-shadow(0 0 15px rgba(168, 85, 247, 0.8))'
                 }}
               />
-              <div className="neon-glow absolute inset-0 bg-purple-400/50" />
+              <div className="neon-glow absolute inset-0 bg-purple-400/50 rounded-full" />
             </div>
             
             {/* ラベル */}
@@ -499,15 +508,19 @@ export default function MyPage() {
           className="jewel-card glass-premium p-4 rounded-2xl border border-white/20 cursor-pointer hover:scale-105 transition-transform"
         >
           <div className="text-center relative">
-            {/* ネオンアイコン */}
-            <div className="neon-icon-wrapper mx-auto mb-2">
-              <Flame 
-                className="w-10 h-10 text-orange-400 relative z-10" 
+            {/* 神聖アセット: ストリーク炎 */}
+            <div className="neon-icon-wrapper mx-auto mb-2 relative w-12 h-12">
+              <Image
+                src="/images/ui/streak-1.png"
+                alt="Streak"
+                width={48}
+                height={48}
+                className="relative z-10 guardian-floating"
                 style={{
                   filter: 'drop-shadow(0 0 15px rgba(251, 146, 60, 0.8))'
                 }}
               />
-              <div className="neon-glow absolute inset-0 bg-orange-400/50" />
+              <div className="neon-glow absolute inset-0 bg-orange-400/50 rounded-full" />
             </div>
             
             {/* ラベル */}
@@ -565,9 +578,9 @@ export default function MyPage() {
             <div className="glass-bg p-4 rounded-xl border border-orange-500/20">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-full bg-orange-500/20 flex items-center justify-center">
-                    <Flame className="w-5 h-5 text-orange-400" />
-                  </div>
+                <div className="w-10 h-10 rounded-full bg-orange-500/20 flex items-center justify-center">
+                  <Image src="/images/ui/streak-1.png" alt="Streak" width={20} height={20} className="opacity-80" />
+                </div>
                   <div>
                     <p className="font-bold text-white">ストリークボーナス</p>
                     <p className="text-xs text-gray-400">
@@ -587,7 +600,7 @@ export default function MyPage() {
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-full bg-purple-500/20 flex items-center justify-center">
-                  <TrendingUp className="w-5 h-5 text-purple-400" />
+                  <Image src="/images/ui/gem.png" alt="Performance" width={20} height={20} className="opacity-80" />
                 </div>
                 <div>
                   <p className="font-bold text-white">成果ボーナス</p>
