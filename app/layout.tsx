@@ -20,7 +20,7 @@ export const metadata: Metadata = {
   appleWebApp: {
     capable: true,
     statusBarStyle: "black-translucent",
-    title: "CC Insight",
+    title: "キャリクラ",
   },
   icons: {
     icon: [
