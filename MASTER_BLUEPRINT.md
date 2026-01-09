@@ -21,14 +21,9 @@
 
 ## 1.2 Firebase設定（本番稼働中）
 ```javascript
-const firebaseConfig = {
-  apiKey: "AIzaSyBqSzA1wFGTRd2yFQyBdGyct9tl_zNceOQ",
-  authDomain: "cc-insight.firebaseapp.com",
-  projectId: "cc-insight",
-  storageBucket: "cc-insight.firebasestorage.app",
-  messagingSenderId: "359311670016",
-  appId: "1:359311670016:web:998b8236071c672f46d1e5"
-};
+// Firebase設定は環境変数で管理
+// Vercel環境変数: NEXT_PUBLIC_FIREBASE_* を参照
+// ローカル開発: .env.local ファイルに設定
 ```
 
 ## 1.3 現在の実装状況

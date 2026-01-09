@@ -12,26 +12,23 @@
 
 ## 🔥 Firebase設定（重要）
 
-### 正確なfirebaseConfig
+### Firebase設定
 ```javascript
-const firebaseConfig = {
-  apiKey: "AIzaSyBqSzA1wFGTRd2yFQyBdGyct9tl_zNceOQ",
-  authDomain: "cc-insight.firebaseapp.com",
-  projectId: "cc-insight",
-  storageBucket: "cc-insight.firebasestorage.app",
-  messagingSenderId: "359311670016",
-  appId: "1:359311670016:web:998b8236071c672f46d1e5"
-};
+// Firebase設定は環境変数で管理
+// セキュリティのため、このドキュメントには記載しません
+// 設定値はVercel環境変数で管理されています
 ```
 
 ### Vercel環境変数（production設定済み）
 ```
-NEXT_PUBLIC_FIREBASE_API_KEY=AIzaSyBqSzA1wFGTRd2yFQyBdGyct9tl_zNceOQ
-NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=cc-insight.firebaseapp.com
-NEXT_PUBLIC_FIREBASE_PROJECT_ID=cc-insight
-NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET=cc-insight.firebasestorage.app
-NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=359311670016
-NEXT_PUBLIC_FIREBASE_APP_ID=1:359311670016:web:998b8236071c672f46d1e5
+# 以下の環境変数をVercelダッシュボードで設定
+NEXT_PUBLIC_FIREBASE_API_KEY
+NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN
+NEXT_PUBLIC_FIREBASE_PROJECT_ID
+NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET
+NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID
+NEXT_PUBLIC_FIREBASE_APP_ID
+# 値はFirebase Consoleから取得
 ```
 
 ### 重要な教訓

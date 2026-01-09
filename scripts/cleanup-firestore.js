@@ -1,15 +1,27 @@
 // Firestoreのテストデータを削除するスクリプト
+// 使用前に環境変数を設定してください:
+// export FIREBASE_API_KEY="your-api-key"
+// export FIREBASE_PROJECT_ID="cc-insight"
+
 const { initializeApp } = require('firebase/app');
 const { getFirestore, collection, getDocs, deleteDoc, doc } = require('firebase/firestore');
 
+// 環境変数から設定を読み込み
 const firebaseConfig = {
-  apiKey: "AIzaSyBqSzA1wFGTRd2yFQyBdGyct9tl_zNceOQ",
-  authDomain: "cc-insight.firebaseapp.com",
-  projectId: "cc-insight",
-  storageBucket: "cc-insight.firebasestorage.app",
-  messagingSenderId: "359311670016",
-  appId: "1:359311670016:web:998b8236071c672f46d1e5"
+  apiKey: process.env.FIREBASE_API_KEY,
+  authDomain: process.env.FIREBASE_AUTH_DOMAIN || "cc-insight.firebaseapp.com",
+  projectId: process.env.FIREBASE_PROJECT_ID || "cc-insight",
+  storageBucket: process.env.FIREBASE_STORAGE_BUCKET || "cc-insight.firebasestorage.app",
+  messagingSenderId: process.env.FIREBASE_MESSAGING_SENDER_ID,
+  appId: process.env.FIREBASE_APP_ID
 };
+
+// APIキーがない場合はエラー
+if (!firebaseConfig.apiKey) {
+  console.error('❌ FIREBASE_API_KEY 環境変数が設定されていません');
+  console.log('使用方法: FIREBASE_API_KEY="your-key" node scripts/cleanup-firestore.js');
+  process.exit(1);
+}
 
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);

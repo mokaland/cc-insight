@@ -25,14 +25,16 @@
 
 2. 以下の6つの環境変数を**すべて**追加:
 
-   | 変数名 | 値 |
-   |--------|-----|
-   | `NEXT_PUBLIC_FIREBASE_API_KEY` | `AIzaSyBqSzA1wFGTRd2yFQyBdGyct9tl_zNceOQ` |
-   | `NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN` | `cc-insight.firebaseapp.com` |
-   | `NEXT_PUBLIC_FIREBASE_PROJECT_ID` | `cc-insight` |
-   | `NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET` | `cc-insight.firebasestorage.app` |
-   | `NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID` | `359311670016` |
-   | `NEXT_PUBLIC_FIREBASE_APP_ID` | `1:359311670016:web:998b8236071c672f46d1e5` |
+   | 変数名 | 値の取得元 |
+   |--------|-----------|
+   | `NEXT_PUBLIC_FIREBASE_API_KEY` | Firebase Console → プロジェクト設定 → 全般 |
+   | `NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN` | Firebase Console → プロジェクト設定 → 全般 |
+   | `NEXT_PUBLIC_FIREBASE_PROJECT_ID` | Firebase Console → プロジェクト設定 → 全般 |
+   | `NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET` | Firebase Console → プロジェクト設定 → 全般 |
+   | `NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID` | Firebase Console → プロジェクト設定 → 全般 |
+   | `NEXT_PUBLIC_FIREBASE_APP_ID` | Firebase Console → プロジェクト設定 → 全般 |
+
+   ※ 値はFirebase Consoleの「プロジェクト設定」→「全般」→「マイアプリ」セクションから取得
 
 3. **重要**: 各変数について以下のチェックボックスをすべて✅にする:
    - ✅ Production
