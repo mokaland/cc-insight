@@ -196,54 +196,48 @@ export default function AllTeamsRankingPage() {
     });
   }, [filteredReports]);
 
-  // 🎯 自分の順位を計算（teamStatsに依存せず直接計算）
-  const userRankInfo = useMemo(() => {
-    if (!user || !guardianProfiles[user.uid]) {
-      return null;
-    }
+  // 🎯 自分の順位を計算（useMemo削除して直接計算）
+  let userRankInfo: { teamName: string; rank: number; totalMembers: number; color: string } | null = null;
 
+  if (user && guardianProfiles[user.uid]) {
     // ユーザーのレポートを検索
     const userReport = filteredReports.find(r => r.userId === user.uid);
-    if (!userReport) {
-      return null;
-    }
 
-    // ユーザーが所属するチームを特定
-    const userTeam = teams.find(t => t.id === userReport.team);
-    if (!userTeam) {
-      return null;
-    }
+    if (userReport) {
+      // ユーザーが所属するチームを特定
+      const userTeam = teams.find(t => t.id === userReport.team);
 
-    const isShorts = userTeam.type === "shorts";
+      if (userTeam) {
+        const isShorts = userTeam.type === "shorts";
 
-    // チームのstatsを直接計算
-    const stats = calculateTeamStats(filteredReports, userTeam.id);
+        // チームのstatsを直接計算
+        const stats = calculateTeamStats(filteredReports, userTeam.id);
 
-    // メンバーをソート
-    const sortedMembers = [...stats.members].sort((a: any, b: any) => {
-      if (isShorts) {
-        return b.views - a.views;
-      } else {
-        const aActivity = (a.likes || 0) + (a.replies || 0);
-        const bActivity = (b.likes || 0) + (b.replies || 0);
-        return bActivity - aActivity;
+        // メンバーをソート
+        const sortedMembers = [...stats.members].sort((a: any, b: any) => {
+          if (isShorts) {
+            return b.views - a.views;
+          } else {
+            const aActivity = (a.likes || 0) + (a.replies || 0);
+            const bActivity = (b.likes || 0) + (b.replies || 0);
+            return bActivity - aActivity;
+          }
+        });
+
+        // ユーザーのランクを検索
+        const userRank = sortedMembers.findIndex((m: any) => m.name === userReport.name) + 1;
+
+        if (userRank > 0) {
+          userRankInfo = {
+            teamName: userTeam.name,
+            rank: userRank,
+            totalMembers: sortedMembers.length,
+            color: userTeam.color
+          };
+        }
       }
-    });
-
-    // ユーザーのランクを検索
-    const userRank = sortedMembers.findIndex((m: any) => m.name === userReport.name) + 1;
-
-    if (userRank > 0) {
-      return {
-        teamName: userTeam.name,
-        rank: userRank,
-        totalMembers: sortedMembers.length,
-        color: userTeam.color
-      };
     }
-
-    return null;
-  }, [user, filteredReports, guardianProfiles]);
+  }
 
   // 📍 自分の位置にスクロール
   const scrollToMyRank = () => {
