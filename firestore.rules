@@ -130,6 +130,52 @@ service cloud.firestore {
       allow update, delete: if false;
     }
 
+    // dm_messages collection (管理者とメンバー間のDM)
+    match /dm_messages/{messageId} {
+      // 読み取り: 参加者または管理者
+      allow read: if isAuthenticated() &&
+                     (request.auth.uid in resource.data.participants || isAdmin());
+
+      // 作成: 承認済みユーザーまたは管理者のみ、参加者に自分が含まれる
+      allow create: if isAuthenticated() &&
+                       (isApproved() || isAdmin()) &&
+                       request.auth.uid in request.resource.data.participants;
+
+      // 更新: 送信者のみ
+      allow update: if isOwner(resource.data.fromUserId);
+
+      // 削除: 送信者または管理者
+      allow delete: if isOwner(resource.data.fromUserId) || isAdmin();
+    }
+
+    // energy_history collection (エナジー履歴)
+    match /energy_history/{historyId} {
+      // 読み取り: 認証済みユーザーなら誰でも
+      allow read: if isAuthenticated();
+
+      // 作成: 自分のエナジー履歴のみ
+      allow create: if isAuthenticated() &&
+                       request.resource.data.userId == request.auth.uid;
+
+      // 更新・削除: 禁止（履歴は削除・変更不可）
+      allow update, delete: if false;
+    }
+
+    // errorLogs collection (エラーログ)
+    match /errorLogs/{logId} {
+      // 読み取り: 管理者のみ
+      allow read: if isAdmin();
+
+      // 作成: 認証済みユーザーなら誰でも（エラーログ記録のため）
+      allow create: if isAuthenticated();
+
+      // 更新: 禁止
+      allow update: if false;
+
+      // 削除: 管理者のみ
+      allow delete: if isAdmin();
+    }
+
     // その他のコレクションはデフォルトで禁止
     match /{document=**} {
       allow read, write: if false;
