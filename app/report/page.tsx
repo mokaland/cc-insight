@@ -542,7 +542,7 @@ export default function ReportPage() {
 
       <div className="max-w-2xl mx-auto relative">
         {/* Header */}
-        <div className="text-center mb-8">
+        <div className="text-center mb-8 -mt-2">
           <h1 
             className="text-3xl font-bold bg-clip-text text-transparent mb-2"
             style={{ backgroundImage: `linear-gradient(to right, ${teamColor}, #a855f7, #06b6d4)` }}
