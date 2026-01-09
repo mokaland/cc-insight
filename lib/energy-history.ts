@@ -53,6 +53,7 @@ export interface EnergyHistorySummary {
 
 /**
  * エナジー獲得を履歴に記録
+ * 同じ日に既に記録がある場合はスキップ（1日1回のみ記録）
  */
 export async function recordEnergyHistory(
   userId: string,
@@ -61,7 +62,15 @@ export async function recordEnergyHistory(
   streakDay: number
 ): Promise<void> {
   const docId = `${userId}_${date}`;
-  const totalEarned = 
+
+  // 既に記録済みかチェック
+  const existingDoc = await getDoc(doc(db, "energy_history", docId));
+  if (existingDoc.exists()) {
+    console.log("📝 エナジー履歴は既に記録済み:", docId);
+    return;
+  }
+
+  const totalEarned =
     breakdown.dailyReport +
     breakdown.streakBonus +
     breakdown.performanceBonus +
