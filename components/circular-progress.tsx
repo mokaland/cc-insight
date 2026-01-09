@@ -13,9 +13,11 @@ export function CircularProgress({
   strokeWidth = 10,
   color = "#ec4899",
 }: CircularProgressProps) {
+  // value が NaN または undefined の場合は 0 として扱う
+  const safeValue = Number.isNaN(value) || value === undefined ? 0 : value;
   const radius = (size - strokeWidth) / 2;
   const circumference = radius * 2 * Math.PI;
-  const offset = circumference - (value / 100) * circumference;
+  const offset = circumference - (safeValue / 100) * circumference;
 
   return (
     <div className="relative inline-flex items-center justify-center">
@@ -48,7 +50,7 @@ export function CircularProgress({
         />
       </svg>
       <div className="absolute inset-0 flex items-center justify-center">
-        <span className="text-2xl font-bold">{value}%</span>
+        <span className="text-2xl font-bold">{safeValue}%</span>
       </div>
     </div>
   );

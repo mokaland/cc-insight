@@ -87,8 +87,9 @@ export function NeonGauge({
   color = "#ec4899",
   showTarget = true,
 }: NeonGaugeProps) {
-  const percentage = Math.min((value / max) * 100, 100);
-  const isComplete = value >= max;
+  // max が 0 または undefined の場合は 0% として扱う
+  const percentage = max > 0 ? Math.min((value / max) * 100, 100) : 0;
+  const isComplete = max > 0 && value >= max;
 
   return (
     <div className="space-y-3">
@@ -149,7 +150,8 @@ interface TodayProgressProps {
 }
 
 export function TodayProgress({ current, target, teamColor, teamName }: TodayProgressProps) {
-  const percentage = Math.min((current / target) * 100, 100);
+  // target が 0 または undefined の場合は 0% として扱う
+  const percentage = target > 0 ? Math.min((current / target) * 100, 100) : 0;
   const remaining = Math.max(target - current, 0);
 
   return (
