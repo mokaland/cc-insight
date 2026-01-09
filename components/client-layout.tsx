@@ -3,7 +3,7 @@
 import { usePathname, useRouter } from "next/navigation";
 import { AuthProvider, AuthGuard } from "@/lib/auth-context";
 import { Sidebar } from "@/components/sidebar";
-import { LogOut, Home, ClipboardList, Trophy, LayoutDashboard, Users } from "lucide-react";
+import { LogOut, Home, ClipboardList, Trophy, LayoutDashboard, Users, Ticket } from "lucide-react";
 import { useAuth } from "@/lib/auth-context";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -159,6 +159,11 @@ function BottomNavigation() {
       label: "メンバー",
       icon: Users,
       href: "/admin/users",
+    },
+    {
+      label: "招待コード",
+      icon: Ticket,
+      href: "/admin/invitations",
     },
   ];
 

@@ -5,11 +5,11 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/lib/auth-context";
-import { 
-  LayoutDashboard, 
-  Briefcase, 
-  LogOut, 
-  Smartphone, 
+import {
+  LayoutDashboard,
+  Briefcase,
+  LogOut,
+  Smartphone,
   Trophy,
   User,
   Users,
@@ -17,7 +17,8 @@ import {
   Shield,
   Search,
   MessageCircle,
-  MessageSquare
+  MessageSquare,
+  Ticket
 } from "lucide-react";
 import { getUserGuardianProfile } from "@/lib/firestore";
 import { GUARDIANS, ATTRIBUTES, EVOLUTION_STAGES, getGuardianImagePath, GuardianId } from "@/lib/guardian-collection";
@@ -102,6 +103,12 @@ const adminNavItems = [
     subtitle: "承認・検索",
     href: "/admin/users",
     icon: Users,
+  },
+  {
+    title: "招待コード",
+    subtitle: "発行・管理",
+    href: "/admin/invitations",
+    icon: Ticket,
   },
 ];
 
