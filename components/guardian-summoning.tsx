@@ -226,8 +226,8 @@ export default function GuardianSummoning({ userId, onComplete }: GuardianSummon
           <MagicCircle size="lg" spinning={true} />
         </div>
 
-        {/* テキスト表示エリア */}
-        <div className="relative z-10 text-center px-8 max-w-2xl">
+        {/* テキスト表示エリア - 2cm下に配置 */}
+        <div className="relative z-10 text-center px-8 max-w-2xl mt-8">
           {prologueTexts.map((text, index) => (
             <div
               key={index}
@@ -238,7 +238,7 @@ export default function GuardianSummoning({ userId, onComplete }: GuardianSummon
               {prologuePhase === index ? (
                 <TypewriterText
                   text={text}
-                  delay={60}
+                  delay={70}
                   onComplete={advancePrologue}
                   className="text-xl md:text-2xl text-gray-200 font-light tracking-wider"
                 />
@@ -286,14 +286,6 @@ export default function GuardianSummoning({ userId, onComplete }: GuardianSummon
             aria-label="次へ進む"
           />
         )}
-
-        {/* スキップボタン */}
-        <button
-          onClick={() => setStep('demographics')}
-          className="absolute bottom-8 right-8 text-gray-500 hover:text-gray-300 text-sm transition-colors"
-        >
-          スキップ →
-        </button>
       </div>
     );
   }
@@ -303,7 +295,7 @@ export default function GuardianSummoning({ userId, onComplete }: GuardianSummon
   // =====================================
   if (step === 'demographics') {
     return (
-      <div className="fixed inset-0 bg-gradient-to-b from-slate-950 via-purple-950 to-slate-950 flex items-center justify-center p-4 z-[9999] overflow-y-auto">
+      <div className="fixed inset-0 bg-gradient-to-b from-slate-950 via-purple-950 to-slate-950 flex items-start justify-center p-4 pt-6 z-[9999] overflow-y-auto">
         {/* 背景の魔法陣 */}
         <div className="absolute inset-0 flex items-center justify-center opacity-20">
           <MagicCircle size="lg" spinning={true} />
@@ -311,8 +303,8 @@ export default function GuardianSummoning({ userId, onComplete }: GuardianSummon
 
         <ParticleEffect count={15} color="purple" />
 
-        <div className="relative bg-slate-900/80 backdrop-blur-xl rounded-2xl p-8 max-w-md w-full border-2 border-purple-500/30 my-8 md:my-0
-                        shadow-2xl shadow-purple-500/20">
+        <div className="relative bg-slate-900/80 backdrop-blur-xl rounded-2xl p-6 max-w-md w-full border-2 border-purple-500/30
+                        shadow-2xl shadow-purple-500/20 mb-[calc(var(--bottom-nav-height)+2rem)]">
           {/* タイトル */}
           <div className="text-center mb-8">
             <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-purple-500/20 border border-purple-500/40 mb-4">
@@ -425,17 +417,17 @@ export default function GuardianSummoning({ userId, onComplete }: GuardianSummon
       <div className="fixed inset-0 bg-gradient-to-b from-slate-950 via-purple-950 to-slate-950 z-[9999] overflow-y-auto">
         <ParticleEffect count={25} color="gold" />
 
-        <div className="min-h-screen flex flex-col items-center justify-start p-4 pt-8 pb-24">
-          {/* タイトル */}
-          <div className="text-center mb-8">
+        <div className="min-h-screen flex flex-col items-center justify-start p-4 pt-4 pb-[calc(var(--bottom-nav-height)+4rem)]">
+          {/* タイトル - 上部見切れ防止+0.5cm下に配置 */}
+          <div className="text-center mb-6 mt-2">
             <div className="flex items-center justify-center gap-2 mb-2">
-              <Flame className="w-6 h-6 text-orange-400" />
-              <h2 className="text-2xl md:text-3xl font-bold text-white">
+              <Flame className="w-5 h-5 text-orange-400" />
+              <h2 className="text-xl md:text-2xl font-bold text-white">
                 守護神召喚の儀式
               </h2>
-              <Flame className="w-6 h-6 text-orange-400" />
+              <Flame className="w-5 h-5 text-orange-400" />
             </div>
-            <p className="text-gray-400 text-sm">
+            <p className="text-gray-400 text-xs">
               3体の守護神から、あなたの相棒を選んでください
             </p>
           </div>
@@ -543,16 +535,16 @@ export default function GuardianSummoning({ userId, onComplete }: GuardianSummon
                     </div>
                   </button>
 
-                  {/* 選択ボタン */}
+                  {/* 選択ボタン - カードとの間隔を確保 */}
                   {isSelected && (
                     <button
                       onClick={() => handleGuardianSelect(guardian.id)}
-                      className="w-full mt-4 py-3 bg-gradient-to-r from-purple-600 to-pink-600
+                      className="w-full mt-3 mb-2 py-3 bg-gradient-to-r from-purple-600 to-pink-600
                                  hover:from-purple-500 hover:to-pink-500
                                  text-white font-bold rounded-xl transition-all
                                  shadow-lg shadow-purple-500/30 animate-pulse"
                     >
-                      この守護神と契約する ✨
+                      この守護神と契約する
                     </button>
                   )}
                 </div>
