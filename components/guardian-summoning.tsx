@@ -76,8 +76,8 @@ export default function GuardianSummoning({ userId, onComplete }: GuardianSummon
   // =====================================
   if (step === 'demographics') {
     return (
-      <div className="fixed inset-0 bg-gradient-to-b from-slate-950 via-purple-950 to-slate-950 flex items-start justify-center p-4 pt-12 md:pt-16 md:pb-4 pb-[calc(var(--bottom-nav-height)+3rem)] z-[9999] overflow-y-auto">
-        <div className="bg-slate-900/90 backdrop-blur-xl rounded-2xl p-8 max-w-md w-full border-2 border-purple-500/30 my-auto">
+      <div className="fixed inset-0 bg-gradient-to-b from-slate-950 via-purple-950 to-slate-950 flex items-start justify-center p-4 pt-12 md:pt-16 z-[9999] overflow-y-auto">
+        <div className="bg-slate-900/90 backdrop-blur-xl rounded-2xl p-8 max-w-md w-full border-2 border-purple-500/30 mb-[calc(var(--bottom-nav-height)+2rem)] md:mb-8">
           <h2 className="text-3xl font-bold text-white mb-2 text-center">
             🛡️ 守護神との契約
           </h2>
