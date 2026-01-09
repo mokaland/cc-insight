@@ -47,12 +47,12 @@ export interface TeamConfig {
 
 // ===== チーム設定マスター =====
 export const TEAM_CONFIG: { [key: string]: TeamConfig } = {
-  // ===== 副業チーム（週次報告）=====
+  // ===== 副業チーム（週次報告）- Xチーム =====
   fukugyou: {
     id: "fukugyou",
     name: "副業チーム",
     color: "#ec4899",
-    type: "shorts",
+    type: "x",
     
     // 週次報告
     reportCycle: "weekly",
@@ -103,12 +103,12 @@ export const TEAM_CONFIG: { [key: string]: TeamConfig } = {
     dailyPostGoal: 2,
   },
   
-  // ===== スマホ物販チーム（日次報告）=====
+  // ===== スマホ物販チーム（日次報告）- Shortsチーム =====
   buppan: {
     id: "buppan",
     name: "スマホ物販チーム",
     color: "#eab308",
-    type: "x",
+    type: "shorts",
     
     // 日次報告
     reportCycle: "daily",

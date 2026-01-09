@@ -78,10 +78,13 @@ export interface Report {
 
 
 // チーム情報
+// fukugyou: Xチーム（投稿、いいね、リプライ）
+// taishoku: Shortsチーム（IG再生数、フォロワーなど）
+// buppan: Shortsチーム（IG再生数、フォロワーなど）
 export const teams = [
-  { id: "fukugyou", name: "副業チーム", color: "#ec4899", type: "shorts", dailyPostGoal: 3 },
+  { id: "fukugyou", name: "副業チーム", color: "#ec4899", type: "x", dailyPostGoal: 3 },
   { id: "taishoku", name: "退職サポートチーム", color: "#06b6d4", type: "shorts", dailyPostGoal: 2 },
-  { id: "buppan", name: "スマホ物販チーム", color: "#eab308", type: "x", dailyPostGoal: 5 },
+  { id: "buppan", name: "スマホ物販チーム", color: "#eab308", type: "shorts", dailyPostGoal: 5 },
 ];
 
 // 期間の計算
