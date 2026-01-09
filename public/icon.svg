@@ -1,22 +1,84 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
   <defs>
+    <!-- 背景グラデーション（深い紫〜黒） -->
     <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
       <stop offset="0%" style="stop-color:#1e1b4b"/>
-      <stop offset="100%" style="stop-color:#111827"/>
+      <stop offset="50%" style="stop-color:#0f0a1e"/>
+      <stop offset="100%" style="stop-color:#000000"/>
     </linearGradient>
-    <linearGradient id="textGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" style="stop-color:#ec4899"/>
-      <stop offset="50%" style="stop-color:#8b5cf6"/>
-      <stop offset="100%" style="stop-color:#06b6d4"/>
+    <!-- 守護神のオーラ（青白い光） -->
+    <radialGradient id="auraGrad" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" style="stop-color:#7dd3fc;stop-opacity:0.8"/>
+      <stop offset="50%" style="stop-color:#38bdf8;stop-opacity:0.4"/>
+      <stop offset="100%" style="stop-color:#0ea5e9;stop-opacity:0"/>
+    </radialGradient>
+    <!-- 魔法陣グラデーション -->
+    <linearGradient id="circleGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#7dd3fc"/>
+      <stop offset="50%" style="stop-color:#a78bfa"/>
+      <stop offset="100%" style="stop-color:#f472b6"/>
+    </linearGradient>
+    <!-- 星のグラデーション -->
+    <linearGradient id="starGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#fef08a"/>
+      <stop offset="100%" style="stop-color:#fbbf24"/>
     </linearGradient>
   </defs>
-  <!-- Background -->
+
+  <!-- 背景 -->
   <rect width="512" height="512" rx="96" fill="url(#bgGrad)"/>
-  <!-- Glow effect -->
-  <circle cx="256" cy="256" r="180" fill="none" stroke="url(#textGrad)" stroke-width="4" opacity="0.3"/>
-  <circle cx="256" cy="256" r="140" fill="none" stroke="url(#textGrad)" stroke-width="2" opacity="0.2"/>
-  <!-- CC Text -->
-  <text x="256" y="290" font-family="Arial, sans-serif" font-size="180" font-weight="bold" fill="url(#textGrad)" text-anchor="middle">CC</text>
-  <!-- Insight indicator - small star/sparkle -->
-  <path d="M420 120 L426 136 L442 142 L426 148 L420 164 L414 148 L398 142 L414 136 Z" fill="#fbbf24"/>
+
+  <!-- オーラ（光の輪） -->
+  <circle cx="256" cy="256" r="200" fill="url(#auraGrad)"/>
+
+  <!-- 外側の魔法陣 -->
+  <circle cx="256" cy="256" r="180" fill="none" stroke="url(#circleGrad)" stroke-width="2" opacity="0.6"/>
+  <circle cx="256" cy="256" r="160" fill="none" stroke="url(#circleGrad)" stroke-width="1" opacity="0.4"/>
+
+  <!-- 守護神シルエット（簡略化した猫/精霊の形） -->
+  <g transform="translate(256, 240)">
+    <!-- 体 -->
+    <ellipse cx="0" cy="40" rx="70" ry="50" fill="#7dd3fc" opacity="0.9"/>
+    <!-- 頭 -->
+    <circle cx="0" cy="-20" r="60" fill="#7dd3fc" opacity="0.95"/>
+    <!-- 耳（左） -->
+    <path d="M-50,-60 L-35,-110 L-15,-65 Z" fill="#7dd3fc"/>
+    <!-- 耳（右） -->
+    <path d="M50,-60 L35,-110 L15,-65 Z" fill="#7dd3fc"/>
+    <!-- 耳の内側（左） -->
+    <path d="M-45,-65 L-35,-100 L-22,-68 Z" fill="#f9a8d4" opacity="0.7"/>
+    <!-- 耳の内側（右） -->
+    <path d="M45,-65 L35,-100 L22,-68 Z" fill="#f9a8d4" opacity="0.7"/>
+    <!-- 目（左） -->
+    <ellipse cx="-22" cy="-25" rx="12" ry="14" fill="#0f172a"/>
+    <ellipse cx="-20" cy="-28" rx="5" ry="6" fill="#ffffff"/>
+    <!-- 目（右） -->
+    <ellipse cx="22" cy="-25" rx="12" ry="14" fill="#0f172a"/>
+    <ellipse cx="24" cy="-28" rx="5" ry="6" fill="#ffffff"/>
+    <!-- 鼻 -->
+    <ellipse cx="0" cy="-5" rx="6" ry="4" fill="#f9a8d4"/>
+    <!-- 口 -->
+    <path d="M-8,5 Q0,12 8,5" fill="none" stroke="#0f172a" stroke-width="2" stroke-linecap="round"/>
+  </g>
+
+  <!-- 星の装飾 -->
+  <g fill="url(#starGrad)">
+    <!-- 大きい星 -->
+    <path d="M100,100 L106,116 L122,122 L106,128 L100,144 L94,128 L78,122 L94,116 Z"/>
+    <path d="M412,100 L418,116 L434,122 L418,128 L412,144 L406,128 L390,122 L406,116 Z"/>
+    <!-- 小さい星 -->
+    <path d="M80,380 L84,390 L94,394 L84,398 L80,408 L76,398 L66,394 L76,390 Z"/>
+    <path d="M432,380 L436,390 L446,394 L436,398 L432,408 L428,398 L418,394 L428,390 Z"/>
+    <path d="M256,420 L260,430 L270,434 L260,438 L256,448 L252,438 L242,434 L252,430 Z"/>
+  </g>
+
+  <!-- キラキラエフェクト -->
+  <g fill="#ffffff" opacity="0.8">
+    <circle cx="150" cy="150" r="3"/>
+    <circle cx="362" cy="150" r="3"/>
+    <circle cx="120" cy="300" r="2"/>
+    <circle cx="392" cy="300" r="2"/>
+    <circle cx="180" cy="420" r="2"/>
+    <circle cx="332" cy="420" r="2"/>
+  </g>
 </svg>
