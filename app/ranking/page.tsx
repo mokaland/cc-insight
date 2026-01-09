@@ -196,7 +196,7 @@ export default function AllTeamsRankingPage() {
     });
   }, [filteredReports]);
 
-  // 🎯 自分の順位を計算（useMemoで依存関係を明示的に管理）
+  // 🎯 自分の順位を計算（teamStatsに依存せず直接計算）
   const userRankInfo = useMemo(() => {
     if (!user || !guardianProfiles[user.uid]) {
       return null;
@@ -209,15 +209,18 @@ export default function AllTeamsRankingPage() {
     }
 
     // ユーザーが所属するチームを特定
-    const userTeamData = teamStats.find(t => t.id === userReport.team);
-    if (!userTeamData) {
+    const userTeam = teams.find(t => t.id === userReport.team);
+    if (!userTeam) {
       return null;
     }
 
-    const isShorts = userTeamData.type === "shorts";
+    const isShorts = userTeam.type === "shorts";
+
+    // チームのstatsを直接計算
+    const stats = calculateTeamStats(filteredReports, userTeam.id);
 
     // メンバーをソート
-    const sortedMembers = [...userTeamData.stats.members].sort((a: any, b: any) => {
+    const sortedMembers = [...stats.members].sort((a: any, b: any) => {
       if (isShorts) {
         return b.views - a.views;
       } else {
@@ -232,15 +235,15 @@ export default function AllTeamsRankingPage() {
 
     if (userRank > 0) {
       return {
-        teamName: userTeamData.name,
+        teamName: userTeam.name,
         rank: userRank,
         totalMembers: sortedMembers.length,
-        color: userTeamData.color
+        color: userTeam.color
       };
     }
 
     return null;
-  }, [user, filteredReports, guardianProfiles, teamStats]);
+  }, [user, filteredReports, guardianProfiles]);
 
   // 📍 自分の位置にスクロール
   const scrollToMyRank = () => {
