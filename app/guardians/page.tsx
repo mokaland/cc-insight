@@ -22,6 +22,7 @@ import {
 import { Lock, Zap, Star, ChevronRight, X, Heart, Sparkles } from "lucide-react";
 import EnergyInvestmentModal from "@/components/energy-investment-modal";
 import GuardianSummoning from "@/components/guardian-summoning";
+import GuardianUnlockAnimation from "@/components/guardian-unlock-animation";
 
 // 守護神の性格・特徴データ
 const GUARDIAN_PERSONALITIES: Record<GuardianId, {
@@ -84,6 +85,8 @@ export default function GuardiansPage() {
   const [showDetailModal, setShowDetailModal] = useState(false);
   const [showEnergyModal, setShowEnergyModal] = useState(false);
   const [showSummoning, setShowSummoning] = useState(false);
+  const [showUnlockAnimation, setShowUnlockAnimation] = useState(false);
+  const [unlockingGuardianId, setUnlockingGuardianId] = useState<GuardianId | null>(null);
 
   useEffect(() => {
     if (!user) {
@@ -215,13 +218,14 @@ export default function GuardiansPage() {
             if (!user) return;
             const guardian = GUARDIANS[selectedGuardian];
             const energyCost = guardian.unlockCondition.energyCost || 0;
-            
+
             if (confirm(`${guardian.name}を${energyCost}エナジーで解放しますか？`)) {
               const result = await unlockGuardian(user.uid, selectedGuardian, energyCost);
               if (result.success) {
-                alert(result.message);
-                await loadProfile();
+                // 解放成功：召喚の儀演出を開始
                 setShowDetailModal(false);
+                setUnlockingGuardianId(selectedGuardian);
+                setShowUnlockAnimation(true);
               } else {
                 alert(result.message);
               }
@@ -258,12 +262,25 @@ export default function GuardiansPage() {
         />
       )}
 
-      {/* 召喚の儀式 */}
+      {/* 召喚の儀式（初回） */}
       {showSummoning && user && (
         <GuardianSummoning
           userId={user.uid}
           onComplete={() => {
             setShowSummoning(false);
+            loadProfile();
+          }}
+        />
+      )}
+
+      {/* 守護神解放演出 */}
+      {showUnlockAnimation && unlockingGuardianId && (
+        <GuardianUnlockAnimation
+          guardianId={unlockingGuardianId}
+          onComplete={() => {
+            setShowUnlockAnimation(false);
+            setUnlockingGuardianId(null);
+            setSelectedGuardian(null);
             loadProfile();
           }}
         />

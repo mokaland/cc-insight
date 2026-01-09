@@ -26,6 +26,109 @@ type EvolutionPhase =
   | "reveal"       // Phase 4: カード裏返し + 新生
   | "finale";      // Phase 5: フィナーレ
 
+// 進化レベル別の演出設定
+interface EvolutionConfig {
+  totalDuration: number;      // 総演出時間
+  cardifyDuration: number;    // Phase 1 の長さ
+  chargingDuration: number;   // Phase 2 の長さ
+  flashDuration: number;      // Phase 3 の長さ
+  revealDuration: number;     // Phase 4 の長さ
+  finaleDuration: number;     // Phase 5 の長さ
+  particleCount: number;      // 光の粒子数
+  confettiCount: number;      // 紙吹雪の数
+  shockwaveCount: number;     // 衝撃波の数
+  sparkleCount: number;       // キラキラの数
+  magicCircleScale: number;   // 魔法陣の最大スケール
+  cardRotations: number;      // カード回転数
+  skipAllowed: boolean;       // スキップ可能か
+}
+
+// 進化レベル別の設定を取得
+function getEvolutionConfig(targetStage: number): EvolutionConfig {
+  switch (targetStage) {
+    case 1: // 0→1: シンプルな目覚め
+      return {
+        totalDuration: 4000,
+        cardifyDuration: 800,
+        chargingDuration: 800,
+        flashDuration: 400,
+        revealDuration: 800,
+        finaleDuration: 1200,
+        particleCount: 10,
+        confettiCount: 15,
+        shockwaveCount: 2,
+        sparkleCount: 6,
+        magicCircleScale: 1.2,
+        cardRotations: 720,
+        skipAllowed: true,
+      };
+    case 2: // 1→2: 力が溢れる
+      return {
+        totalDuration: 5000,
+        cardifyDuration: 1000,
+        chargingDuration: 1000,
+        flashDuration: 500,
+        revealDuration: 1000,
+        finaleDuration: 1500,
+        particleCount: 15,
+        confettiCount: 25,
+        shockwaveCount: 3,
+        sparkleCount: 10,
+        magicCircleScale: 1.3,
+        cardRotations: 1080,
+        skipAllowed: true,
+      };
+    case 3: // 2→3: 覚醒！特性解放
+      return {
+        totalDuration: 7000,
+        cardifyDuration: 1200,
+        chargingDuration: 1400,
+        flashDuration: 600,
+        revealDuration: 1200,
+        finaleDuration: 2600,
+        particleCount: 25,
+        confettiCount: 40,
+        shockwaveCount: 4,
+        sparkleCount: 15,
+        magicCircleScale: 1.5,
+        cardRotations: 1800,
+        skipAllowed: true,
+      };
+    case 4: // 3→4: 究極覚醒！
+      return {
+        totalDuration: 10000,
+        cardifyDuration: 1500,
+        chargingDuration: 2000,
+        flashDuration: 800,
+        revealDuration: 1500,
+        finaleDuration: 4200,
+        particleCount: 40,
+        confettiCount: 60,
+        shockwaveCount: 5,
+        sparkleCount: 20,
+        magicCircleScale: 2.0,
+        cardRotations: 2520,
+        skipAllowed: false,
+      };
+    default:
+      return {
+        totalDuration: 5000,
+        cardifyDuration: 1000,
+        chargingDuration: 1000,
+        flashDuration: 500,
+        revealDuration: 1000,
+        finaleDuration: 1500,
+        particleCount: 15,
+        confettiCount: 25,
+        shockwaveCount: 3,
+        sparkleCount: 10,
+        magicCircleScale: 1.3,
+        cardRotations: 1080,
+        skipAllowed: true,
+      };
+  }
+}
+
 interface EnergyInvestmentModalProps {
   guardianId: GuardianId;
   profile: UserGuardianProfile;
@@ -90,33 +193,50 @@ export default function EnergyInvestmentModal({
   const [showSuccessAnimation, setShowSuccessAnimation] = useState(false);
   const [successData, setSuccessData] = useState<{ amount: number; remaining: number | null; newInvested: number } | null>(null);
 
+  // 現在の進化設定を取得
+  const evolutionConfig = evolutionData ? getEvolutionConfig(evolutionData.to) : null;
+
   // 進化演出のフェーズ進行
   useEffect(() => {
-    if (!showEvolutionAnimation) {
+    if (!showEvolutionAnimation || !evolutionData) {
       setEvolutionPhase("idle");
       return;
     }
 
+    const config = getEvolutionConfig(evolutionData.to);
+
     // Phase 1: カード化 (0ms)
     setEvolutionPhase("cardify");
 
-    // Phase 2: 光の収束 (1200ms)
-    const timer1 = setTimeout(() => setEvolutionPhase("charging"), 1200);
+    // Phase 2: 光の収束
+    const timer1 = setTimeout(
+      () => setEvolutionPhase("charging"),
+      config.cardifyDuration
+    );
 
-    // Phase 3: フラッシュ (2400ms)
-    const timer2 = setTimeout(() => setEvolutionPhase("flash"), 2400);
+    // Phase 3: フラッシュ
+    const timer2 = setTimeout(
+      () => setEvolutionPhase("flash"),
+      config.cardifyDuration + config.chargingDuration
+    );
 
-    // Phase 4: 新生の顕現 (3000ms)
-    const timer3 = setTimeout(() => setEvolutionPhase("reveal"), 3000);
+    // Phase 4: 新生の顕現
+    const timer3 = setTimeout(
+      () => setEvolutionPhase("reveal"),
+      config.cardifyDuration + config.chargingDuration + config.flashDuration
+    );
 
-    // Phase 5: フィナーレ (4200ms)
-    const timer4 = setTimeout(() => setEvolutionPhase("finale"), 4200);
+    // Phase 5: フィナーレ
+    const timer4 = setTimeout(
+      () => setEvolutionPhase("finale"),
+      config.cardifyDuration + config.chargingDuration + config.flashDuration + config.revealDuration
+    );
 
-    // 終了 (6500ms)
+    // 終了
     const timer5 = setTimeout(() => {
       setShowEvolutionAnimation(false);
       onSuccess();
-    }, 6500);
+    }, config.totalDuration);
 
     return () => {
       clearTimeout(timer1);
@@ -125,7 +245,7 @@ export default function EnergyInvestmentModal({
       clearTimeout(timer4);
       clearTimeout(timer5);
     };
-  }, [showEvolutionAnimation, onSuccess]);
+  }, [showEvolutionAnimation, onSuccess, evolutionData]);
 
   const guardian = GUARDIANS[guardianId];
   const instance = profile.guardians[guardianId];
@@ -329,10 +449,11 @@ export default function EnergyInvestmentModal({
   }
 
   // 進化演出中 - 神秘のカード召喚演出
-  if (showEvolutionAnimation && evolutionData) {
+  if (showEvolutionAnimation && evolutionData && evolutionConfig) {
     const oldPlaceholder = getPlaceholderStyle(guardianId);
     const oldStageImage = getGuardianImagePath(guardianId, evolutionData.from as EvolutionStage);
     const newStageImage = getGuardianImagePath(guardianId, evolutionData.to as EvolutionStage);
+    const config = evolutionConfig;
 
     return (
       <div className="fixed inset-0 bg-black flex items-center justify-center z-[9999] overflow-hidden">
@@ -343,13 +464,53 @@ export default function EnergyInvestmentModal({
           className="absolute inset-0 bg-gradient-to-b from-slate-950 via-purple-950/50 to-slate-950"
         />
 
+        {/* 究極進化（Stage 4）専用：属性オーラエフェクト */}
+        {evolutionData.to === 4 && evolutionPhase !== "flash" && (
+          <>
+            {/* 属性カラーのパルスオーラ */}
+            <motion.div
+              animate={{
+                scale: [1, 1.5, 1],
+                opacity: [0.3, 0.6, 0.3],
+              }}
+              transition={{
+                duration: 2,
+                repeat: Infinity,
+                ease: "easeInOut",
+              }}
+              className="absolute w-[600px] h-[600px] rounded-full"
+              style={{
+                background: `radial-gradient(circle, ${attr.color}40 0%, transparent 70%)`,
+              }}
+            />
+            {/* 外側のエネルギーリング */}
+            {[...Array(3)].map((_, i) => (
+              <motion.div
+                key={`energy-ring-${i}`}
+                animate={{
+                  scale: [0.8, 2, 2.5],
+                  opacity: [0.8, 0.3, 0],
+                }}
+                transition={{
+                  duration: 3,
+                  repeat: Infinity,
+                  delay: i * 1,
+                  ease: "easeOut",
+                }}
+                className="absolute w-64 h-64 rounded-full border-2"
+                style={{ borderColor: attr.color }}
+              />
+            ))}
+          </>
+        )}
+
         {/* Phase 3: ホワイトアウトフラッシュ */}
         <AnimatePresence>
           {evolutionPhase === "flash" && (
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: [0, 1, 1, 0] }}
-              transition={{ duration: 0.6, times: [0, 0.1, 0.7, 1] }}
+              transition={{ duration: config.flashDuration / 1000, times: [0, 0.1, 0.7, 1] }}
               className="absolute inset-0 bg-white z-50"
             />
           )}
@@ -360,10 +521,10 @@ export default function EnergyInvestmentModal({
           initial={{ opacity: 0, scale: 0.5, rotate: 0 }}
           animate={{
             opacity: evolutionPhase === "flash" ? 0 : evolutionPhase === "cardify" ? 0.6 : evolutionPhase === "charging" ? 1 : 0.3,
-            scale: evolutionPhase === "charging" ? 1.5 : 1,
+            scale: evolutionPhase === "charging" ? config.magicCircleScale : 1,
             rotate: evolutionPhase === "charging" ? 360 : evolutionPhase === "cardify" ? 180 : 0
           }}
-          transition={{ duration: 1.2, ease: "easeInOut" }}
+          transition={{ duration: config.chargingDuration / 1000, ease: "easeInOut" }}
           className="absolute w-80 h-80 md:w-96 md:h-96"
         >
           {/* 外側の円 */}
@@ -404,12 +565,12 @@ export default function EnergyInvestmentModal({
         {/* Phase 2: 光の粒子収束 */}
         {(evolutionPhase === "charging" || evolutionPhase === "cardify") && (
           <>
-            {[...Array(20)].map((_, i) => (
+            {[...Array(config.particleCount)].map((_, i) => (
               <motion.div
                 key={`particle-${i}`}
                 initial={{
-                  x: (Math.random() - 0.5) * 600,
-                  y: (Math.random() - 0.5) * 600,
+                  x: (Math.random() - 0.5) * (400 + config.particleCount * 10),
+                  y: (Math.random() - 0.5) * (400 + config.particleCount * 10),
                   opacity: 0,
                   scale: 0
                 }}
@@ -420,8 +581,8 @@ export default function EnergyInvestmentModal({
                   scale: evolutionPhase === "charging" ? [0, 1, 0] : 0
                 }}
                 transition={{
-                  duration: 1.2,
-                  delay: i * 0.05,
+                  duration: config.chargingDuration / 1000,
+                  delay: i * (0.8 / config.particleCount),
                   ease: "easeIn"
                 }}
                 className="absolute z-20"
@@ -439,10 +600,10 @@ export default function EnergyInvestmentModal({
             animate={{
               rotateY:
                 evolutionPhase === "cardify" ? 0 :
-                evolutionPhase === "charging" ? 1800 :
-                evolutionPhase === "flash" ? 1800 :
-                evolutionPhase === "reveal" ? 1980 :
-                evolutionPhase === "finale" ? 1980 : 0,
+                evolutionPhase === "charging" ? config.cardRotations :
+                evolutionPhase === "flash" ? config.cardRotations :
+                evolutionPhase === "reveal" ? config.cardRotations + 180 :
+                evolutionPhase === "finale" ? config.cardRotations + 180 : 0,
               scale:
                 evolutionPhase === "cardify" ? [1, 0.95] :
                 evolutionPhase === "charging" ? 0.9 :
@@ -452,7 +613,7 @@ export default function EnergyInvestmentModal({
             }}
             transition={{
               rotateY: {
-                duration: evolutionPhase === "charging" ? 1.2 : evolutionPhase === "reveal" ? 0.8 : 0.5,
+                duration: evolutionPhase === "charging" ? config.chargingDuration / 1000 : evolutionPhase === "reveal" ? config.revealDuration / 1000 : 0.5,
                 ease: evolutionPhase === "charging" ? "easeIn" : "easeOut"
               },
               scale: { duration: 0.5 }
@@ -515,11 +676,22 @@ export default function EnergyInvestmentModal({
             {/* カード裏面（新ステージ） */}
             <motion.div
               animate={{
-                opacity: evolutionPhase === "reveal" || evolutionPhase === "finale" ? 1 : 0
+                opacity: evolutionPhase === "reveal" || evolutionPhase === "finale" ? 1 : 0,
+                boxShadow:
+                  evolutionData.to === 4 && evolutionPhase === "finale"
+                    ? [
+                        `0 0 80px #fbbf24, 0 0 120px ${attr.color}`,
+                        `0 0 120px #fbbf24, 0 0 180px ${attr.color}, 0 0 250px ${attr.color}40`,
+                        `0 0 80px #fbbf24, 0 0 120px ${attr.color}`,
+                      ]
+                    : `0 0 80px #fbbf24, 0 0 120px ${attr.color}`,
+              }}
+              transition={{
+                boxShadow: { duration: 2, repeat: Infinity, ease: "easeInOut" },
               }}
               className="absolute inset-0 w-48 h-64 md:w-56 md:h-72 rounded-2xl overflow-hidden border-4"
               style={{
-                borderColor: "#fbbf24",
+                borderColor: evolutionData.to === 4 ? attr.color : "#fbbf24",
                 background: `linear-gradient(135deg, #fbbf2440, ${attr.color}60)`,
                 boxShadow: `0 0 80px #fbbf24, 0 0 120px ${attr.color}`,
                 transform: "rotateY(180deg)",
@@ -561,13 +733,13 @@ export default function EnergyInvestmentModal({
         <AnimatePresence>
           {evolutionPhase === "reveal" && (
             <>
-              {[...Array(3)].map((_, i) => (
+              {[...Array(config.shockwaveCount)].map((_, i) => (
                 <motion.div
                   key={`shockwave-${i}`}
                   initial={{ scale: 0.5, opacity: 0.8 }}
-                  animate={{ scale: 3, opacity: 0 }}
+                  animate={{ scale: 2 + config.shockwaveCount * 0.5, opacity: 0 }}
                   exit={{ opacity: 0 }}
-                  transition={{ duration: 0.8, delay: i * 0.15 }}
+                  transition={{ duration: config.revealDuration / 1000, delay: i * 0.12 }}
                   className="absolute w-64 h-64 rounded-full border-4"
                   style={{ borderColor: attr.color }}
                 />
@@ -579,30 +751,30 @@ export default function EnergyInvestmentModal({
         {/* Phase 4 & 5: 金色の紙吹雪 */}
         {(evolutionPhase === "reveal" || evolutionPhase === "finale") && (
           <>
-            {[...Array(30)].map((_, i) => (
+            {[...Array(config.confettiCount)].map((_, i) => (
               <motion.div
                 key={`confetti-${i}`}
                 initial={{
                   y: -20,
-                  x: (Math.random() - 0.5) * 400,
+                  x: (Math.random() - 0.5) * (300 + config.confettiCount * 5),
                   rotate: 0,
                   opacity: 1
                 }}
                 animate={{
                   y: 500,
-                  x: (Math.random() - 0.5) * 600,
+                  x: (Math.random() - 0.5) * (400 + config.confettiCount * 5),
                   rotate: Math.random() * 720,
                   opacity: [1, 1, 0]
                 }}
                 transition={{
-                  duration: 2 + Math.random(),
-                  delay: Math.random() * 0.5,
+                  duration: 2 + Math.random() * (config.finaleDuration / 2000),
+                  delay: Math.random() * 0.8,
                   ease: "easeOut"
                 }}
                 className="absolute top-0"
                 style={{
-                  width: 8 + Math.random() * 8,
-                  height: 8 + Math.random() * 8,
+                  width: 6 + Math.random() * 10,
+                  height: 6 + Math.random() * 10,
                   background: i % 3 === 0 ? "#fbbf24" : i % 3 === 1 ? attr.color : "#fff",
                   borderRadius: Math.random() > 0.5 ? "50%" : "2px"
                 }}
@@ -658,6 +830,43 @@ export default function EnergyInvestmentModal({
                   </p>
                 </motion.div>
               )}
+
+              {/* 究極進化（Stage 4）専用メッセージ */}
+              {evolutionData.to === 4 && (
+                <motion.div
+                  initial={{ scale: 0, opacity: 0 }}
+                  animate={{ scale: 1, opacity: 1 }}
+                  transition={{ delay: 0.8, type: "spring" }}
+                  className="mt-6"
+                >
+                  <motion.div
+                    animate={{
+                      boxShadow: [
+                        `0 0 20px ${attr.color}60`,
+                        `0 0 40px ${attr.color}80`,
+                        `0 0 20px ${attr.color}60`,
+                      ],
+                    }}
+                    transition={{ duration: 2, repeat: Infinity }}
+                    className="p-6 rounded-xl border-2"
+                    style={{
+                      background: `linear-gradient(135deg, ${attr.color}30, #fbbf2430)`,
+                      borderColor: attr.color,
+                    }}
+                  >
+                    <p className="text-4xl mb-2">👑</p>
+                    <p className="text-2xl font-bold text-white mb-2">
+                      究極覚醒！
+                    </p>
+                    <p className="text-lg" style={{ color: attr.color }}>
+                      {guardian.name}が最高形態に到達しました！
+                    </p>
+                    <p className="text-sm text-gray-400 mt-2">
+                      あなたの献身が{guardian.name}の究極の力を解放した
+                    </p>
+                  </motion.div>
+                </motion.div>
+              )}
             </motion.div>
           )}
         </AnimatePresence>
@@ -665,24 +874,24 @@ export default function EnergyInvestmentModal({
         {/* キラキラエフェクト（常時） */}
         {evolutionPhase !== "flash" && (
           <>
-            {[...Array(12)].map((_, i) => (
+            {[...Array(config.sparkleCount)].map((_, i) => (
               <motion.div
                 key={`sparkle-${i}`}
                 initial={{ opacity: 0, scale: 0 }}
                 animate={{
                   opacity: [0, 1, 0],
-                  scale: [0, 1, 0]
+                  scale: [0, 1.2, 0]
                 }}
                 transition={{
-                  duration: 1.5,
-                  delay: i * 0.2,
+                  duration: 1.2 + Math.random() * 0.5,
+                  delay: i * (1.5 / config.sparkleCount),
                   repeat: Infinity,
-                  repeatDelay: Math.random()
+                  repeatDelay: Math.random() * 0.8
                 }}
                 className="absolute"
                 style={{
-                  top: `${10 + Math.random() * 80}%`,
-                  left: `${10 + Math.random() * 80}%`
+                  top: `${5 + Math.random() * 90}%`,
+                  left: `${5 + Math.random() * 90}%`
                 }}
               >
                 <Sparkles className="w-6 h-6 text-yellow-400" />
