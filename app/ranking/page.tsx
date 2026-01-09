@@ -254,7 +254,7 @@ export default function AllTeamsRankingPage() {
   }
 
   return (
-    <div className="space-y-12 pb-[calc(var(--bottom-nav-height)+1rem)] md:pb-12">
+    <div className="space-y-12 md:pb-12">
       {/* Page Header */}
       <div className="text-center">
         <h1 className="text-4xl font-bold mb-3 bg-gradient-to-r from-pink-500 via-purple-500 to-cyan-500 bg-clip-text text-transparent">

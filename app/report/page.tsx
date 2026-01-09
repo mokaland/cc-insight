@@ -507,7 +507,7 @@ export default function ReportPage() {
   }
 
   return (
-    <div className="min-h-screen cosmic-bg relative overflow-hidden p-4 md:p-8 pb-[calc(var(--bottom-nav-height)+1rem)] md:pb-8">
+    <div className="min-h-screen cosmic-bg relative overflow-hidden p-4 md:p-8 md:pb-8">
       {/* 星雲背景エフェクト */}
       <div className="fixed inset-0 overflow-hidden pointer-events-none">
         <div className="nebula-bg absolute top-0 left-1/4 w-[600px] h-[600px] rounded-full blur-3xl opacity-30" 
