@@ -675,6 +675,7 @@ export default function EnergyInvestmentModal({
 
             {/* カード裏面（新ステージ） */}
             <motion.div
+              initial={{ opacity: 0 }}
               animate={{
                 opacity: evolutionPhase === "reveal" || evolutionPhase === "finale" ? 1 : 0,
                 boxShadow:
@@ -687,6 +688,7 @@ export default function EnergyInvestmentModal({
                     : `0 0 80px #fbbf24, 0 0 120px ${attr.color}`,
               }}
               transition={{
+                opacity: { duration: 0.1 },
                 boxShadow: { duration: 2, repeat: Infinity, ease: "easeInOut" },
               }}
               className="absolute inset-0 w-48 h-64 md:w-56 md:h-72 rounded-2xl overflow-hidden border-4"
@@ -707,17 +709,7 @@ export default function EnergyInvestmentModal({
                   src={newStageImage}
                   alt={guardian.name}
                   className="w-full h-full object-contain"
-                  onError={(e) => {
-                    // 画像読み込み失敗時はフォールバック絵文字を表示
-                    e.currentTarget.style.display = "none";
-                    const fallback = e.currentTarget.parentElement?.nextElementSibling;
-                    if (fallback) fallback.classList.remove("hidden");
-                  }}
                 />
-              </div>
-              {/* フォールバック絵文字（画像読み込み失敗時のみ表示） */}
-              <div className="absolute inset-0 flex items-center justify-center hidden">
-                <span className="text-8xl md:text-9xl">{oldPlaceholder.emoji}</span>
               </div>
               {/* 新ステージ表示 */}
               <div className="absolute bottom-4 left-0 right-0 text-center">
