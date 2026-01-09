@@ -434,9 +434,9 @@ export default function GuardianSummoning({ userId, onComplete }: GuardianSummon
       <div className="fixed inset-0 bg-gradient-to-b from-slate-950 via-purple-950 to-slate-950 z-[9999] overflow-y-auto">
         <ParticleEffect count={25} color="gold" />
 
-        <div className="min-h-screen flex flex-col items-center justify-start p-4 pt-4 pb-[calc(var(--bottom-nav-height)+4rem)]">
-          {/* タイトル - 上部見切れ防止+0.5cm下に配置 */}
-          <div className="text-center mb-6 mt-2">
+        <div className="min-h-screen flex flex-col items-center justify-start p-4 pt-8 pb-[calc(var(--bottom-nav-height)+6rem)]">
+          {/* タイトル - 上部見切れ防止 */}
+          <div className="text-center mb-6 mt-4">
             <div className="flex items-center justify-center gap-2 mb-2">
               <Flame className="w-5 h-5 text-orange-400" />
               <h2 className="text-xl md:text-2xl font-bold text-white">
@@ -556,7 +556,7 @@ export default function GuardianSummoning({ userId, onComplete }: GuardianSummon
                   {isSelected && (
                     <button
                       onClick={() => handleGuardianSelect(guardian.id)}
-                      className="w-full mt-3 mb-2 py-3 bg-gradient-to-r from-purple-600 to-pink-600
+                      className="w-full mt-4 mb-8 py-4 bg-gradient-to-r from-purple-600 to-pink-600
                                  hover:from-purple-500 hover:to-pink-500
                                  text-white font-bold rounded-xl transition-all
                                  shadow-lg shadow-purple-500/30 animate-pulse"
