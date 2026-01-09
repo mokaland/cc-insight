@@ -34,9 +34,10 @@ service cloud.firestore {
       allow create: if isOwner(userId) &&
                        !('role' in request.resource.data);
 
-      // 更新: 自分のドキュメントのみ、ただし role 更新は管理者のみ
+      // 更新: 自分のドキュメントのみ、ただし role 変更は管理者のみ
+      // merge: true での更新時、roleが変更されていなければ許可
       allow update: if isOwner(userId) &&
-                       (!('role' in request.resource.data) || isAdmin());
+                       (request.resource.data.role == resource.data.role || isAdmin());
 
       // 削除: 管理者のみ
       allow delete: if isAdmin();

@@ -82,8 +82,10 @@ export default function MyPage() {
 
         if (todayReport) {
           setTodayReported(true);
-          // 今日のエナジー取得（報告から計算）
-          setTodayEnergy((todayReport as any).earnedEnergy || 0);
+          // 今日のエナジー取得（energy_historyから取得）
+          const { getTodayEnergyHistory } = await import("@/lib/energy-history");
+          const todayHistory = await getTodayEnergyHistory(user.uid, today);
+          setTodayEnergy(todayHistory?.totalEarned || 0);
         } else {
           // 📅 ストリーク警告ロジック
           const { getLastReport } = await import("@/lib/firestore");
