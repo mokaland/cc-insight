@@ -523,11 +523,11 @@ export default function GuardianSummoning({ userId, onComplete }: GuardianSummon
                       style={{ backgroundColor: `${attr.color}10` }}
                     >
                       <p style={{ color: attr.color }}>
-                        「{guardian.attribute === 'fire'
-                          ? '我が炎で、汝の道を照らそう'
-                          : guardian.attribute === 'water'
+                        「{guardian.attribute === 'power'
+                          ? '我が力で、汝の道を切り拓こう'
+                          : guardian.attribute === 'beauty'
                           ? '我が知恵で、汝を導こう'
-                          : '我が刃で、汝を守ろう'
+                          : '我が技術で、汝を守ろう'
                         }」
                       </p>
                     </div>
