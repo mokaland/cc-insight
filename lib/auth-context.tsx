@@ -159,21 +159,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       await updateProfile(newUser, { displayName });
 
       // Firestoreにユーザードキュメント作成
-      const userProfile: Omit<UserProfile, "approvedAt" | "approvedBy" | "lastLoginAt" | "profileImage"> = {
+      // 注意: セキュリティルールで 'role' フィールドを含む作成は禁止されている
+      // 新規ユーザーは role なしで作成され、管理者が承認時に role: "member" を付与する
+      await setDoc(doc(db, "users", newUser.uid), {
         uid: newUser.uid,
         email: email,
         realName: realName, // 漢字フルネーム
         displayName: displayName, // ニックネーム
         team: team,
-        role: "member",
+        // role は含めない（セキュリティルール制約: ユーザー自身がroleを設定することを禁止）
         status: "pending",
         emailVerified: false,
-        createdAt: serverTimestamp() as Timestamp,
-      };
-
-      // Firestoreにユーザードキュメント作成
-      await setDoc(doc(db, "users", newUser.uid), {
-        ...userProfile,
+        createdAt: serverTimestamp(),
         // 守護神プロファイルを初期化（重要！）
         guardianProfile: {
           energy: {

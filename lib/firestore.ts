@@ -510,19 +510,22 @@ export async function getAllUsers(): Promise<User[]> {
 
 // ユーザーのステータスを更新
 export async function updateUserStatus(
-  userId: string, 
+  userId: string,
   status: "pending" | "approved" | "suspended",
   adminUid: string
 ): Promise<void> {
   const updates: any = {
     status,
   };
-  
+
   if (status === "approved") {
     updates.approvedAt = serverTimestamp();
     updates.approvedBy = adminUid;
+    // 承認時に role が未設定の場合は "member" を付与
+    // （新規登録時は role を含めずに作成されるため）
+    updates.role = "member";
   }
-  
+
   await setDoc(doc(db, "users", userId), updates, { merge: true });
 }
 
