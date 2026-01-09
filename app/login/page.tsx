@@ -6,9 +6,10 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Sword, Mail, Lock, AlertCircle, Sparkles, UserPlus } from "lucide-react";
+import { Mail, Lock, AlertCircle, Sparkles, UserPlus, Star } from "lucide-react";
 import Link from "next/link";
 import { ButtonLoader } from "@/components/ui/loading-spinner";
+import Image from "next/image";
 
 export default function MemberLoginPage() {
   const [email, setEmail] = useState("");
@@ -45,49 +46,70 @@ export default function MemberLoginPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-900 via-purple-900 to-pink-900 p-4 relative overflow-hidden">
-      {/* RPG風背景エフェクト */}
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-950 via-indigo-950 to-slate-900 p-4 relative overflow-hidden">
+      {/* 守護神テーマ背景エフェクト */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-pink-500/20 rounded-full blur-3xl animate-pulse" />
-        <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-purple-500/20 rounded-full blur-3xl animate-pulse" style={{ animationDelay: "1s" }} />
-        <div className="absolute top-1/2 left-1/2 w-96 h-96 bg-cyan-500/10 rounded-full blur-3xl animate-pulse" style={{ animationDelay: "2s" }} />
+        <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-indigo-500/20 rounded-full blur-3xl animate-pulse" />
+        <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-sky-500/20 rounded-full blur-3xl animate-pulse" style={{ animationDelay: "1s" }} />
+        <div className="absolute top-1/2 left-1/2 w-96 h-96 bg-violet-500/10 rounded-full blur-3xl animate-pulse" style={{ animationDelay: "2s" }} />
       </div>
 
-      {/* キラキラエフェクト */}
+      {/* 星キラキラエフェクト */}
       <div className="absolute inset-0 pointer-events-none">
-        {[...Array(20)].map((_, i) => (
-          <Sparkles
+        {[...Array(15)].map((_, i) => (
+          <Star
             key={i}
-            className="absolute text-pink-400/30 animate-pulse"
+            className="absolute text-sky-300/40 animate-pulse"
             style={{
               top: `${Math.random() * 100}%`,
               left: `${Math.random() * 100}%`,
               animationDelay: `${Math.random() * 3}s`,
-              fontSize: `${Math.random() * 20 + 10}px`,
+              width: `${Math.random() * 16 + 8}px`,
+              height: `${Math.random() * 16 + 8}px`,
+            }}
+            fill="currentColor"
+          />
+        ))}
+        {[...Array(10)].map((_, i) => (
+          <Sparkles
+            key={`sparkle-${i}`}
+            className="absolute text-indigo-300/30 animate-pulse"
+            style={{
+              top: `${Math.random() * 100}%`,
+              left: `${Math.random() * 100}%`,
+              animationDelay: `${Math.random() * 3}s`,
+              width: `${Math.random() * 14 + 10}px`,
+              height: `${Math.random() * 14 + 10}px`,
             }}
           />
         ))}
       </div>
 
-      <Card className="w-full max-w-md relative bg-black/40 backdrop-blur-xl border-2 border-pink-500/30 shadow-[0_0_50px_rgba(236,72,153,0.3)]">
+      <Card className="w-full max-w-md relative bg-slate-900/60 backdrop-blur-xl border-2 border-indigo-500/30 shadow-[0_0_50px_rgba(99,102,241,0.3)]">
         <CardHeader className="text-center space-y-4">
-          {/* RPG風アイコン */}
+          {/* 守護神アイコン */}
           <div className="mx-auto mb-2 relative">
-            <div className="w-20 h-20 rounded-2xl bg-gradient-to-r from-pink-500 via-purple-500 to-cyan-500 flex items-center justify-center shadow-[0_0_40px_rgba(236,72,153,0.6)] animate-pulse">
-              <Sword className="w-10 h-10 text-white" />
+            <div className="w-24 h-24 rounded-2xl overflow-hidden shadow-[0_0_40px_rgba(99,102,241,0.6)] animate-pulse ring-2 ring-sky-400/50">
+              <Image
+                src="/icon-192x192.png"
+                alt="キャリクラ守護神"
+                width={96}
+                height={96}
+                className="w-full h-full object-cover"
+              />
             </div>
             {/* グローエフェクト */}
-            <div className="absolute inset-0 w-20 h-20 rounded-2xl bg-gradient-to-r from-pink-500 to-purple-500 blur-xl opacity-50 animate-ping" />
+            <div className="absolute inset-0 w-24 h-24 rounded-2xl bg-gradient-to-r from-indigo-500 to-sky-500 blur-xl opacity-40 animate-ping" />
           </div>
 
           <div>
-            <CardTitle className="text-3xl font-bold bg-gradient-to-r from-pink-500 via-purple-500 to-cyan-500 bg-clip-text text-transparent mb-2">
-              CC Insight
+            <CardTitle className="text-3xl font-bold bg-gradient-to-r from-sky-400 via-indigo-400 to-violet-400 bg-clip-text text-transparent mb-2">
+              キャリクラ
             </CardTitle>
-            <CardDescription className="text-lg text-pink-300 font-semibold">
-              🎮 冒険者ログイン
+            <CardDescription className="text-lg text-sky-300 font-semibold">
+              守護神があなたを待っています
             </CardDescription>
-            <p className="text-sm text-muted-foreground mt-2">
+            <p className="text-sm text-slate-400 mt-2">
               あなたの成長の記録がここに
             </p>
           </div>
@@ -103,32 +125,32 @@ export default function MemberLoginPage() {
             )}
 
             <div className="space-y-2">
-              <Label htmlFor="email" className="text-pink-200">メールアドレス</Label>
+              <Label htmlFor="email" className="text-sky-200">メールアドレス</Label>
               <div className="relative">
-                <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-pink-400" />
+                <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-sky-400" />
                 <Input
                   id="email"
                   type="email"
                   placeholder="your-email@example.com"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  className="pl-10 bg-white/5 border-2 border-pink-500/30 focus:border-pink-500 text-white placeholder:text-gray-500 h-12"
+                  className="pl-10 bg-white/5 border-2 border-indigo-500/30 focus:border-sky-500 text-white placeholder:text-slate-500 h-12"
                   required
                 />
               </div>
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="password" className="text-pink-200">パスワード</Label>
+              <Label htmlFor="password" className="text-sky-200">パスワード</Label>
               <div className="relative">
-                <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-purple-400" />
+                <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-indigo-400" />
                 <Input
                   id="password"
                   type="password"
                   placeholder="••••••••"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="pl-10 bg-white/5 border-2 border-purple-500/30 focus:border-purple-500 text-white placeholder:text-gray-500 h-12"
+                  className="pl-10 bg-white/5 border-2 border-indigo-500/30 focus:border-indigo-500 text-white placeholder:text-slate-500 h-12"
                   required
                 />
               </div>
@@ -136,22 +158,22 @@ export default function MemberLoginPage() {
 
             <Button
               type="submit"
-              className="w-full h-12 bg-gradient-to-r from-pink-500 via-purple-500 to-cyan-500 text-white font-bold text-lg hover:opacity-90 shadow-[0_0_30px_rgba(236,72,153,0.5)] relative overflow-hidden group"
+              className="w-full h-12 bg-gradient-to-r from-indigo-500 via-sky-500 to-violet-500 text-white font-bold text-lg hover:opacity-90 shadow-[0_0_30px_rgba(99,102,241,0.5)] relative overflow-hidden group"
               disabled={loading}
             >
               {/* ホバー時のアニメーション */}
-              <span className="absolute inset-0 w-full h-full bg-gradient-to-r from-cyan-500 via-purple-500 to-pink-500 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+              <span className="absolute inset-0 w-full h-full bg-gradient-to-r from-violet-500 via-sky-500 to-indigo-500 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
 
               <span className="relative z-10 flex items-center justify-center gap-2">
                 {loading ? (
                   <>
                     <ButtonLoader />
-                    冒険の扉を開いています...
+                    守護神を呼び出し中...
                   </>
                 ) : (
                   <>
-                    <Sword className="w-5 h-5" />
-                    冒険を始める
+                    <Star className="w-5 h-5" fill="currentColor" />
+                    ログイン
                   </>
                 )}
               </span>
@@ -161,10 +183,10 @@ export default function MemberLoginPage() {
           {/* 新規登録リンク */}
           <div className="relative">
             <div className="absolute inset-0 flex items-center">
-              <div className="w-full border-t border-pink-500/30" />
+              <div className="w-full border-t border-indigo-500/30" />
             </div>
             <div className="relative flex justify-center text-sm">
-              <span className="px-4 bg-black/40 text-muted-foreground">または</span>
+              <span className="px-4 bg-slate-900/60 text-slate-400">または</span>
             </div>
           </div>
 
@@ -172,18 +194,18 @@ export default function MemberLoginPage() {
             <Button
               type="button"
               variant="outline"
-              className="w-full h-12 border-2 border-cyan-500/50 bg-cyan-500/10 text-cyan-300 hover:bg-cyan-500/20 hover:text-cyan-200 font-semibold shadow-[0_0_20px_rgba(6,182,212,0.3)]"
+              className="w-full h-12 border-2 border-sky-500/50 bg-sky-500/10 text-sky-300 hover:bg-sky-500/20 hover:text-sky-200 font-semibold shadow-[0_0_20px_rgba(56,189,248,0.3)]"
             >
               <UserPlus className="w-5 h-5 mr-2" />
-              新規登録（冒険者になる）
+              新規登録
             </Button>
           </Link>
 
           {/* フッター */}
-          <div className="pt-4 border-t border-white/10 text-center text-xs text-muted-foreground space-y-2">
-            <p>✨ レベルアップ・バッジ獲得で成長を実感 ✨</p>
-            <p className="text-pink-400/70">
-              ログイン後、あなた専用のRPGマイページへ
+          <div className="pt-4 border-t border-white/10 text-center text-xs text-slate-400 space-y-2">
+            <p>レベルアップ・バッジ獲得で成長を実感</p>
+            <p className="text-indigo-400/70">
+              ログイン後、あなた専用のマイページへ
             </p>
           </div>
         </CardContent>

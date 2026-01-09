@@ -6,8 +6,9 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import Link from "next/link";
-import { UserPlus, Mail, Lock, User, Users, Ticket } from "lucide-react";
+import { Mail, Lock, User, Users, Ticket, Star, Sparkles } from "lucide-react";
 import { ButtonLoader } from "@/components/ui/loading-spinner";
+import Image from "next/image";
 
 type TeamType = "fukugyou" | "taishoku" | "buppan";
 
@@ -81,74 +82,118 @@ export default function RegisterPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-start justify-center bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 p-4 py-8 overflow-y-auto">
-      <div className="w-full max-w-md">
+    <div className="min-h-screen flex items-start justify-center bg-gradient-to-br from-slate-950 via-indigo-950 to-slate-900 p-4 py-8 overflow-y-auto relative">
+      {/* 守護神テーマ背景エフェクト */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-indigo-500/20 rounded-full blur-3xl animate-pulse" />
+        <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-sky-500/20 rounded-full blur-3xl animate-pulse" style={{ animationDelay: "1s" }} />
+        <div className="absolute top-3/4 left-1/2 w-96 h-96 bg-violet-500/10 rounded-full blur-3xl animate-pulse" style={{ animationDelay: "2s" }} />
+      </div>
+
+      {/* 星キラキラエフェクト */}
+      <div className="absolute inset-0 pointer-events-none">
+        {[...Array(12)].map((_, i) => (
+          <Star
+            key={i}
+            className="absolute text-sky-300/40 animate-pulse"
+            style={{
+              top: `${Math.random() * 100}%`,
+              left: `${Math.random() * 100}%`,
+              animationDelay: `${Math.random() * 3}s`,
+              width: `${Math.random() * 14 + 6}px`,
+              height: `${Math.random() * 14 + 6}px`,
+            }}
+            fill="currentColor"
+          />
+        ))}
+        {[...Array(8)].map((_, i) => (
+          <Sparkles
+            key={`sparkle-${i}`}
+            className="absolute text-indigo-300/30 animate-pulse"
+            style={{
+              top: `${Math.random() * 100}%`,
+              left: `${Math.random() * 100}%`,
+              animationDelay: `${Math.random() * 3}s`,
+              width: `${Math.random() * 12 + 8}px`,
+              height: `${Math.random() * 12 + 8}px`,
+            }}
+          />
+        ))}
+      </div>
+
+      <div className="w-full max-w-md relative z-10">
         {/* ロゴ/タイトル */}
         <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-br from-pink-500 to-purple-600 mb-4">
-            <UserPlus className="w-8 h-8 text-white" />
+          <div className="inline-flex items-center justify-center w-20 h-20 rounded-2xl overflow-hidden mb-4 shadow-[0_0_40px_rgba(99,102,241,0.6)] ring-2 ring-sky-400/50">
+            <Image
+              src="/icon-192x192.png"
+              alt="キャリクラ守護神"
+              width={80}
+              height={80}
+              className="w-full h-full object-cover"
+            />
           </div>
-          <h1 className="text-3xl font-bold text-white mb-2">新規登録</h1>
-          <p className="text-gray-400">CC-Insight メンバー登録</p>
+          <h1 className="text-3xl font-bold bg-gradient-to-r from-sky-400 via-indigo-400 to-violet-400 bg-clip-text text-transparent mb-2">新規登録</h1>
+          <p className="text-sky-300">キャリクラ メンバー登録</p>
         </div>
 
         {/* 登録フォーム */}
-        <div className="backdrop-blur-xl bg-white/5 border border-white/10 rounded-2xl p-8 shadow-2xl">
+        <div className="backdrop-blur-xl bg-slate-900/60 border-2 border-indigo-500/30 rounded-2xl p-8 shadow-[0_0_50px_rgba(99,102,241,0.3)]">
           <form onSubmit={handleSubmit} className="space-y-5">
             {/* 漢字フルネーム */}
             <div className="space-y-2">
-              <Label htmlFor="realName" className="text-gray-300">
+              <Label htmlFor="realName" className="text-sky-200">
                 漢字フルネーム（正式名）
               </Label>
               <div className="relative">
-                <User className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-500" />
+                <User className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-sky-400" />
                 <Input
                   id="realName"
                   type="text"
                   placeholder="山田 太郎"
                   value={realName}
                   onChange={(e) => setRealName(e.target.value)}
-                  className="pl-10 bg-white/5 border-white/10 text-white placeholder:text-gray-500 focus:border-pink-500 focus:ring-pink-500/20"
+                  className="pl-10 bg-white/5 border-2 border-indigo-500/30 text-white placeholder:text-slate-500 focus:border-sky-500 focus:ring-sky-500/20"
                   required
                 />
               </div>
-              <p className="text-xs text-gray-500">※管理者のみ閲覧可能</p>
+              <p className="text-xs text-slate-500">※管理者のみ閲覧可能</p>
             </div>
 
             {/* ニックネーム */}
             <div className="space-y-2">
-              <Label htmlFor="displayName" className="text-gray-300">
+              <Label htmlFor="displayName" className="text-sky-200">
                 ニックネーム（表示名）
               </Label>
               <div className="relative">
-                <User className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-500" />
+                <User className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-indigo-400" />
                 <Input
                   id="displayName"
                   type="text"
                   placeholder="やまたろ"
                   value={displayName}
                   onChange={(e) => setDisplayName(e.target.value)}
-                  className="pl-10 bg-white/5 border-white/10 text-white placeholder:text-gray-500 focus:border-pink-500 focus:ring-pink-500/20"
+                  className="pl-10 bg-white/5 border-2 border-indigo-500/30 text-white placeholder:text-slate-500 focus:border-sky-500 focus:ring-sky-500/20"
                   required
                 />
               </div>
-              <p className="text-xs text-gray-500">※ランキング等で公開されます</p>
+              <p className="text-xs text-slate-500">※ランキング等で公開されます</p>
             </div>
 
             {/* メールアドレス */}
             <div className="space-y-2">
-              <Label htmlFor="email" className="text-gray-300">
+              <Label htmlFor="email" className="text-sky-200">
                 メールアドレス
               </Label>
               <div className="relative">
-                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-500" />
+                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-sky-400" />
                 <Input
                   id="email"
                   type="email"
                   placeholder="your@email.com"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  className="pl-10 bg-white/5 border-white/10 text-white placeholder:text-gray-500 focus:border-pink-500 focus:ring-pink-500/20"
+                  className="pl-10 bg-white/5 border-2 border-indigo-500/30 text-white placeholder:text-slate-500 focus:border-sky-500 focus:ring-sky-500/20"
                   required
                 />
               </div>
@@ -156,18 +201,18 @@ export default function RegisterPage() {
 
             {/* パスワード */}
             <div className="space-y-2">
-              <Label htmlFor="password" className="text-gray-300">
+              <Label htmlFor="password" className="text-sky-200">
                 パスワード
               </Label>
               <div className="relative">
-                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-500" />
+                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-indigo-400" />
                 <Input
                   id="password"
                   type="password"
-                  placeholder="6文字以上"
+                  placeholder="8文字以上（英数字必須）"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="pl-10 bg-white/5 border-white/10 text-white placeholder:text-gray-500 focus:border-pink-500 focus:ring-pink-500/20"
+                  className="pl-10 bg-white/5 border-2 border-indigo-500/30 text-white placeholder:text-slate-500 focus:border-sky-500 focus:ring-sky-500/20"
                   required
                 />
               </div>
@@ -175,18 +220,18 @@ export default function RegisterPage() {
 
             {/* パスワード確認 */}
             <div className="space-y-2">
-              <Label htmlFor="confirmPassword" className="text-gray-300">
+              <Label htmlFor="confirmPassword" className="text-sky-200">
                 パスワード（確認）
               </Label>
               <div className="relative">
-                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-500" />
+                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-sky-400" />
                 <Input
                   id="confirmPassword"
                   type="password"
                   placeholder="パスワードを再入力"
                   value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}
-                  className="pl-10 bg-white/5 border-white/10 text-white placeholder:text-gray-500 focus:border-pink-500 focus:ring-pink-500/20"
+                  className="pl-10 bg-white/5 border-2 border-indigo-500/30 text-white placeholder:text-slate-500 focus:border-sky-500 focus:ring-sky-500/20"
                   required
                 />
               </div>
@@ -194,7 +239,7 @@ export default function RegisterPage() {
 
             {/* チーム選択 */}
             <div className="space-y-2">
-              <Label className="text-gray-300 flex items-center gap-2">
+              <Label className="text-sky-200 flex items-center gap-2">
                 <Users className="w-5 h-5" />
                 所属チーム
               </Label>
@@ -205,8 +250,8 @@ export default function RegisterPage() {
                     type="button"
                     onClick={() => setSelectedTeam(team.id)}
                     className={`p-4 rounded-xl border-2 transition-all text-left ${selectedTeam === team.id
-                      ? "border-opacity-100 bg-opacity-20"
-                      : "border-white/10 bg-white/5 hover:bg-white/10"
+                      ? "border-opacity-100 bg-opacity-20 shadow-[0_0_20px_rgba(99,102,241,0.3)]"
+                      : "border-indigo-500/20 bg-white/5 hover:bg-white/10"
                       }`}
                     style={{
                       borderColor: selectedTeam === team.id ? team.color : undefined,
@@ -220,7 +265,7 @@ export default function RegisterPage() {
                       />
                       <div>
                         <div className="font-medium text-white">{team.name}</div>
-                        <div className="text-sm text-gray-400">{team.description}</div>
+                        <div className="text-sm text-slate-400">{team.description}</div>
                       </div>
                     </div>
                   </button>
@@ -230,27 +275,27 @@ export default function RegisterPage() {
 
             {/*  Invitation Code - New Field */}
             <div className="space-y-2">
-              <Label htmlFor="invitationCode" className="text-gray-300">
+              <Label htmlFor="invitationCode" className="text-sky-200">
                 招待コード
               </Label>
               <div className="relative">
-                <Ticket className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-500" />
+                <Ticket className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-indigo-400" />
                 <Input
                   id="invitationCode"
                   type="text"
                   placeholder="8桁のコードを入力"
                   value={invitationCode}
                   onChange={(e) => setInvitationCode(e.target.value.toUpperCase())}
-                  className="pl-10 bg-white/5 border-white/10 text-white placeholder:text-gray-500 focus:border-pink-500 focus:ring-pink-500/20 font-mono tracking-widest"
+                  className="pl-10 bg-white/5 border-2 border-indigo-500/30 text-white placeholder:text-slate-500 focus:border-sky-500 focus:ring-sky-500/20 font-mono tracking-widest"
                   required
                 />
               </div>
-              <p className="text-xs text-gray-500">※管理画面から発行されたコードが必要です</p>
+              <p className="text-xs text-slate-500">※管理画面から発行されたコードが必要です</p>
             </div>
 
             {/* エラーメッセージ */}
             {error && (
-              <div className="p-3 rounded-lg bg-red-500/10 border border-red-500/20 text-red-400 text-sm">
+              <div className="p-3 rounded-lg bg-red-500/20 border-2 border-red-500/30 text-red-300 text-sm shadow-[0_0_15px_rgba(239,68,68,0.2)]">
                 {error}
               </div>
             )}
@@ -259,29 +304,32 @@ export default function RegisterPage() {
             <Button
               type="submit"
               disabled={isLoading}
-              className="w-full bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-600 hover:to-purple-700 text-white font-medium py-3 rounded-xl transition-all duration-200 shadow-lg shadow-pink-500/25"
+              className="w-full h-12 bg-gradient-to-r from-indigo-500 via-sky-500 to-violet-500 hover:opacity-90 text-white font-bold py-3 rounded-xl transition-all duration-200 shadow-[0_0_30px_rgba(99,102,241,0.5)] relative overflow-hidden group"
             >
+              {/* ホバー時のアニメーション */}
+              <span className="absolute inset-0 w-full h-full bg-gradient-to-r from-violet-500 via-sky-500 to-indigo-500 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+
               {isLoading ? (
-                <div className="flex items-center gap-2">
+                <span className="relative z-10 flex items-center justify-center gap-2">
                   <ButtonLoader />
                   登録中...
-                </div>
+                </span>
               ) : (
-                <div className="flex items-center gap-2">
-                  <UserPlus className="w-5 h-5" />
+                <span className="relative z-10 flex items-center justify-center gap-2">
+                  <Star className="w-5 h-5" fill="currentColor" />
                   アカウントを作成
-                </div>
+                </span>
               )}
             </Button>
           </form>
 
           {/* ログインリンク */}
           <div className="mt-6 text-center">
-            <p className="text-gray-400">
+            <p className="text-slate-400">
               既にアカウントをお持ちですか？{" "}
               <Link
                 href="/login"
-                className="text-pink-400 hover:text-pink-300 font-medium transition-colors"
+                className="text-sky-400 hover:text-sky-300 font-medium transition-colors"
               >
                 ログイン
               </Link>
@@ -290,7 +338,7 @@ export default function RegisterPage() {
         </div>
 
         {/* 注意事項 */}
-        <p className="text-center text-gray-500 text-sm mt-6">
+        <p className="text-center text-slate-500 text-sm mt-6">
           登録後、メール認証と管理者承認が必要です
         </p>
       </div>
