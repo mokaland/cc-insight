@@ -574,7 +574,7 @@ export default function AllTeamsRankingPage() {
                               energy,
                               guardianData
                             });
-                            setSelectedTeam({ name, color, isShorts });
+                            setSelectedTeam({ name, color, type });
                           }}
                           className={`flex items-center gap-4 p-4 rounded-xl transition-all duration-200 cursor-pointer hover:-translate-y-1 hover:shadow-xl ${
                             isCurrentUser
