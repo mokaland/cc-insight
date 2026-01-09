@@ -351,9 +351,11 @@ export default function GuardianUnlockAnimation({
 
           {/* カード表面（守護神） */}
           <motion.div
+            initial={{ opacity: 0 }}
             animate={{
               opacity: phase === "manifesting" || phase === "blessing" ? 1 : 0,
             }}
+            transition={{ opacity: { duration: 0.1 } }}
             className="absolute inset-0 w-56 h-72 md:w-64 md:h-80 rounded-2xl overflow-hidden border-4"
             style={{
               borderColor: "#fbbf24",
@@ -368,14 +370,10 @@ export default function GuardianUnlockAnimation({
               alt={guardian.name}
               className="w-full h-full object-contain"
               onError={(e) => {
-                e.currentTarget.style.display = "none";
-                const fallback = e.currentTarget.nextElementSibling;
-                if (fallback) fallback.classList.remove("hidden");
+                // 画像読み込み失敗時は卵画像を表示
+                e.currentTarget.src = "/images/ui/guardian-egg.png";
               }}
             />
-            <div className="absolute inset-0 flex items-center justify-center hidden">
-              <span className="text-8xl">{placeholder.emoji}</span>
-            </div>
             {/* Stage 0 バッジ */}
             <div className="absolute bottom-4 left-0 right-0 text-center">
               <span className="text-yellow-400 text-sm font-bold bg-black/70 px-3 py-1 rounded-full">

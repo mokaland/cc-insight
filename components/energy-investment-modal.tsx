@@ -647,23 +647,10 @@ export default function EnergyInvestmentModal({
                     opacity: evolutionPhase === "cardify" ? [1, 0.7] : evolutionPhase === "charging" ? 0.5 : 1
                   }}
                   onError={(e) => {
-                    // 画像読み込み失敗時はフォールバック絵文字を表示
-                    e.currentTarget.style.display = "none";
-                    const fallback = e.currentTarget.parentElement?.nextElementSibling;
-                    if (fallback) fallback.classList.remove("hidden");
+                    // 画像読み込み失敗時は卵画像を表示
+                    e.currentTarget.src = "/images/ui/guardian-egg.png";
                   }}
                 />
-              </div>
-              {/* フォールバック絵文字（画像読み込み失敗時のみ表示） */}
-              <div className="absolute inset-0 flex items-center justify-center hidden">
-                <motion.span
-                  animate={{
-                    opacity: evolutionPhase === "cardify" ? [1, 0.5] : evolutionPhase === "charging" ? 0.3 : 1
-                  }}
-                  className="text-8xl md:text-9xl"
-                >
-                  {oldPlaceholder.emoji}
-                </motion.span>
               </div>
               {/* ステージ表示 */}
               <div className="absolute bottom-4 left-0 right-0 text-center">
@@ -709,6 +696,10 @@ export default function EnergyInvestmentModal({
                   src={newStageImage}
                   alt={guardian.name}
                   className="w-full h-full object-contain"
+                  onError={(e) => {
+                    // 画像読み込み失敗時は卵画像を表示
+                    e.currentTarget.src = "/images/ui/guardian-egg.png";
+                  }}
                 />
               </div>
               {/* 新ステージ表示 */}
