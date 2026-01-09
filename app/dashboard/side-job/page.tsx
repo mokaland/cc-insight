@@ -210,45 +210,45 @@ export default function SideJobTeamPage() {
       {/* 全11項目完全実装 */}
       {/* 項目1-4: 基本指標 */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        <GlassCard glowColor="#ec4899" title="総再生数" icon={<Eye className="h-5 w-5" />} value={teamStats.totalViews.toLocaleString()} subtitle="今週の合計">
+        <GlassCard glowColor="#ec4899" title="総再生数" icon={<Eye className="h-5 w-5" />} value={(teamStats.totalViews || 0).toLocaleString()} subtitle="今週の合計">
           <div></div>
         </GlassCard>
-        <GlassCard glowColor="#ec4899" title="総インプレッション" icon={<TrendingUp className="h-5 w-5" />} value={teamStats.totalImpressions.toLocaleString()} subtitle="今週の合計">
+        <GlassCard glowColor="#ec4899" title="総インプレッション" icon={<TrendingUp className="h-5 w-5" />} value={(teamStats.totalImpressions || 0).toLocaleString()} subtitle="今週の合計">
           <div></div>
         </GlassCard>
-        <GlassCard glowColor="#ec4899" title="総投稿数" icon={<Video className="h-5 w-5" />} value={teamStats.totalPosts.toLocaleString()} subtitle="今週の合計">
+        <GlassCard glowColor="#ec4899" title="総投稿数" icon={<Video className="h-5 w-5" />} value={(teamStats.totalPosts || 0).toLocaleString()} subtitle="今週の合計">
           <div></div>
         </GlassCard>
-        <GlassCard glowColor="#ec4899" title="アクティブメンバー" icon={<Users className="h-5 w-5" />} value={`${teamStats.memberCount}人`} subtitle="報告済み人数">
+        <GlassCard glowColor="#ec4899" title="アクティブメンバー" icon={<Users className="h-5 w-5" />} value={`${teamStats.memberCount || 0}人`} subtitle="報告済み人数">
           <div></div>
         </GlassCard>
       </div>
 
       {/* 項目5-8: Instagram詳細KPI */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        <GlassCard glowColor="#22c55e" title="プロフアクセス数" icon={<Users className="h-5 w-5" />} value={teamStats.totalProfileAccess.toLocaleString()} subtitle="Instagram">
+        <GlassCard glowColor="#22c55e" title="プロフアクセス数" icon={<Users className="h-5 w-5" />} value={(teamStats.totalProfileAccess || 0).toLocaleString()} subtitle="Instagram">
           <div></div>
         </GlassCard>
-        <GlassCard glowColor="#f59e0b" title="外部タップ数" icon={<TrendingUp className="h-5 w-5" />} value={teamStats.totalExternalTaps.toLocaleString()} subtitle="リンククリック">
+        <GlassCard glowColor="#f59e0b" title="外部タップ数" icon={<TrendingUp className="h-5 w-5" />} value={(teamStats.totalExternalTaps || 0).toLocaleString()} subtitle="リンククリック">
           <div></div>
         </GlassCard>
-        <GlassCard glowColor="#8b5cf6" title="インタラクション" icon={<Eye className="h-5 w-5" />} value={teamStats.totalInteractions.toLocaleString()} subtitle="エンゲージメント">
+        <GlassCard glowColor="#8b5cf6" title="インタラクション" icon={<Eye className="h-5 w-5" />} value={(teamStats.totalInteractions || 0).toLocaleString()} subtitle="エンゲージメント">
           <div></div>
         </GlassCard>
-        <GlassCard glowColor="#ec4899" title="ストーリー投稿" icon={<Video className="h-5 w-5" />} value={teamStats.totalStories.toString()} subtitle="週間合計">
+        <GlassCard glowColor="#ec4899" title="ストーリー投稿" icon={<Video className="h-5 w-5" />} value={(teamStats.totalStories || 0).toString()} subtitle="週間合計">
           <div></div>
         </GlassCard>
       </div>
 
       {/* 項目9-11: SNSフォロワー統計 */}
       <div className="grid gap-4 md:grid-cols-3">
-        <GlassCard glowColor="#e1306c" title="Instagram" icon={<Instagram className="h-5 w-5" />} value={teamStats.totalIgFollowers.toLocaleString()} subtitle="総フォロワー数">
+        <GlassCard glowColor="#e1306c" title="Instagram" icon={<Instagram className="h-5 w-5" />} value={(teamStats.totalIgFollowers || 0).toLocaleString()} subtitle="総フォロワー数">
           <div></div>
         </GlassCard>
-        <GlassCard glowColor="#ff0000" title="YouTube" icon={<Youtube className="h-5 w-5" />} value={teamStats.totalYtFollowers.toLocaleString()} subtitle="総フォロワー数">
+        <GlassCard glowColor="#ff0000" title="YouTube" icon={<Youtube className="h-5 w-5" />} value={(teamStats.totalYtFollowers || 0).toLocaleString()} subtitle="総フォロワー数">
           <div></div>
         </GlassCard>
-        <GlassCard glowColor="#000000" title="TikTok" icon={<Video className="h-5 w-5" />} value={teamStats.totalTiktokFollowers.toLocaleString()} subtitle="総フォロワー数">
+        <GlassCard glowColor="#000000" title="TikTok" icon={<Video className="h-5 w-5" />} value={(teamStats.totalTiktokFollowers || 0).toLocaleString()} subtitle="総フォロワー数">
           <div></div>
         </GlassCard>
       </div>
@@ -335,8 +335,8 @@ export default function SideJobTeamPage() {
                   </div>
                 </div>
                 <div className="flex gap-6 text-sm">
-                  <div className="text-right"><p className="text-muted-foreground">再生数</p><p className="font-bold">{member.views.toLocaleString()}</p></div>
-                  <div className="text-right"><p className="text-muted-foreground">投稿数</p><p className="font-bold">{member.posts}</p></div>
+                  <div className="text-right"><p className="text-muted-foreground">再生数</p><p className="font-bold">{(member.views || 0).toLocaleString()}</p></div>
+                  <div className="text-right"><p className="text-muted-foreground">投稿数</p><p className="font-bold">{member.posts || 0}</p></div>
                   <div className="text-right"><p className="text-muted-foreground">交流数</p><p className="font-bold">{(member.interactions || 0).toLocaleString()}</p></div>
                 </div>
               </div>

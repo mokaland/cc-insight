@@ -222,6 +222,7 @@ export function calculateTeamStats(reports: Report[], teamId: string) {
       totalIgFollowers: 0,
       totalYtFollowers: 0,
       totalTiktokFollowers: 0,
+      totalXFollowers: 0,  // ✅ X（Twitter）フォロワー合計
     };
   }
 
