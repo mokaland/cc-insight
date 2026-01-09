@@ -305,15 +305,31 @@ export default function GuardianSummoning({ userId, onComplete }: GuardianSummon
 
         <div className="relative bg-slate-900/80 backdrop-blur-xl rounded-2xl p-6 max-w-md w-full border-2 border-purple-500/30
                         shadow-2xl shadow-purple-500/20 mb-[calc(var(--bottom-nav-height)+2rem)]">
-          {/* タイトル */}
+          {/* タイトル - 魔法的なデザイン */}
           <div className="text-center mb-8">
-            <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-purple-500/20 border border-purple-500/40 mb-4">
-              <Star className="w-8 h-8 text-purple-400" />
+            {/* 神秘的なシンボル */}
+            <div className="relative inline-flex items-center justify-center w-20 h-20 mb-4">
+              {/* 外側の回転リング */}
+              <div className="absolute inset-0 rounded-full border-2 border-purple-500/30 animate-spin-slow" />
+              {/* 中間リング */}
+              <div className="absolute inset-2 rounded-full border border-pink-500/40 animate-spin-reverse" />
+              {/* 内側のグロー */}
+              <div
+                className="absolute inset-4 rounded-full bg-gradient-to-br from-purple-600/40 to-pink-600/40"
+                style={{ boxShadow: '0 0 20px rgba(168, 85, 247, 0.5)' }}
+              />
+              {/* 中央のアイコン */}
+              <div className="relative z-10 flex items-center justify-center">
+                <Shield className="w-8 h-8 text-purple-300" />
+              </div>
+              {/* 装飾の星 */}
+              <Sparkles className="absolute -top-1 -right-1 w-4 h-4 text-yellow-400 animate-pulse" />
+              <Star className="absolute -bottom-1 -left-1 w-3 h-3 text-pink-400 animate-pulse" style={{ animationDelay: '0.5s' }} />
             </div>
-            <h2 className="text-2xl font-bold text-white mb-2">
+            <h2 className="text-2xl font-bold bg-gradient-to-r from-purple-300 via-pink-300 to-purple-300 bg-clip-text text-transparent mb-2">
               契約者の証明
             </h2>
-            <p className="text-gray-400 text-sm">
+            <p className="text-gray-400 text-sm italic">
               汝の姿を示せ...
             </p>
           </div>
@@ -398,8 +414,9 @@ export default function GuardianSummoning({ userId, onComplete }: GuardianSummon
                 処理中...
               </span>
             ) : (
-              <span className="flex items-center justify-center gap-2">
-                守護神を選ぶ
+              <span className="inline-flex items-center justify-center gap-2 w-full">
+                <Sparkles className="w-5 h-5" />
+                <span>守護神を選ぶ</span>
                 <Sparkles className="w-5 h-5" />
               </span>
             )}
