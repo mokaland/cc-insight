@@ -47,8 +47,24 @@ function AnimatedNumber({ value }: { value: number }) {
 }
 
 export default function MyPage() {
-  const { user } = useAuth();
+  const { user, userProfile } = useAuth();
   const [loading, setLoading] = useState(true);
+
+  // 新規登録当日かどうかを判定
+  const isFirstDay = (() => {
+    if (!userProfile?.createdAt) return false;
+    // Timestamp型の場合はtoDate()を呼ぶ、そうでなければDateとして扱う
+    const createdAt = userProfile.createdAt as any;
+    const createdDate = typeof createdAt.toDate === 'function'
+      ? createdAt.toDate()
+      : new Date(createdAt);
+    const today = new Date();
+    return (
+      createdDate.getFullYear() === today.getFullYear() &&
+      createdDate.getMonth() === today.getMonth() &&
+      createdDate.getDate() === today.getDate()
+    );
+  })();
   const [profile, setProfile] = useState<UserGuardianProfile | null>(null);
   const [todayReported, setTodayReported] = useState(false);
   const [todayEnergy, setTodayEnergy] = useState(0);
@@ -319,6 +335,20 @@ export default function MyPage() {
           <p className="text-slate-300 text-lg mb-1">獲得エナジー: <span className="text-yellow-400 font-bold">+{todayEnergy}E</span></p>
           <p className="text-sm text-slate-400 mt-3">
             次の報告: 明日の0時以降
+          </p>
+        </div>
+      ) : isFirstDay ? (
+        /* 新規登録当日はウェルカムメッセージを表示 */
+        <div className="bg-purple-500/20 border-2 border-purple-500 rounded-xl p-6 text-center animate-in fade-in duration-500">
+          <span className="text-6xl mb-4 block">✨</span>
+          <h3 className="text-2xl font-bold bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent mb-2">
+            ようこそ！
+          </h3>
+          <p className="text-slate-300 mb-2">
+            明日から活動を始めましょう。
+          </p>
+          <p className="text-slate-400 text-sm">
+            守護神があなたの成長を見守っています。
           </p>
         </div>
       ) : (
