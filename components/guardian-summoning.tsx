@@ -76,8 +76,8 @@ export default function GuardianSummoning({ userId, onComplete }: GuardianSummon
   // =====================================
   if (step === 'demographics') {
     return (
-      <div className="fixed inset-0 bg-gradient-to-b from-slate-950 via-purple-950 to-slate-950 flex items-start justify-center p-4 pt-12 md:pt-16 z-[9999] overflow-y-auto">
-        <div className="bg-slate-900/90 backdrop-blur-xl rounded-2xl p-8 max-w-md w-full border-2 border-purple-500/30 mb-[calc(var(--bottom-nav-height)+2rem)] md:mb-8">
+      <div className="fixed inset-0 bg-gradient-to-b from-slate-950 via-purple-950 to-slate-950 flex items-center justify-center p-4 z-[9999] overflow-y-auto">
+        <div className="bg-slate-900/90 backdrop-blur-xl rounded-2xl p-8 max-w-md w-full border-2 border-purple-500/30 my-8 md:my-0">
           <h2 className="text-3xl font-bold text-white mb-2 text-center">
             🛡️ 守護神との契約
           </h2>
@@ -88,11 +88,10 @@ export default function GuardianSummoning({ userId, onComplete }: GuardianSummon
           {/* 性別 */}
           <div className="mb-6">
             <label className="block text-white font-bold mb-3">性別</label>
-            <div className="grid grid-cols-3 gap-3">
+            <div className="grid grid-cols-2 gap-3">
               {[
                 { value: 'male' as const, label: '男性', image: '/images/ui/gender-male.png' },
-                { value: 'female' as const, label: '女性', image: '/images/ui/gender-female.png' },
-                { value: 'other' as const, label: 'その他', image: '/images/ui/gender-other.png' }
+                { value: 'female' as const, label: '女性', image: '/images/ui/gender-female.png' }
               ].map(option => (
                 <button
                   key={option.value}
