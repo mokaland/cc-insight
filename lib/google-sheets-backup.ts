@@ -1,9 +1,28 @@
 import { google } from 'googleapis';
-import { db } from './firebase';
-import { collection, getDocs, query, orderBy, Timestamp } from 'firebase/firestore';
+import * as admin from 'firebase-admin';
 
 // Google Sheets APIの認証情報
 const SCOPES = ['https://www.googleapis.com/auth/spreadsheets'];
+
+// Firebase Admin SDKの初期化（サーバーサイド用）
+function getAdminFirestore() {
+  if (admin.apps.length === 0) {
+    // 環境変数からサービスアカウント認証情報を取得
+    const serviceAccount = process.env.FIREBASE_SERVICE_ACCOUNT_KEY;
+    if (serviceAccount) {
+      admin.initializeApp({
+        credential: admin.credential.cert(JSON.parse(serviceAccount)),
+      });
+    } else {
+      // Vercel環境ではデフォルト認証情報を使用
+      admin.initializeApp({
+        credential: admin.credential.applicationDefault(),
+        projectId: 'cc-insight',
+      });
+    }
+  }
+  return admin.firestore();
+}
 
 // 環境変数から認証情報を取得
 function getAuthClient() {
@@ -31,11 +50,10 @@ export async function backupReportsToSheets(): Promise<{ success: boolean; rowsW
 
     const auth = getAuthClient();
     const sheets = google.sheets({ version: 'v4', auth });
+    const db = getAdminFirestore();
 
-    // Firestoreから全レポートを取得
-    const reportsRef = collection(db, 'reports');
-    const q = query(reportsRef, orderBy('createdAt', 'desc'));
-    const snapshot = await getDocs(q);
+    // Firestoreから全レポートを取得（Admin SDKはセキュリティルールをバイパス）
+    const snapshot = await db.collection('reports').orderBy('createdAt', 'desc').get();
 
     if (snapshot.empty) {
       return { success: true, rowsWritten: 0 };
@@ -78,9 +96,9 @@ export async function backupReportsToSheets(): Promise<{ success: boolean; rowsW
 
     snapshot.forEach((doc) => {
       const data = doc.data();
-      const createdAt = data.createdAt instanceof Timestamp
+      const createdAt = data.createdAt?.toDate?.()
         ? data.createdAt.toDate().toISOString()
-        : data.createdAt;
+        : data.createdAt || '';
 
       rows.push([
         doc.id,
@@ -88,7 +106,7 @@ export async function backupReportsToSheets(): Promise<{ success: boolean; rowsW
         data.teamType || '',
         data.name || '',
         data.date || '',
-        createdAt || '',
+        createdAt,
         data.userId || '',
         data.userEmail || '',
         // Shorts系
@@ -175,10 +193,10 @@ export async function backupUsersToSheets(): Promise<{ success: boolean; rowsWri
 
     const auth = getAuthClient();
     const sheets = google.sheets({ version: 'v4', auth });
+    const db = getAdminFirestore();
 
     // Firestoreからユーザーを取得
-    const usersRef = collection(db, 'users');
-    const snapshot = await getDocs(usersRef);
+    const snapshot = await db.collection('users').get();
 
     if (snapshot.empty) {
       return { success: true, rowsWritten: 0 };
@@ -200,7 +218,7 @@ export async function backupUsersToSheets(): Promise<{ success: boolean; rowsWri
 
     snapshot.forEach((doc) => {
       const data = doc.data();
-      const createdAt = data.createdAt instanceof Timestamp
+      const createdAt = data.createdAt?.toDate?.()
         ? data.createdAt.toDate().toISOString()
         : data.createdAt || '';
 
@@ -275,10 +293,10 @@ export async function backupGuardianProfilesToSheets(): Promise<{ success: boole
 
     const auth = getAuthClient();
     const sheets = google.sheets({ version: 'v4', auth });
+    const db = getAdminFirestore();
 
     // Firestoreから守護神プロファイルを取得
-    const profilesRef = collection(db, 'guardianProfiles');
-    const snapshot = await getDocs(profilesRef);
+    const snapshot = await db.collection('guardianProfiles').get();
 
     if (snapshot.empty) {
       return { success: true, rowsWritten: 0 };
@@ -300,7 +318,7 @@ export async function backupGuardianProfilesToSheets(): Promise<{ success: boole
 
     snapshot.forEach((doc) => {
       const data = doc.data();
-      const lastReportDate = data.streak?.lastReportDate instanceof Timestamp
+      const lastReportDate = data.streak?.lastReportDate?.toDate?.()
         ? data.streak.lastReportDate.toDate().toISOString().split('T')[0]
         : data.streak?.lastReportDate || '';
 
