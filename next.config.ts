@@ -13,6 +13,11 @@ const nextConfig: NextConfig = {
   // 本番環境でのソースマップ無効化（ビルド高速化）
   productionBrowserSourceMaps: false,
 
+  // キャッシュバスティング：ビルドごとに一意のIDを生成
+  generateBuildId: async () => {
+    return `build-${Date.now()}`;
+  },
+
   // 実験的機能
   experimental: {
     // 並列ビルドの最適化（アイコンライブラリとUIライブラリ）
