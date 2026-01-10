@@ -454,10 +454,11 @@ export default function EnergyInvestmentModal({
 
     return (
       <div
-        className="fixed inset-0 bg-black flex flex-col items-center justify-center z-[9999] overflow-hidden"
+        className="fixed inset-0 bg-black flex flex-col items-center z-[9999] overflow-hidden"
         style={{
-          paddingTop: "env(safe-area-inset-top, 0px)",
-          paddingBottom: "env(safe-area-inset-bottom, 0px)"
+          paddingTop: "calc(env(safe-area-inset-top, 0px) + 2rem)",
+          paddingBottom: "calc(env(safe-area-inset-bottom, 0px) + 5rem)",
+          justifyContent: "center"
         }}
       >
         {/* 背景の暗転グラデーション */}
@@ -796,9 +797,9 @@ export default function EnergyInvestmentModal({
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
-              className="absolute bottom-0 left-0 right-0 px-4 pb-4"
+              className="absolute bottom-0 left-0 right-0 px-4"
               style={{
-                paddingBottom: "calc(env(safe-area-inset-bottom, 0px) + 1rem)"
+                paddingBottom: "calc(env(safe-area-inset-bottom, 0px) + 5rem)"
               }}
             >
               <motion.div
