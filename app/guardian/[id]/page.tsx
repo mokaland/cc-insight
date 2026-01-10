@@ -562,7 +562,7 @@ export default function GuardianDetailPage() {
       {/* アクションボタン */}
       {isUnlocked && (
         <button
-          onClick={() => router.push("/guardians")}
+          onClick={() => router.push(`/guardians?invest=${guardianId}`)}
           className="w-full py-4 rounded-xl font-bold text-lg bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white transition-all flex items-center justify-center gap-2"
         >
           <Zap className="w-5 h-5" />

@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useAuth } from "@/lib/auth-context";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import {
   getUserGuardianProfile,
   unlockGuardian,
@@ -79,6 +79,9 @@ const GUARDIAN_PERSONALITIES: Record<GuardianId, {
 export default function GuardiansPage() {
   const { user } = useAuth();
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const investParam = searchParams.get("invest");
+
   const [profile, setProfile] = useState<UserGuardianProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [selectedGuardian, setSelectedGuardian] = useState<GuardianId | null>(null);
@@ -93,10 +96,24 @@ export default function GuardiansPage() {
       router.push("/login");
       return;
     }
-    
+
     loadProfile();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user?.uid]);
+
+  // URLパラメータでエナジー投資モーダルを自動で開く
+  useEffect(() => {
+    if (investParam && profile) {
+      const guardianId = investParam as GuardianId;
+      const guardian = profile.guardians[guardianId];
+      if (guardian?.unlocked) {
+        setSelectedGuardian(guardianId);
+        setShowEnergyModal(true);
+        // URLからパラメータを削除
+        router.replace("/guardians", { scroll: false });
+      }
+    }
+  }, [investParam, profile, router]);
 
   async function loadProfile() {
     if (!user) return;
