@@ -649,19 +649,16 @@ export default function ReportPage() {
                       </div>
                     </div>
                     <div className="space-y-2">
-                      <Label htmlFor="date" className="flex items-center gap-2 text-white">
+                      <Label className="flex items-center gap-2 text-white">
                         <Calendar className="w-4 h-4" />
                         日付
                       </Label>
-                      <Input
-                        id="date"
-                        type="date"
-                        value={date}
-                        onChange={(e) => setDate(e.target.value)}
-                        className="bg-white/5 border-white/10"
+                      <div
+                        className="px-3 py-2 rounded-md bg-white/10 border text-white"
                         style={{ borderColor: `${teamColor}30` }}
-                        required
-                      />
+                      >
+                        {new Date(date).toLocaleDateString('ja-JP', { year: 'numeric', month: 'long', day: 'numeric', weekday: 'short' })}
+                      </div>
                     </div>
                   </div>
 
