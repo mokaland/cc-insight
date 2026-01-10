@@ -727,8 +727,8 @@ export default function EnergyInvestmentModal({
           </>
         )}
 
-        {/* カード本体 */}
-        <div className="relative z-10" style={{ perspective: "1000px" }}>
+        {/* カード本体 - z-20でメッセージより上に表示 */}
+        <div className="relative z-20" style={{ perspective: "1000px" }}>
           <motion.div
             initial={{ rotateY: 0, scale: 1 }}
             animate={{
@@ -1065,45 +1065,45 @@ export default function EnergyInvestmentModal({
                 </div>
               </motion.div>
 
-              {/* 特性発動通知（Stage 3の場合のみ） */}
+              {/* 特性発動通知（Stage 3の場合のみ、カードの下に配置） */}
               {evolutionData.to === 3 && (
                 <motion.div
-                  initial={{ x: -100, opacity: 0 }}
-                  animate={{ x: 0, opacity: 1 }}
-                  transition={{ delay: 1.8, duration: 0.5 }}
-                  className="absolute left-4 right-4 z-40 pointer-events-none"
-                  style={{ top: "20%" }}
+                  initial={{ scale: 0.8, opacity: 0 }}
+                  animate={{ scale: 1, opacity: 1 }}
+                  transition={{ delay: 1.2, duration: 0.5, type: "spring" }}
+                  className="absolute left-4 right-4 z-10 pointer-events-none"
+                  style={{ bottom: "calc(env(safe-area-inset-bottom, 0px) + 14rem)" }}
                 >
                   <motion.div
                     animate={{
-                      boxShadow: [`0 0 20px ${attr.color}60`, `0 0 40px ${attr.color}80`, `0 0 20px ${attr.color}60`]
+                      boxShadow: [`0 0 15px ${attr.color}60`, `0 0 30px ${attr.color}80`, `0 0 15px ${attr.color}60`]
                     }}
-                    transition={{ duration: 1.5, repeat: 3 }}
-                    className="mx-auto max-w-xs px-6 py-3 rounded-xl text-center"
+                    transition={{ duration: 1.5, repeat: 2 }}
+                    className="mx-auto max-w-xs px-4 py-2 rounded-lg text-center"
                     style={{
-                      background: `linear-gradient(135deg, ${attr.color}40, ${attr.color}20)`,
+                      background: `linear-gradient(135deg, ${attr.color}50, ${attr.color}30)`,
                       border: `2px solid ${attr.color}`
                     }}
                   >
-                    <p className="text-lg font-bold text-white flex items-center justify-center gap-2">
-                      <Sparkles className="w-5 h-5 text-yellow-400" />
-                      特性が発動しました！
-                      <Sparkles className="w-5 h-5 text-yellow-400" />
+                    <p className="text-base font-bold text-white flex items-center justify-center gap-2">
+                      <Sparkles className="w-4 h-4 text-yellow-400" />
+                      特性発動！
+                      <Sparkles className="w-4 h-4 text-yellow-400" />
                     </p>
-                    <p className="text-sm text-white/80 mt-1">
+                    <p className="text-xs text-white/90">
                       「{guardian.ability.name}」
                     </p>
                   </motion.div>
                 </motion.div>
               )}
 
-              {/* 称号・実績表示（カードの下に配置） */}
+              {/* 称号・実績表示（カードの下、ボタンの上に配置） */}
               <motion.div
-                initial={{ y: 30, opacity: 0 }}
+                initial={{ y: 20, opacity: 0 }}
                 animate={{ y: 0, opacity: 1 }}
-                transition={{ delay: 2.2, duration: 0.5 }}
-                className="absolute z-40 pointer-events-none"
-                style={{ bottom: "36%", left: 0, right: 0 }}
+                transition={{ delay: 1.5, duration: 0.5 }}
+                className="absolute z-10 pointer-events-none"
+                style={{ bottom: "calc(env(safe-area-inset-bottom, 0px) + 11rem)", left: 0, right: 0 }}
               >
                 <div className="flex justify-center gap-2 flex-wrap px-4">
                   {evolutionData.to === 1 && (
@@ -1136,39 +1136,38 @@ export default function EnergyInvestmentModal({
                 </div>
               </motion.div>
 
-              {/* ガーディアンからのメッセージ（カードの上） */}
+              {/* ガーディアンからのメッセージ（画面上部、カードより上に配置） */}
               {(() => {
                 const evolutionMessage = getEvolutionMessage(guardianId, evolutionData.to as EvolutionStage);
                 if (!evolutionMessage) return null;
 
                 return (
                   <motion.div
-                    initial={{ opacity: 0, y: 20 }}
+                    initial={{ opacity: 0, y: -20 }}
                     animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.5, duration: 0.6 }}
-                    className="absolute top-0 left-0 right-0 px-6 text-center z-20"
+                    transition={{ delay: 2.5, duration: 0.6 }}
+                    className="absolute left-0 right-0 px-4 text-center z-10 pointer-events-none"
                     style={{
-                      paddingTop: "calc(env(safe-area-inset-top, 0px) + 2rem)"
+                      top: "calc(env(safe-area-inset-top, 0px) + 1rem)"
                     }}
                   >
                     <div
-                      className="inline-block px-6 py-4 rounded-2xl backdrop-blur-md max-w-sm mx-auto"
+                      className="inline-block px-4 py-3 rounded-xl backdrop-blur-md max-w-xs mx-auto"
                       style={{
-                        background: `linear-gradient(135deg, ${attr.color}20, ${attr.color}10)`,
-                        border: `1px solid ${attr.color}40`,
-                        boxShadow: `0 4px 30px ${attr.color}20`
+                        background: `linear-gradient(135deg, ${attr.color}30, ${attr.color}15)`,
+                        border: `1px solid ${attr.color}50`,
+                        boxShadow: `0 4px 20px ${attr.color}30`
                       }}
                     >
-                      {/* メッセージ本文（3行） */}
-                      <div className="space-y-1.5 mb-3">
+                      {/* メッセージ本文（3行を1行ずつ表示） */}
+                      <div className="space-y-1 mb-2">
                         {evolutionMessage.lines.map((line, index) => (
                           <motion.p
                             key={index}
-                            initial={{ opacity: 0, x: -10 }}
-                            animate={{ opacity: 1, x: 0 }}
-                            transition={{ delay: 0.7 + index * 0.2, duration: 0.4 }}
-                            className="text-white leading-relaxed"
-                            style={{ fontSize: "0.95rem" }}
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            transition={{ delay: 2.7 + index * 0.3, duration: 0.4 }}
+                            className="text-white leading-snug text-sm"
                           >
                             {line}
                           </motion.p>
@@ -1179,11 +1178,11 @@ export default function EnergyInvestmentModal({
                       <motion.p
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
-                        transition={{ delay: 1.3, duration: 0.4 }}
-                        className="text-right"
-                        style={{ color: attr.color, fontSize: "0.85rem" }}
+                        transition={{ delay: 3.6, duration: 0.4 }}
+                        className="text-right text-xs"
+                        style={{ color: attr.color }}
                       >
-                        ─ {evolutionMessage.guardianName}より
+                        ─ {evolutionMessage.guardianName}
                       </motion.p>
                     </div>
                   </motion.div>
