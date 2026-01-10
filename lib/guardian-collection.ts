@@ -289,6 +289,15 @@ export function getAuraLevel(investedEnergy: number, stage: EvolutionStage): num
 // 📊 Firestore データ構造
 // =====================================
 
+// 思い出タイムライン用
+export interface GuardianMemory {
+  type: 'unlock' | 'evolve' | 'streak' | 'milestone';
+  date: Timestamp;
+  stage?: EvolutionStage;
+  streakDays?: number;
+  message: string;
+}
+
 export interface GuardianInstance {
   guardianId: GuardianId;
   unlocked: boolean;
@@ -298,6 +307,8 @@ export interface GuardianInstance {
   abilityActive: boolean;    // stage >= 3 で true
   nickname?: string;         // ユーザーが付けた愛称
   unlockedStages?: EvolutionStage[];  // 解放済みステージ履歴（図鑑用）
+  memo?: string;             // ユーザーが自由に書けるメモ
+  memories?: GuardianMemory[]; // 思い出タイムライン
 }
 
 export interface UserEnergyData {
@@ -474,14 +485,75 @@ export function createNewUserProfile(): UserGuardianProfile {
  * 守護神インスタンスを作成
  */
 export function createGuardianInstance(guardianId: GuardianId): GuardianInstance {
+  const guardian = GUARDIANS[guardianId];
+  const now = Timestamp.now();
+
   return {
     guardianId,
     unlocked: true,
-    unlockedAt: Timestamp.now(),
+    unlockedAt: now,
     stage: 0,
     investedEnergy: 0,
     abilityActive: false,
-    unlockedStages: [0]  // 初期ステージを解放済みとして記録
+    unlockedStages: [0],  // 初期ステージを解放済みとして記録
+    memo: "",
+    memories: [
+      {
+        type: 'unlock',
+        date: now,
+        stage: 0,
+        message: `${guardian.name}と運命の出会いを果たした`
+      }
+    ]
+  };
+}
+
+/**
+ * 思い出を追加
+ */
+export function addGuardianMemory(
+  guardian: GuardianInstance,
+  memory: Omit<GuardianMemory, 'date'>
+): GuardianInstance {
+  const newMemory: GuardianMemory = {
+    ...memory,
+    date: Timestamp.now()
+  };
+
+  return {
+    ...guardian,
+    memories: [...(guardian.memories || []), newMemory]
+  };
+}
+
+/**
+ * 進化時の思い出を作成
+ */
+export function createEvolutionMemory(guardianId: GuardianId, newStage: EvolutionStage): Omit<GuardianMemory, 'date'> {
+  const guardian = GUARDIANS[guardianId];
+  const stageName = EVOLUTION_STAGES[newStage].name;
+
+  return {
+    type: 'evolve',
+    stage: newStage,
+    message: `${guardian.name}が「${stageName}」に進化した`
+  };
+}
+
+/**
+ * ストリーク達成時の思い出を作成
+ */
+export function createStreakMemory(guardianId: GuardianId, streakDays: number): Omit<GuardianMemory, 'date'> | null {
+  // 特定の日数でのみ記録（7, 14, 21, 30, 50, 100日など）
+  const milestones = [7, 14, 21, 30, 50, 100];
+  if (!milestones.includes(streakDays)) return null;
+
+  const guardian = GUARDIANS[guardianId];
+
+  return {
+    type: 'streak',
+    streakDays,
+    message: `${guardian.name}と${streakDays}日連続で共に歩んだ`
   };
 }
 

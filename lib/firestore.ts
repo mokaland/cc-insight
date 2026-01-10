@@ -1001,6 +1001,39 @@ export async function switchActiveGuardian(
 }
 
 /**
+ * 守護神のメモを更新（v2.0）
+ */
+export async function updateGuardianMemo(
+  userId: string,
+  guardianId: GuardianId,
+  memo: string
+): Promise<{ success: boolean; message: string }> {
+  try {
+    const profile = await getUserGuardianProfile(userId);
+    if (!profile) {
+      return { success: false, message: "プロファイルが見つかりません" };
+    }
+
+    const guardian = profile.guardians[guardianId];
+    if (!guardian || !guardian.unlocked) {
+      return { success: false, message: "この守護神は解放されていません" };
+    }
+
+    // メモを更新
+    guardian.memo = memo;
+    await updateUserGuardianProfile(userId, profile);
+
+    return {
+      success: true,
+      message: "メモを保存しました"
+    };
+  } catch (error) {
+    console.error("Error updating guardian memo:", error);
+    return { success: false, message: "エラーが発生しました" };
+  }
+}
+
+/**
  * プロファイル初期化済みかチェック（v2.0）
  */
 export async function isGuardianProfileInitialized(userId: string): Promise<boolean> {

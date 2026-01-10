@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useAuth } from "@/lib/auth-context";
 import { useRouter, useParams } from "next/navigation";
-import { getUserGuardianProfile } from "@/lib/firestore";
+import { getUserGuardianProfile, updateGuardianMemo } from "@/lib/firestore";
 import {
   GUARDIANS,
   GuardianId,
@@ -14,67 +14,27 @@ import {
   getPlaceholderStyle,
   getGuardianImagePath,
   EvolutionStage,
+  GuardianMemory,
 } from "@/lib/guardian-collection";
-import { ArrowLeft, Lock, Zap, Star, Heart, Sparkles, ChevronLeft, ChevronRight } from "lucide-react";
-
-// 守護神の性格・特徴データ
-const GUARDIAN_PERSONALITIES: Record<
-  GuardianId,
-  {
-    personality: string;
-    traits: string[];
-    backstory: string;
-    favoriteThings: string[];
-    quote: string;
-  }
-> = {
-  horyu: {
-    personality: "勇敢で正義感が強い",
-    traits: ["リーダーシップ", "決断力", "熱血"],
-    backstory:
-      "古来より炎の山に住む伝説の龍。困難に立ち向かう者を守護する。",
-    favoriteThings: ["挑戦", "成長", "仲間"],
-    quote: "炎のように燃え上がれ！君の可能性は無限大だ！",
-  },
-  shishimaru: {
-    personality: "冷静沈着で知恵に溢れる",
-    traits: ["戦略性", "忍耐力", "洞察力"],
-    backstory: "森の奥深くで瞑想する白獅子。静かな力で導く賢者。",
-    favoriteThings: ["思考", "計画", "瞑想"],
-    quote: "焦らず、着実に。真の強さは心の平穏から生まれる。",
-  },
-  hanase: {
-    personality: "優しく穏やかで癒しの存在",
-    traits: ["共感力", "包容力", "癒し"],
-    backstory:
-      "花園に住む精霊。疲れた心を癒し、再び歩む力を与える。",
-    favoriteThings: ["自然", "調和", "笑顔"],
-    quote: "大丈夫、一歩ずつでいいの。あなたは一人じゃないわ。",
-  },
-  shiroko: {
-    personality: "神秘的で直感力が鋭い",
-    traits: ["直感", "神秘", "変化適応"],
-    backstory:
-      "月光に照らされた湖に現れる白狐。未来を予見し導く。",
-    favoriteThings: ["月夜", "静寂", "変化"],
-    quote: "運命は変えられる。君の選択が未来を創る。",
-  },
-  kitama: {
-    personality: "好奇心旺盛でエネルギッシュ",
-    traits: ["活発", "創造性", "楽観性"],
-    backstory: "黄金の森で踊る妖精。笑顔と希望を運ぶ使者。",
-    favoriteThings: ["冒険", "発見", "お祭り"],
-    quote: "楽しもう！人生は一度きりの大冒険だよ！",
-  },
-  hoshimaru: {
-    personality: "高貴で威厳があり完璧主義",
-    traits: ["完璧主義", "野心", "カリスマ"],
-    backstory:
-      "星々の彼方から降臨した究極の守護神。選ばれし者のみと契約する。",
-    favoriteThings: ["完璧", "達成", "栄光"],
-    quote: "限界など存在しない。我と共に頂へ登るのだ。",
-  },
-};
+import { getStageContent, getUnlockedStories } from "@/lib/guardian-stage-content";
+import {
+  ArrowLeft,
+  Lock,
+  Zap,
+  Star,
+  Heart,
+  Sparkles,
+  ChevronLeft,
+  ChevronRight,
+  MessageSquare,
+  Calendar,
+  BookOpen,
+  Clock,
+  Edit3,
+  Save,
+  X,
+} from "lucide-react";
+import { Timestamp } from "firebase/firestore";
 
 export default function GuardianDetailPage() {
   const { user } = useAuth();
@@ -84,7 +44,10 @@ export default function GuardianDetailPage() {
 
   const [profile, setProfile] = useState<UserGuardianProfile | null>(null);
   const [loading, setLoading] = useState(true);
-  const [selectedStage, setSelectedStage] = useState<EvolutionStage>(0);
+  const [selectedStage, setSelectedStage] = useState<EvolutionStage>(1);
+  const [isEditingMemo, setIsEditingMemo] = useState(false);
+  const [memoText, setMemoText] = useState("");
+  const [savingMemo, setSavingMemo] = useState(false);
 
   // 守護神が存在するか確認
   const guardian = GUARDIANS[guardianId];
@@ -105,7 +68,9 @@ export default function GuardianDetailPage() {
     if (profile && guardianId) {
       const instance = profile.guardians[guardianId];
       if (instance?.unlocked) {
-        setSelectedStage(instance.stage);
+        // 現在のステージが1以上ならそれを選択、そうでなければ1
+        setSelectedStage(Math.max(1, instance.stage) as EvolutionStage);
+        setMemoText(instance.memo || "");
       }
     }
   }, [profile, guardianId]);
@@ -122,6 +87,20 @@ export default function GuardianDetailPage() {
       console.error("Error loading profile:", error);
     } finally {
       setLoading(false);
+    }
+  }
+
+  async function handleSaveMemo() {
+    if (!user || !profile) return;
+    setSavingMemo(true);
+    try {
+      await updateGuardianMemo(user.uid, guardianId, memoText);
+      setIsEditingMemo(false);
+      await loadProfile();
+    } catch (error) {
+      console.error("Error saving memo:", error);
+    } finally {
+      setSavingMemo(false);
     }
   }
 
@@ -161,13 +140,24 @@ export default function GuardianDetailPage() {
   const unlockedStages = instance?.unlockedStages || (isUnlocked ? [0] : []);
   const isActive = profile.activeGuardianId === guardianId;
   const attr = ATTRIBUTES[guardian.attribute];
-  const personality = GUARDIAN_PERSONALITIES[guardianId];
   const investedEnergy = instance?.investedEnergy || 0;
   const auraLevel = isUnlocked ? getAuraLevel(investedEnergy, currentStage) : 0;
+  const memories = instance?.memories || [];
 
-  // 選択したステージが解放済みかどうか
+  // 選択したステージが解放済みかどうか（Stage 1-4のみ）
   const isStageUnlocked = unlockedStages.includes(selectedStage);
   const stageInfo = EVOLUTION_STAGES[selectedStage];
+  const stageContent = getStageContent(guardianId, selectedStage);
+  const unlockedStories = getUnlockedStories(guardianId, unlockedStages);
+
+  // 絆エピソード計算
+  const unlockedAt = instance?.unlockedAt;
+  const daysTogether = unlockedAt
+    ? Math.floor((Date.now() - unlockedAt.toDate().getTime()) / (1000 * 60 * 60 * 24))
+    : 0;
+
+  // フィルタリングされた解放済みステージ（1-4のみ）
+  const displayStages = unlockedStages.filter(s => s >= 1 && s <= 4) as EvolutionStage[];
 
   return (
     <div className="space-y-6 pb-8">
@@ -204,7 +194,7 @@ export default function GuardianDetailPage() {
         )}
       </div>
 
-      {/* 守護神画像（大） */}
+      {/* 守護神画像（大）とセリフ */}
       <div className="relative">
         <div
           className="w-full aspect-square max-w-md mx-auto rounded-2xl overflow-hidden relative border-4"
@@ -242,61 +232,85 @@ export default function GuardianDetailPage() {
                   : "#47556999",
               }}
             >
-              {stageInfo.name} (Stage {selectedStage})
+              {stageInfo?.name || "???"} (Stage {selectedStage})
             </span>
           </div>
         </div>
 
-        {/* ステージ切り替えボタン */}
-        {isUnlocked && unlockedStages.length > 1 && (
+        {/* セリフ（吹き出し風） */}
+        {isStageUnlocked && stageContent && (
+          <div className="mt-4 p-4 glass-premium rounded-xl relative">
+            <div
+              className="absolute -top-2 left-1/2 transform -translate-x-1/2 w-4 h-4 rotate-45"
+              style={{ backgroundColor: `${attr.color}30` }}
+            />
+            <div className="flex items-start gap-3">
+              <MessageSquare className="w-5 h-5 text-purple-400 flex-shrink-0 mt-0.5" />
+              <p className="text-white italic">&quot;{stageContent.quote}&quot;</p>
+            </div>
+          </div>
+        )}
+
+        {/* ステージ切り替えボタン（Stage 1-4のみ） */}
+        {isUnlocked && displayStages.length > 0 && (
           <div className="flex items-center justify-center gap-4 mt-4">
             <button
               onClick={() => {
-                const currentIndex = unlockedStages.indexOf(selectedStage);
+                const currentIndex = displayStages.indexOf(selectedStage);
                 if (currentIndex > 0) {
-                  setSelectedStage(unlockedStages[currentIndex - 1]);
+                  setSelectedStage(displayStages[currentIndex - 1]);
                 }
               }}
-              disabled={unlockedStages.indexOf(selectedStage) === 0}
+              disabled={displayStages.indexOf(selectedStage) === 0}
               className="p-2 rounded-full bg-slate-700 hover:bg-slate-600 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
             >
               <ChevronLeft className="w-6 h-6 text-white" />
             </button>
 
             <div className="flex gap-2">
-              {unlockedStages.map((stage) => (
-                <button
-                  key={stage}
-                  onClick={() => setSelectedStage(stage)}
-                  className={`w-10 h-10 rounded-full font-bold transition-all ${
-                    selectedStage === stage
-                      ? "text-white scale-110"
-                      : "bg-slate-700 text-slate-300 hover:bg-slate-600"
-                  }`}
-                  style={{
-                    backgroundColor:
-                      selectedStage === stage ? attr.color : undefined,
-                    boxShadow:
+              {[1, 2, 3, 4].map((stage) => {
+                const isThisUnlocked = unlockedStages.includes(stage as EvolutionStage);
+                return (
+                  <button
+                    key={stage}
+                    onClick={() => {
+                      if (isThisUnlocked) {
+                        setSelectedStage(stage as EvolutionStage);
+                      }
+                    }}
+                    disabled={!isThisUnlocked}
+                    className={`w-10 h-10 rounded-full font-bold transition-all ${
                       selectedStage === stage
-                        ? `0 0 20px ${attr.color}`
-                        : "none",
-                  }}
-                >
-                  {stage}
-                </button>
-              ))}
+                        ? "text-white scale-110"
+                        : isThisUnlocked
+                        ? "bg-slate-700 text-slate-300 hover:bg-slate-600"
+                        : "bg-slate-800 text-slate-600 cursor-not-allowed"
+                    }`}
+                    style={{
+                      backgroundColor:
+                        selectedStage === stage ? attr.color : undefined,
+                      boxShadow:
+                        selectedStage === stage
+                          ? `0 0 20px ${attr.color}`
+                          : "none",
+                    }}
+                  >
+                    {stage}
+                  </button>
+                );
+              })}
             </div>
 
             <button
               onClick={() => {
-                const currentIndex = unlockedStages.indexOf(selectedStage);
-                if (currentIndex < unlockedStages.length - 1) {
-                  setSelectedStage(unlockedStages[currentIndex + 1]);
+                const currentIndex = displayStages.indexOf(selectedStage);
+                if (currentIndex < displayStages.length - 1) {
+                  setSelectedStage(displayStages[currentIndex + 1]);
                 }
               }}
               disabled={
-                unlockedStages.indexOf(selectedStage) ===
-                unlockedStages.length - 1
+                displayStages.indexOf(selectedStage) ===
+                displayStages.length - 1
               }
               className="p-2 rounded-full bg-slate-700 hover:bg-slate-600 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
             >
@@ -306,66 +320,16 @@ export default function GuardianDetailPage() {
         )}
       </div>
 
-      {/* 進化ステージ一覧（スタンプカード風） */}
-      <div className="glass-premium p-4 rounded-xl">
-        <h3 className="text-lg font-bold text-white mb-4">進化履歴</h3>
-        <div className="flex justify-between">
-          {EVOLUTION_STAGES.map((stageData, index) => {
-            const stageNum = stageData.stage as EvolutionStage;
-            const isThisStageUnlocked = unlockedStages.includes(stageNum);
-            const isCurrentStage = currentStage === stageNum;
-
-            return (
-              <button
-                key={stageNum}
-                onClick={() => {
-                  if (isThisStageUnlocked) {
-                    setSelectedStage(stageNum);
-                  }
-                }}
-                className={`flex flex-col items-center gap-1 p-2 rounded-xl transition-all ${
-                  isThisStageUnlocked
-                    ? "cursor-pointer hover:bg-white/10"
-                    : "cursor-default opacity-50"
-                } ${selectedStage === stageNum ? "bg-white/10" : ""}`}
-              >
-                <div
-                  className={`w-12 h-12 rounded-full flex items-center justify-center border-2 ${
-                    isThisStageUnlocked
-                      ? "border-purple-500"
-                      : "border-slate-600"
-                  }`}
-                  style={{
-                    backgroundColor: isThisStageUnlocked
-                      ? `${attr.color}40`
-                      : "#1e293b",
-                    boxShadow:
-                      isCurrentStage && isThisStageUnlocked
-                        ? `0 0 15px ${attr.color}`
-                        : "none",
-                  }}
-                >
-                  {isThisStageUnlocked ? (
-                    <span className="text-white font-bold">{stageNum}</span>
-                  ) : (
-                    <span className="text-slate-500 text-lg">?</span>
-                  )}
-                </div>
-                <span
-                  className={`text-xs ${
-                    isThisStageUnlocked ? "text-white" : "text-slate-500"
-                  }`}
-                >
-                  {isThisStageUnlocked ? stageData.name : "???"}
-                </span>
-                {isCurrentStage && isThisStageUnlocked && (
-                  <span className="text-xs text-purple-400">現在</span>
-                )}
-              </button>
-            );
-          })}
+      {/* 外見の説明 */}
+      {isStageUnlocked && stageContent && (
+        <div className="glass-bg p-4 rounded-xl">
+          <h3 className="text-lg font-bold text-white mb-2 flex items-center gap-2">
+            <Sparkles className="w-5 h-5" style={{ color: attr.color }} />
+            Stage {selectedStage} の姿
+          </h3>
+          <p className="text-slate-300 text-sm">{stageContent.appearance}</p>
         </div>
-      </div>
+      )}
 
       {/* ステータス */}
       {isUnlocked && (
@@ -390,79 +354,194 @@ export default function GuardianDetailPage() {
         </div>
       )}
 
-      {/* 説明 */}
-      <div className="glass-bg p-4 rounded-xl">
-        <h3 className="text-lg font-bold text-white mb-2">説明</h3>
-        <p className="text-slate-300 text-sm">{guardian.description}</p>
-      </div>
-
-      {/* 性格・特徴 */}
-      <div className="glass-bg p-4 rounded-xl">
-        <h3 className="text-lg font-bold text-white mb-3 flex items-center gap-2">
-          <Heart className="w-5 h-5 text-pink-400" />
-          性格・特徴
-        </h3>
-        <div className="space-y-3">
-          <div>
-            <p className="text-xs text-slate-400 mb-1">性格</p>
-            <p className="text-white">{personality.personality}</p>
+      {/* 絆エピソード */}
+      {isUnlocked && (
+        <div className="glass-premium p-4 rounded-xl">
+          <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
+            <Heart className="w-5 h-5 text-pink-400" />
+            絆の記録
+          </h3>
+          <div className="grid grid-cols-2 gap-4">
+            <div className="glass-bg p-3 rounded-lg text-center">
+              <Calendar className="w-5 h-5 text-purple-400 mx-auto mb-1" />
+              <p className="text-2xl font-bold text-white">{daysTogether}</p>
+              <p className="text-xs text-slate-400">一緒に過ごした日数</p>
+            </div>
+            <div className="glass-bg p-3 rounded-lg text-center">
+              <Sparkles className="w-5 h-5 text-yellow-400 mx-auto mb-1" />
+              <p className="text-2xl font-bold text-white">{currentStage}</p>
+              <p className="text-xs text-slate-400">進化回数</p>
+            </div>
           </div>
-          <div>
-            <p className="text-xs text-slate-400 mb-1">特性</p>
-            <div className="flex flex-wrap gap-2">
-              {personality.traits.map((trait) => (
-                <span
-                  key={trait}
-                  className="px-3 py-1 bg-purple-500/20 text-purple-300 rounded-full text-sm"
+        </div>
+      )}
+
+      {/* 守護神メモ */}
+      {isUnlocked && (
+        <div className="glass-bg p-4 rounded-xl">
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="text-lg font-bold text-white flex items-center gap-2">
+              <Edit3 className="w-5 h-5 text-blue-400" />
+              あなたのメモ
+            </h3>
+            {!isEditingMemo ? (
+              <button
+                onClick={() => setIsEditingMemo(true)}
+                className="text-sm text-blue-400 hover:text-blue-300"
+              >
+                編集
+              </button>
+            ) : (
+              <div className="flex gap-2">
+                <button
+                  onClick={handleSaveMemo}
+                  disabled={savingMemo}
+                  className="flex items-center gap-1 text-sm text-green-400 hover:text-green-300"
                 >
-                  {trait}
-                </span>
-              ))}
-            </div>
+                  <Save className="w-4 h-4" />
+                  保存
+                </button>
+                <button
+                  onClick={() => {
+                    setIsEditingMemo(false);
+                    setMemoText(instance?.memo || "");
+                  }}
+                  className="flex items-center gap-1 text-sm text-slate-400 hover:text-slate-300"
+                >
+                  <X className="w-4 h-4" />
+                  キャンセル
+                </button>
+              </div>
+            )}
           </div>
-          <div>
-            <p className="text-xs text-slate-400 mb-1">好きなこと</p>
-            <div className="flex flex-wrap gap-2">
-              {personality.favoriteThings.map((thing) => (
-                <span key={thing} className="text-sm text-slate-300">
-                  {thing}
+          {isEditingMemo ? (
+            <textarea
+              value={memoText}
+              onChange={(e) => setMemoText(e.target.value)}
+              placeholder={`${guardian.name}との思い出や気持ちを書いてみよう...`}
+              className="w-full h-24 p-3 bg-slate-800/50 border border-slate-600 rounded-lg text-white placeholder-slate-500 focus:outline-none focus:border-purple-500 resize-none"
+            />
+          ) : (
+            <p className="text-slate-300 text-sm whitespace-pre-wrap">
+              {instance?.memo || (
+                <span className="text-slate-500 italic">
+                  タップして{guardian.name}への想いを書いてみよう...
                 </span>
-              ))}
-            </div>
-          </div>
+              )}
+            </p>
+          )}
         </div>
-      </div>
+      )}
 
-      {/* バックストーリー */}
-      <div className="glass-bg p-4 rounded-xl">
-        <h3 className="text-lg font-bold text-white mb-2 flex items-center gap-2">
-          <Sparkles className="w-5 h-5 text-yellow-400" />
-          バックストーリー
-        </h3>
-        <p className="text-slate-300 text-sm mb-3">{personality.backstory}</p>
-        <div className="p-3 bg-slate-800/50 rounded-lg border-l-4 border-purple-500">
-          <p className="text-sm text-purple-300 italic">
-            &quot;{personality.quote}&quot;
-          </p>
+      {/* 思い出タイムライン */}
+      {isUnlocked && memories.length > 0 && (
+        <div className="glass-bg p-4 rounded-xl">
+          <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
+            <Clock className="w-5 h-5 text-cyan-400" />
+            思い出タイムライン
+          </h3>
+          <div className="space-y-3">
+            {memories.slice().reverse().slice(0, 5).map((memory, index) => (
+              <div
+                key={index}
+                className="flex items-start gap-3 p-3 glass-bg rounded-lg"
+              >
+                <div
+                  className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0"
+                  style={{ backgroundColor: `${attr.color}30` }}
+                >
+                  {memory.type === 'unlock' && <Star className="w-4 h-4" style={{ color: attr.color }} />}
+                  {memory.type === 'evolve' && <Sparkles className="w-4 h-4" style={{ color: attr.color }} />}
+                  {memory.type === 'streak' && <Zap className="w-4 h-4" style={{ color: attr.color }} />}
+                  {memory.type === 'milestone' && <Heart className="w-4 h-4" style={{ color: attr.color }} />}
+                </div>
+                <div className="flex-1">
+                  <p className="text-white text-sm">{memory.message}</p>
+                  <p className="text-xs text-slate-500 mt-1">
+                    {formatMemoryDate(memory.date)}
+                  </p>
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
-      </div>
+      )}
+
+      {/* 隠しストーリー */}
+      {isUnlocked && unlockedStories.length > 0 && (
+        <div className="glass-premium p-4 rounded-xl">
+          <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
+            <BookOpen className="w-5 h-5 text-yellow-400" />
+            {guardian.name}の物語
+          </h3>
+          <div className="space-y-4">
+            {unlockedStories.map((storyData) => (
+              <div
+                key={storyData.stage}
+                className={`p-4 rounded-lg border-l-4 ${
+                  selectedStage === storyData.stage
+                    ? "bg-white/10"
+                    : "bg-slate-800/30"
+                }`}
+                style={{
+                  borderColor:
+                    selectedStage === storyData.stage
+                      ? attr.color
+                      : "#475569",
+                }}
+              >
+                <div className="flex items-center gap-2 mb-2">
+                  <span
+                    className="text-xs font-bold px-2 py-0.5 rounded"
+                    style={{ backgroundColor: `${attr.color}40`, color: attr.color }}
+                  >
+                    Stage {storyData.stage}
+                  </span>
+                  <h4 className="text-white font-bold text-sm">
+                    {storyData.title}
+                  </h4>
+                </div>
+                <p className="text-slate-300 text-sm leading-relaxed">
+                  {storyData.story}
+                </p>
+              </div>
+            ))}
+            {/* 未解放のストーリーへのヒント */}
+            {unlockedStories.length < 4 && (
+              <div className="p-4 rounded-lg bg-slate-800/30 border-l-4 border-slate-600">
+                <p className="text-slate-500 text-sm italic">
+                  進化すると新しい物語が解放されます...
+                </p>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* 特性スキル */}
       <div className="glass-bg p-4 rounded-xl">
-        <h3 className="text-lg font-bold text-white mb-2">特性スキル</h3>
+        <h3 className="text-lg font-bold text-white mb-2 flex items-center gap-2">
+          <Zap className="w-5 h-5 text-yellow-400" />
+          特性スキル
+        </h3>
         <p className="text-sm font-bold text-purple-400 mb-1">
           {guardian.ability.name}
         </p>
-        <p className="text-sm text-slate-300 mb-2">
-          {guardian.ability.description}
-        </p>
-        {isUnlocked && currentStage >= 3 && (
-          <p className="text-sm text-green-400">発動中</p>
-        )}
-        {isUnlocked && currentStage < 3 && (
-          <p className="text-sm text-yellow-400">Stage 3で解放</p>
-        )}
-        {!isUnlocked && (
+        {isUnlocked && currentStage >= 3 ? (
+          <>
+            <p className="text-sm text-slate-300 mb-2">
+              {guardian.ability.description}
+            </p>
+            <p className="text-sm text-green-400">発動中</p>
+          </>
+        ) : isUnlocked ? (
+          <>
+            <p className="text-sm text-slate-400 mb-2">
+              {stageContent?.abilityHint || "???"}
+            </p>
+            <p className="text-sm text-yellow-400">Stage 3で解放</p>
+          </>
+        ) : (
           <p className="text-sm text-slate-500">解放後に使用可能</p>
         )}
       </div>
@@ -479,4 +558,18 @@ export default function GuardianDetailPage() {
       )}
     </div>
   );
+}
+
+// 日付フォーマット
+function formatMemoryDate(timestamp: Timestamp): string {
+  const date = timestamp.toDate();
+  const now = new Date();
+  const diffDays = Math.floor((now.getTime() - date.getTime()) / (1000 * 60 * 60 * 24));
+
+  if (diffDays === 0) return "今日";
+  if (diffDays === 1) return "昨日";
+  if (diffDays < 7) return `${diffDays}日前`;
+  if (diffDays < 30) return `${Math.floor(diffDays / 7)}週間前`;
+
+  return `${date.getFullYear()}/${date.getMonth() + 1}/${date.getDate()}`;
 }

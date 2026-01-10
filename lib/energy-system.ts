@@ -20,7 +20,9 @@ import {
   UserStreakData,
   GUARDIANS,
   getCurrentStage,
-  EVOLUTION_STAGES
+  EVOLUTION_STAGES,
+  createEvolutionMemory,
+  GuardianMemory
 } from "./guardian-collection";
 import { recordEnergyHistory, EnergyBreakdown } from "./energy-history";
 
@@ -305,12 +307,23 @@ export function investEnergy(
     unlockedStages.sort((a, b) => a - b);
   }
 
+  // 思い出を更新（進化した場合のみ）
+  let memories = guardian.memories ? [...guardian.memories] : [];
+  if (evolved) {
+    const evolutionMemory = createEvolutionMemory(guardian.guardianId, newStage);
+    memories.push({
+      ...evolutionMemory,
+      date: Timestamp.now()
+    } as GuardianMemory);
+  }
+
   const newGuardian: GuardianInstance = {
     ...guardian,
     investedEnergy: newInvestedEnergy,
     stage: newStage,
     abilityActive: newStage >= 3,
-    unlockedStages
+    unlockedStages,
+    memories
   };
 
   let message = `${GUARDIANS[guardian.guardianId].name}に${amount}エナジーを投資しました`;
