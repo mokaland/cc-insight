@@ -2,7 +2,7 @@
 
 import { motion, AnimatePresence } from "framer-motion";
 import { X, Zap, Calendar, TrendingUp, Award } from "lucide-react";
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import type { LoginBonusResult } from "@/lib/daily-login-bonus";
 
 interface DailyLoginModalProps {
@@ -42,6 +42,42 @@ const TIER_CONFIG = {
 
 export function DailyLoginModal({ isOpen, onClose, bonusData }: DailyLoginModalProps) {
   const config = TIER_CONFIG[bonusData.tier];
+  const scrollYRef = useRef(0);
+
+  // PWA/iOS Safari対応: 背景スクロールを完全に防止
+  useEffect(() => {
+    if (isOpen && bonusData.isFirstLoginToday) {
+      // 現在のスクロール位置を保存
+      scrollYRef.current = window.scrollY;
+
+      // body固定でスクロール防止
+      document.body.style.position = 'fixed';
+      document.body.style.top = `-${scrollYRef.current}px`;
+      document.body.style.left = '0';
+      document.body.style.right = '0';
+      document.body.style.width = '100%';
+      document.body.style.overflow = 'hidden';
+      document.documentElement.style.overflow = 'hidden';
+
+      // タッチイベントを制御
+      const preventTouchMove = (e: TouchEvent) => {
+        e.preventDefault();
+      };
+      document.addEventListener('touchmove', preventTouchMove, { passive: false });
+
+      return () => {
+        document.removeEventListener('touchmove', preventTouchMove);
+        document.body.style.position = '';
+        document.body.style.top = '';
+        document.body.style.left = '';
+        document.body.style.right = '';
+        document.body.style.width = '';
+        document.body.style.overflow = '';
+        document.documentElement.style.overflow = '';
+        window.scrollTo(0, scrollYRef.current);
+      };
+    }
+  }, [isOpen, bonusData.isFirstLoginToday]);
 
   // バイブレーション
   useEffect(() => {
@@ -67,21 +103,42 @@ export function DailyLoginModal({ isOpen, onClose, bonusData }: DailyLoginModalP
   return (
     <AnimatePresence>
       {isOpen && (
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-          className="fixed inset-0 z-[100] flex items-center justify-center p-4 overflow-hidden"
-          style={{ backdropFilter: 'blur(8px)' }}
-        >
-          {/* 背景オーバーレイ */}
+        <>
+          {/*
+            PWA/iOS Safari対応: セーフエリアを含む画面全体を覆う背景
+            負のマージンでステータスバー・ホームバー領域も確実にカバー
+          */}
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="absolute inset-0 bg-black/60"
             onClick={onClose}
+            className="fixed z-[9998] bg-black/80"
+            style={{
+              position: 'fixed',
+              top: 'calc(-1 * env(safe-area-inset-top, 0px) - 50px)',
+              left: 'calc(-1 * env(safe-area-inset-left, 0px) - 50px)',
+              right: 'calc(-1 * env(safe-area-inset-right, 0px) - 50px)',
+              bottom: 'calc(-1 * env(safe-area-inset-bottom, 0px) - 50px)',
+              minWidth: 'calc(100vw + 100px)',
+              minHeight: 'calc(100vh + 100px)',
+              backdropFilter: 'blur(8px)',
+              WebkitBackdropFilter: 'blur(8px)',
+              touchAction: 'none',
+            }}
           />
+
+          {/* モーダルコンテナ */}
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[9999] flex items-center justify-center p-4 overflow-hidden"
+            style={{
+              paddingTop: 'calc(env(safe-area-inset-top, 0px) + 1rem)',
+              paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 5rem)',
+            }}
+          >
 
           {/* パーティクル爆発 */}
           <div className="absolute inset-0 overflow-hidden pointer-events-none">
@@ -306,7 +363,8 @@ export function DailyLoginModal({ isOpen, onClose, bonusData }: DailyLoginModalP
               タップして閉じる
             </motion.p>
           </motion.div>
-        </motion.div>
+          </motion.div>
+        </>
       )}
     </AnimatePresence>
   );
