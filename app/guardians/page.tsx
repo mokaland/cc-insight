@@ -258,26 +258,28 @@ export default function GuardiansPage() {
                       `}
                       style={{
                         borderColor: isStageUnlocked ? attr.color : "#475569",
-                        backgroundColor: isStageUnlocked ? `${attr.color}30` : "#1e293b",
+                        backgroundColor: isStageUnlocked ? "#ffffff" : "#1e293b",
                         boxShadow: isStageUnlocked ? `0 0 10px ${attr.color}40` : "none",
                       }}
                     >
                       {isStageUnlocked ? (
-                        <img
-                          src={getGuardianImagePath(guardian.id, stage as 0 | 1 | 2 | 3 | 4)}
-                          alt={`${guardian.name} Stage ${stage}`}
-                          className="w-full h-full object-cover scale-125"
-                          onError={(e) => {
-                            e.currentTarget.style.display = "none";
-                            const parent = e.currentTarget.parentElement;
-                            if (parent) {
-                              const fallback = document.createElement("span");
-                              fallback.className = "text-lg";
-                              fallback.textContent = attr.emoji;
-                              parent.appendChild(fallback);
-                            }
-                          }}
-                        />
+                        <div className="w-full h-full flex items-center justify-center bg-white">
+                          <img
+                            src={getGuardianImagePath(guardian.id, stage as 0 | 1 | 2 | 3 | 4)}
+                            alt={`${guardian.name} Stage ${stage}`}
+                            className="w-[90%] h-[90%] object-contain"
+                            onError={(e) => {
+                              e.currentTarget.style.display = "none";
+                              const parent = e.currentTarget.parentElement;
+                              if (parent) {
+                                const fallback = document.createElement("span");
+                                fallback.className = "text-lg";
+                                fallback.textContent = attr.emoji;
+                                parent.appendChild(fallback);
+                              }
+                            }}
+                          />
+                        </div>
                       ) : (
                         <span className="text-slate-500 text-sm font-bold">?</span>
                       )}
