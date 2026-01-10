@@ -755,17 +755,17 @@ export default function EnergyInvestmentModal({
             className="relative"
             style={{ transformStyle: "preserve-3d" }}
           >
-            {/* カード表面（旧ステージ） */}
+            {/* カード表面（旧ステージ）- フィナーレでは非表示 */}
             <motion.div
               animate={{
                 opacity: evolutionPhase === "reveal" || evolutionPhase === "finale" ? 0 : 1
               }}
+              transition={{ opacity: { duration: 0.3 } }}
               className="w-48 h-64 md:w-56 md:h-72 rounded-2xl overflow-hidden border-4 relative"
               style={{
                 borderColor: attr.color,
                 background: `linear-gradient(135deg, ${attr.color}20, ${attr.color}40)`,
                 boxShadow: `0 0 ${evolutionPhase === "charging" ? 60 : 30}px ${attr.color}80`,
-                backfaceVisibility: "hidden"
               }}
             >
               {/* カード内のグラデーション背景 */}
@@ -794,7 +794,7 @@ export default function EnergyInvestmentModal({
               </div>
             </motion.div>
 
-            {/* カード裏面（新ステージ）+ オーラエフェクト */}
+            {/* カード裏面（新ステージ）+ オーラエフェクト - revealとfinaleで表示 */}
             <motion.div
               initial={{ opacity: 0 }}
               animate={{
@@ -802,7 +802,7 @@ export default function EnergyInvestmentModal({
                 y: evolutionPhase === "finale" ? [0, -8, 0] : 0,
               }}
               transition={{
-                opacity: { duration: 0.1 },
+                opacity: { duration: 0.3 },
                 y: { duration: 2, repeat: Infinity, ease: "easeInOut" },
               }}
               className="absolute inset-0 w-48 h-64 md:w-56 md:h-72 rounded-2xl overflow-hidden border-4"
@@ -812,8 +812,6 @@ export default function EnergyInvestmentModal({
                 boxShadow: evolutionPhase === "finale"
                   ? `0 0 ${auraConfig.glowIntensity}px ${auraConfig.glowColor}, 0 0 ${auraConfig.glowIntensity * 1.5}px ${auraConfig.glowColor}80${auraConfig.hasRainbow ? ', 0 0 100px rgba(255, 215, 0, 0.5)' : ''}`
                   : `0 0 80px #fbbf24, 0 0 120px ${attr.color}`,
-                transform: "rotateY(180deg)",
-                backfaceVisibility: "hidden"
               }}
             >
               {/* オーラレイヤー（ステージに応じて増加） */}
@@ -1065,47 +1063,16 @@ export default function EnergyInvestmentModal({
                 </div>
               </motion.div>
 
-              {/* 特性発動通知（Stage 3の場合のみ、カードの下に配置） */}
-              {evolutionData.to === 3 && (
-                <motion.div
-                  initial={{ scale: 0.8, opacity: 0 }}
-                  animate={{ scale: 1, opacity: 1 }}
-                  transition={{ delay: 1.2, duration: 0.5, type: "spring" }}
-                  className="absolute left-4 right-4 z-10 pointer-events-none"
-                  style={{ bottom: "calc(env(safe-area-inset-bottom, 0px) + 14rem)" }}
-                >
-                  <motion.div
-                    animate={{
-                      boxShadow: [`0 0 15px ${attr.color}60`, `0 0 30px ${attr.color}80`, `0 0 15px ${attr.color}60`]
-                    }}
-                    transition={{ duration: 1.5, repeat: 2 }}
-                    className="mx-auto max-w-xs px-4 py-2 rounded-lg text-center"
-                    style={{
-                      background: `linear-gradient(135deg, ${attr.color}50, ${attr.color}30)`,
-                      border: `2px solid ${attr.color}`
-                    }}
-                  >
-                    <p className="text-base font-bold text-white flex items-center justify-center gap-2">
-                      <Sparkles className="w-4 h-4 text-yellow-400" />
-                      特性発動！
-                      <Sparkles className="w-4 h-4 text-yellow-400" />
-                    </p>
-                    <p className="text-xs text-white/90">
-                      「{guardian.ability.name}」
-                    </p>
-                  </motion.div>
-                </motion.div>
-              )}
-
-              {/* 称号・実績表示（カードの下、ボタンの上に配置） */}
+              {/* 称号・実績表示（カード直下に配置） */}
               <motion.div
                 initial={{ y: 20, opacity: 0 }}
                 animate={{ y: 0, opacity: 1 }}
-                transition={{ delay: 1.5, duration: 0.5 }}
+                transition={{ delay: 1.0, duration: 0.5 }}
                 className="absolute z-10 pointer-events-none"
-                style={{ bottom: "calc(env(safe-area-inset-bottom, 0px) + 11rem)", left: 0, right: 0 }}
+                style={{ top: "68%", left: 0, right: 0 }}
               >
-                <div className="flex justify-center gap-2 flex-wrap px-4">
+                <div className="flex flex-col items-center gap-2 px-4">
+                  {/* Stage 1: はじめての進化 */}
                   {evolutionData.to === 1 && (
                     <motion.span
                       animate={{ scale: [1, 1.1, 1] }}
@@ -1115,6 +1082,7 @@ export default function EnergyInvestmentModal({
                       🎉 はじめての進化！
                     </motion.span>
                   )}
+                  {/* Stage 4: 究極体到達 */}
                   {evolutionData.to === 4 && (
                     <motion.span
                       animate={{ scale: [1, 1.1, 1] }}
@@ -1124,14 +1092,31 @@ export default function EnergyInvestmentModal({
                       👑 究極体到達！
                     </motion.span>
                   )}
+                  {/* Stage 3: 特性解放 */}
                   {evolutionData.to === 3 && (
-                    <motion.span
-                      animate={{ scale: [1, 1.1, 1] }}
-                      transition={{ duration: 0.5, repeat: 2 }}
-                      className="px-3 py-1 rounded-full text-sm font-bold bg-gradient-to-r from-purple-500 to-pink-500 text-white"
-                    >
-                      ✨ 特性解放！
-                    </motion.span>
+                    <>
+                      <motion.span
+                        animate={{ scale: [1, 1.1, 1] }}
+                        transition={{ duration: 0.5, repeat: 2 }}
+                        className="px-3 py-1 rounded-full text-sm font-bold bg-gradient-to-r from-purple-500 to-pink-500 text-white"
+                      >
+                        ✨ 特性解放！
+                      </motion.span>
+                      <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        transition={{ delay: 1.5 }}
+                        className="px-3 py-1 rounded-lg text-center"
+                        style={{
+                          background: `${attr.color}40`,
+                          border: `1px solid ${attr.color}80`
+                        }}
+                      >
+                        <p className="text-xs text-white/90">
+                          「{guardian.ability.name}」発動！
+                        </p>
+                      </motion.div>
+                    </>
                   )}
                 </div>
               </motion.div>
