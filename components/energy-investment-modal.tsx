@@ -812,7 +812,6 @@ export default function EnergyInvestmentModal({
                 boxShadow: evolutionPhase === "finale"
                   ? `0 0 ${auraConfig.glowIntensity}px ${auraConfig.glowColor}, 0 0 ${auraConfig.glowIntensity * 1.5}px ${auraConfig.glowColor}80${auraConfig.hasRainbow ? ', 0 0 100px rgba(255, 215, 0, 0.5)' : ''}`
                   : `0 0 80px #fbbf24, 0 0 120px ${attr.color}`,
-                transform: "rotateY(180deg)", // 親の回転に合わせて反転を補正
               }}
             >
               {/* オーラレイヤー（ステージに応じて増加） */}
@@ -871,10 +870,13 @@ export default function EnergyInvestmentModal({
                 />
               )}
 
-              {/* 新しい守護神画像 */}
+              {/* 新しい守護神画像 - 親の回転で反転するためscaleX(-1)で補正 */}
               <div
                 className="absolute inset-0"
-                style={{ background: oldPlaceholder.background }}
+                style={{
+                  background: oldPlaceholder.background,
+                  transform: "scaleX(-1)", // 親の900度回転による鏡像を補正
+                }}
               >
                 <motion.img
                   src={newStageImage}
@@ -890,8 +892,11 @@ export default function EnergyInvestmentModal({
                   }}
                 />
               </div>
-              {/* 新ステージ表示 */}
-              <div className="absolute bottom-4 left-0 right-0 text-center">
+              {/* 新ステージ表示 - 親の回転で反転するためscaleX(-1)で補正 */}
+              <div
+                className="absolute bottom-4 left-0 right-0 text-center"
+                style={{ transform: "scaleX(-1)" }}
+              >
                 <span className="text-yellow-400 text-sm font-bold bg-black/70 px-3 py-1 rounded-full">
                   Stage {evolutionData.to}
                 </span>
