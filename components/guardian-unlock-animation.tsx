@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   GUARDIANS,
@@ -9,7 +10,7 @@ import {
   getPlaceholderStyle,
   getGuardianImagePath,
 } from "@/lib/guardian-collection";
-import { Sparkles, Star } from "lucide-react";
+import { Sparkles, Star, Eye, X } from "lucide-react";
 
 // 召喚の儀のフェーズ
 type SummoningPhase =
@@ -29,6 +30,7 @@ export default function GuardianUnlockAnimation({
   guardianId,
   onComplete,
 }: GuardianUnlockAnimationProps) {
+  const router = useRouter();
   const [phase, setPhase] = useState<SummoningPhase>("idle");
   const guardian = GUARDIANS[guardianId];
   const attr = ATTRIBUTES[guardian.attribute];
@@ -71,7 +73,7 @@ export default function GuardianUnlockAnimation({
         SUMMONING_CONFIG.summoningDuration
     );
 
-    // Phase 5: 祝福
+    // Phase 5: 祝福（ボタンが押されるまで待機）
     const timer4 = setTimeout(
       () => setPhase("blessing"),
       SUMMONING_CONFIG.preparingDuration +
@@ -80,19 +82,15 @@ export default function GuardianUnlockAnimation({
         SUMMONING_CONFIG.manifestingDuration
     );
 
-    // 完了
-    const timer5 = setTimeout(() => {
-      onComplete();
-    }, SUMMONING_CONFIG.totalDuration);
+    // 自動完了は削除 - ユーザーがボタンを押すまで待機
 
     return () => {
       clearTimeout(timer1);
       clearTimeout(timer2);
       clearTimeout(timer3);
       clearTimeout(timer4);
-      clearTimeout(timer5);
     };
-  }, [onComplete]);
+  }, []);
 
   return (
     <div className="fixed inset-0 bg-black flex items-center justify-center z-[9999] overflow-hidden">
@@ -442,48 +440,115 @@ export default function GuardianUnlockAnimation({
         </>
       )}
 
-      {/* Phase 5: 祝福メッセージ */}
+      {/* Phase 5: 祝福メッセージとボタン */}
       <AnimatePresence>
         {phase === "blessing" && (
-          <motion.div
-            initial={{ y: 80, opacity: 0 }}
-            animate={{ y: 0, opacity: 1 }}
-            className="absolute left-0 right-0 text-center px-4"
-            style={{
-              bottom: "calc(env(safe-area-inset-bottom, 0px) + 5rem)"
-            }}
-          >
-            <motion.h2
-              initial={{ scale: 0.5 }}
-              animate={{ scale: [0.5, 1.2, 1] }}
-              transition={{ duration: 0.5 }}
-              className="text-3xl md:text-4xl font-bold text-white mb-3"
+          <>
+            {/* 上部メッセージ（カードの上に配置） */}
+            <motion.div
+              initial={{ scale: 2, opacity: 0, y: -20 }}
+              animate={{ scale: 1, opacity: [0, 1, 1, 0], y: 0 }}
+              transition={{ duration: 2, times: [0, 0.2, 0.7, 1] }}
+              className="absolute left-0 right-0 z-30 pointer-events-none"
+              style={{ top: "calc(env(safe-area-inset-top, 0px) + 8%)" }}
             >
-              ✨ 契約成立！
-            </motion.h2>
+              <div className="text-center">
+                <motion.h2
+                  className="text-3xl md:text-4xl font-bold text-white mb-2"
+                  style={{
+                    textShadow: `0 0 40px ${attr.color}`,
+                    filter: 'drop-shadow(0 0 15px rgba(251, 191, 36, 0.5))'
+                  }}
+                >
+                  ✨ 契約成立！
+                </motion.h2>
+                <motion.p
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: [0, 1, 1, 0] }}
+                  transition={{ duration: 2, times: [0, 0.25, 0.7, 1] }}
+                  className="text-lg text-white/80"
+                >
+                  新しい守護神を召喚しました！
+                </motion.p>
+              </div>
+            </motion.div>
+
+            {/* ガーディアン名表示（カード直下） */}
+            <motion.div
+              initial={{ y: 20, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              transition={{ delay: 0.8, duration: 0.5 }}
+              className="absolute z-10 pointer-events-none"
+              style={{ top: "62%", left: 0, right: 0 }}
+            >
+              <div className="flex flex-col items-center gap-1 px-4">
+                <motion.p
+                  animate={{ scale: [1, 1.05, 1] }}
+                  transition={{ duration: 0.5, repeat: 2 }}
+                  className="text-base md:text-lg text-white"
+                >
+                  <span style={{ color: attr.color }} className="font-bold">
+                    {guardian.name}
+                  </span>{" "}
+                  があなたの守護神になりました！
+                </motion.p>
+                <motion.div
+                  initial={{ scale: 0 }}
+                  animate={{ scale: 1 }}
+                  transition={{ delay: 0.3, type: "spring" }}
+                  className="inline-block p-2 px-4 bg-gradient-to-r from-purple-900/80 to-pink-900/80 rounded-xl border border-yellow-400/50 mt-2"
+                >
+                  <p className="text-yellow-400 font-bold text-sm">
+                    🎯 エナジーを注入して育てよう！
+                  </p>
+                </motion.div>
+              </div>
+            </motion.div>
+
+            {/* ボタン（下部に配置） */}
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
-              transition={{ delay: 0.3 }}
+              className="absolute bottom-0 left-0 right-0 px-4"
+              style={{
+                paddingBottom: "calc(env(safe-area-inset-bottom, 0px) + 6rem)"
+              }}
             >
-              <p className="text-base md:text-lg text-gray-300 mb-1">
-                <span style={{ color: attr.color }} className="font-bold">
-                  {guardian.name}
-                </span>{" "}
-                があなたの守護神になりました！
-              </p>
               <motion.div
-                initial={{ scale: 0 }}
-                animate={{ scale: 1 }}
-                transition={{ delay: 0.5, type: "spring" }}
-                className="inline-block p-2 px-4 bg-gradient-to-r from-purple-900/80 to-pink-900/80 rounded-xl border border-yellow-400/50 mt-2"
+                initial={{ y: 20, opacity: 0 }}
+                animate={{ y: 0, opacity: 1 }}
+                transition={{ delay: 0.3, duration: 0.5 }}
+                className="flex flex-col items-center gap-3 w-full max-w-sm mx-auto"
               >
-                <p className="text-yellow-400 font-bold text-sm">
-                  🎯 エナジーを注入して育てよう！
-                </p>
+                {/* 詳細を見るボタン */}
+                <button
+                  onClick={() => {
+                    onComplete();
+                    router.push(`/guardian/${guardianId}`);
+                  }}
+                  className="w-full py-4 rounded-xl font-bold text-lg text-white transition-all flex items-center justify-center gap-2"
+                  style={{
+                    background: `linear-gradient(135deg, ${attr.color}, ${attr.color}cc)`,
+                    boxShadow: `0 0 30px ${attr.color}80`,
+                  }}
+                >
+                  <Eye className="w-5 h-5" />
+                  詳細を見る
+                </button>
+
+                {/* 閉じるボタン */}
+                <button
+                  onClick={() => {
+                    onComplete();
+                  }}
+                  className="w-full py-3 rounded-xl font-bold text-white/80 bg-slate-800/80 hover:bg-slate-700/80 transition-all flex items-center justify-center gap-2"
+                >
+                  <X className="w-5 h-5" />
+                  閉じる
+                </button>
               </motion.div>
             </motion.div>
-          </motion.div>
+          </>
         )}
       </AnimatePresence>
 
