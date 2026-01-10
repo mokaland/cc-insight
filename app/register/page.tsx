@@ -304,7 +304,7 @@ export default function RegisterPage() {
             <Button
               type="submit"
               disabled={isLoading}
-              className="!flex w-full h-12 bg-gradient-to-r from-pink-500 via-rose-500 to-pink-600 hover:opacity-90 text-white font-bold text-lg rounded-xl transition-all duration-200 shadow-[0_0_30px_rgba(236,72,153,0.5)] relative overflow-hidden group mx-auto"
+              className="w-full h-12 bg-gradient-to-r from-pink-500 via-rose-500 to-pink-600 text-white font-bold text-lg hover:opacity-90 shadow-[0_0_30px_rgba(236,72,153,0.5)] relative overflow-hidden group"
             >
               {/* ホバー時のアニメーション */}
               <span className="absolute inset-0 w-full h-full bg-gradient-to-r from-rose-500 via-pink-500 to-pink-600 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
