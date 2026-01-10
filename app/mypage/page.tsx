@@ -411,13 +411,36 @@ export default function MyPage() {
         <div className="bg-purple-500/20 border-2 border-purple-500 rounded-xl p-6 text-center animate-in fade-in duration-500">
           <span className="text-6xl mb-4 block">✨</span>
           <h3 className="text-2xl font-bold bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent mb-2">
-            ようこそ！
+            ようこそ、契約者よ！
           </h3>
-          <p className="text-slate-300 mb-2">
-            明日から活動を始めましょう。
+          <p className="text-slate-300 mb-4">
+            守護神との契約が完了しました。<br />
+            これからあなたの成長の旅が始まります。
           </p>
-          <p className="text-slate-400 text-sm">
-            守護神があなたの成長を見守っています。
+
+          {/* 次のステップ案内 */}
+          <div className="bg-black/30 rounded-xl p-4 mt-4 text-left">
+            <p className="text-sm text-purple-300 font-bold mb-3 text-center">
+              📋 はじめの一歩
+            </p>
+            <ul className="text-sm text-slate-300 space-y-2">
+              <li className="flex items-start gap-2">
+                <span className="text-yellow-400">1.</span>
+                <span><strong>明日から日報を報告</strong>して、エナジーを獲得しましょう</span>
+              </li>
+              <li className="flex items-start gap-2">
+                <span className="text-yellow-400">2.</span>
+                <span>獲得したエナジーを<strong>守護神に投資</strong>して進化させましょう</span>
+              </li>
+              <li className="flex items-start gap-2">
+                <span className="text-yellow-400">3.</span>
+                <span><strong>連続報告（ストリーク）</strong>でボーナスエナジーを獲得！</span>
+              </li>
+            </ul>
+          </div>
+
+          <p className="text-slate-400 text-xs mt-4">
+            守護神があなたの成長を見守っています ✨
           </p>
         </div>
       ) : (
