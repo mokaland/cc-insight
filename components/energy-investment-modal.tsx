@@ -1031,33 +1031,34 @@ export default function EnergyInvestmentModal({
         <AnimatePresence>
           {evolutionPhase === "finale" && (
             <>
-              {/* ステージ名の大きな表示（最初にドラマチックに） */}
+              {/* ステージ名の大きな表示（カードの上に配置、完全にフェードアウト） */}
               <motion.div
-                initial={{ scale: 3, opacity: 0 }}
-                animate={{ scale: 1, opacity: [0, 1, 1, 0.8] }}
-                transition={{ duration: 1.5, times: [0, 0.2, 0.8, 1] }}
-                className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-30 pointer-events-none"
+                initial={{ scale: 2, opacity: 0, y: -20 }}
+                animate={{ scale: 1, opacity: [0, 1, 1, 0], y: 0 }}
+                transition={{ duration: 2, times: [0, 0.2, 0.7, 1] }}
+                className="absolute left-0 right-0 z-30 pointer-events-none"
+                style={{ top: "calc(env(safe-area-inset-top, 0px) + 8%)" }}
               >
                 <div className="text-center">
                   <motion.p
-                    className="text-6xl md:text-7xl font-bold mb-2"
+                    className="text-4xl md:text-5xl font-bold mb-1"
                     style={{
                       background: evolutionData.to === 4
                         ? 'linear-gradient(135deg, #fbbf24, #f59e0b, #fbbf24)'
                         : `linear-gradient(135deg, ${attr.color}, #fbbf24)`,
                       WebkitBackgroundClip: 'text',
                       WebkitTextFillColor: 'transparent',
-                      textShadow: `0 0 60px ${attr.color}`,
-                      filter: 'drop-shadow(0 0 20px rgba(251, 191, 36, 0.5))'
+                      textShadow: `0 0 40px ${attr.color}`,
+                      filter: 'drop-shadow(0 0 15px rgba(251, 191, 36, 0.5))'
                     }}
                   >
                     {newStageName}
                   </motion.p>
                   <motion.p
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.5 }}
-                    className="text-xl text-white/80"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: [0, 1, 1, 0] }}
+                    transition={{ duration: 2, times: [0, 0.25, 0.7, 1] }}
+                    className="text-lg text-white/80"
                   >
                     Stage {evolutionData.from} → Stage {evolutionData.to}
                   </motion.p>
@@ -1096,13 +1097,13 @@ export default function EnergyInvestmentModal({
                 </motion.div>
               )}
 
-              {/* 称号・実績表示 */}
+              {/* 称号・実績表示（カードの下に配置） */}
               <motion.div
-                initial={{ y: 50, opacity: 0 }}
+                initial={{ y: 30, opacity: 0 }}
                 animate={{ y: 0, opacity: 1 }}
                 transition={{ delay: 2.2, duration: 0.5 }}
                 className="absolute z-40 pointer-events-none"
-                style={{ bottom: "42%", left: 0, right: 0 }}
+                style={{ bottom: "36%", left: 0, right: 0 }}
               >
                 <div className="flex justify-center gap-2 flex-wrap px-4">
                   {evolutionData.to === 1 && (
