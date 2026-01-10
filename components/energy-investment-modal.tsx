@@ -605,12 +605,14 @@ export default function EnergyInvestmentModal({
                 evolutionPhase === "cardify" ? 0 :
                 evolutionPhase === "charging" ? config.cardRotations :
                 evolutionPhase === "flash" ? config.cardRotations :
-                evolutionPhase === "reveal" ? config.cardRotations + 180 : 0,
+                evolutionPhase === "reveal" ? config.cardRotations + 180 :
+                evolutionPhase === "finale" ? config.cardRotations + 180 : 0,
               scale:
                 evolutionPhase === "cardify" ? [1, 0.95] :
                 evolutionPhase === "charging" ? 0.9 :
                 evolutionPhase === "flash" ? 0.9 :
-                evolutionPhase === "reveal" ? [0.9, 1.1, 1] : 1,
+                evolutionPhase === "reveal" ? [0.9, 1.1, 1] :
+                evolutionPhase === "finale" ? 1 : 1,
             }}
             transition={{
               rotateY: {
