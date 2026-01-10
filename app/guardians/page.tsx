@@ -19,7 +19,7 @@ import {
   getPlaceholderStyle,
   getGuardianImagePath
 } from "@/lib/guardian-collection";
-import { Lock, Zap, Star, ChevronRight, X, Heart, Sparkles } from "lucide-react";
+import { Lock, Zap, Star, ChevronRight, X, Heart, Sparkles, ClipboardList, ArrowRight } from "lucide-react";
 import EnergyInvestmentModal from "@/components/energy-investment-modal";
 import GuardianSummoning from "@/components/guardian-summoning";
 import GuardianUnlockAnimation from "@/components/guardian-unlock-animation";
@@ -122,9 +122,11 @@ export default function GuardiansPage() {
       const data = await getUserGuardianProfile(user.uid);
       if (data) {
         setProfile(data);
-        
+
+        // 守護神を1体も持っていない場合は召喚画面を表示
+        // （途中離脱後の再ログインでも召喚フローに戻れるようにする）
         const hasAnyGuardian = Object.values(data.guardians).some(g => g?.unlocked);
-        if (!hasAnyGuardian && !data.gender) {
+        if (!hasAnyGuardian) {
           setShowSummoning(true);
         }
       }
@@ -192,12 +194,40 @@ export default function GuardiansPage() {
           </span>
         </div>
         <div className="w-full h-3 bg-slate-700 rounded-full overflow-hidden">
-          <div 
+          <div
             className="h-full bg-gradient-to-r from-purple-500 via-pink-500 to-blue-500 transition-all duration-1000"
             style={{ width: `${completionPercentage}%` }}
           />
         </div>
       </div>
+
+      {/* 新規メンバー向けガイダンスカード */}
+      {unlockedStagesCount === 0 && (
+        <div className="glass-premium p-6 rounded-2xl border-2 border-purple-500/50 bg-gradient-to-br from-purple-900/20 to-pink-900/20">
+          <div className="flex items-start gap-4">
+            <div className="w-16 h-16 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center flex-shrink-0">
+              <ClipboardList className="w-8 h-8 text-white" />
+            </div>
+            <div className="flex-1">
+              <h3 className="text-xl font-bold text-white mb-2">
+                守護神を育てよう！
+              </h3>
+              <p className="text-slate-300 text-sm mb-4">
+                毎日の日報報告でエナジーを獲得して、守護神を進化させましょう。
+                継続報告でボーナスエナジーも獲得できます！
+              </p>
+              <button
+                onClick={() => router.push("/report")}
+                className="w-full py-3 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 text-white font-bold rounded-xl transition-all flex items-center justify-center gap-2"
+              >
+                <ClipboardList className="w-5 h-5" />
+                日報報告を始める
+                <ArrowRight className="w-5 h-5" />
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* 守護神図鑑（スタンプカード風） */}
       <div className="glass-premium p-4 rounded-2xl">

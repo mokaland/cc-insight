@@ -400,10 +400,10 @@ export function MemberDetailModal({
           </div>
         )}
 
-        {/* 閉じるボタン */}
+        {/* 閉じるボタン - PWA対応で下部に余裕を持たせる */}
         <button
           onClick={onClose}
-          className="mt-8 w-full py-4 rounded-xl font-bold text-white transition-all hover:scale-105"
+          className="mt-8 mb-4 w-full py-4 rounded-xl font-bold text-white transition-all hover:scale-105"
           style={{
             background: `linear-gradient(135deg, ${teamColor}CC, ${teamColor}99)`,
             boxShadow: `0 10px 30px ${teamColor}40`

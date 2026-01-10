@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import {
   GUARDIANS,
   GuardianId,
@@ -11,6 +11,35 @@ import {
 } from "@/lib/guardian-collection";
 import { setUserDemographics, unlockGuardian } from "@/lib/firestore";
 import { Sparkles, Zap, Star, Shield, Flame } from "lucide-react";
+
+// PWA対応: スクロールロック用のカスタムフック
+function useScrollLock(isLocked: boolean) {
+  const scrollYRef = useRef(0);
+
+  useEffect(() => {
+    if (isLocked) {
+      scrollYRef.current = window.scrollY;
+      document.body.style.position = 'fixed';
+      document.body.style.top = `-${scrollYRef.current}px`;
+      document.body.style.left = '0';
+      document.body.style.right = '0';
+      document.body.style.width = '100%';
+      document.body.style.overflow = 'hidden';
+      document.documentElement.style.overflow = 'hidden';
+
+      return () => {
+        document.body.style.position = '';
+        document.body.style.top = '';
+        document.body.style.left = '';
+        document.body.style.right = '';
+        document.body.style.width = '';
+        document.body.style.overflow = '';
+        document.documentElement.style.overflow = '';
+        window.scrollTo(0, scrollYRef.current);
+      };
+    }
+  }, [isLocked]);
+}
 
 interface GuardianSummoningProps {
   userId: string;
@@ -135,6 +164,9 @@ export default function GuardianSummoning({ userId, onComplete }: GuardianSummon
 
   const tier1Guardians = getTier1Guardians();
 
+  // PWA対応: 召喚画面表示中は背景スクロールをロック
+  useScrollLock(true);
+
   // プロローグの進行
   const advancePrologue = useCallback(() => {
     if (prologuePhase < 4) {
@@ -210,18 +242,30 @@ export default function GuardianSummoning({ userId, onComplete }: GuardianSummon
     ];
 
     return (
-      <div
-        className="fixed inset-0 bg-black flex flex-col items-center justify-center z-[9999] overflow-hidden"
-        style={{
-          paddingTop: 'env(safe-area-inset-top, 0px)',
-          paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 5rem)',
-        }}
-      >
-        {/* 背景の星空エフェクト */}
-        <div className="absolute inset-0">
-          <div className="absolute inset-0 bg-gradient-to-b from-slate-950 via-purple-950/50 to-slate-950" />
-          <ParticleEffect count={30} color="purple" />
-        </div>
+      <>
+        {/* PWA対応: セーフエリア外まで背景を拡張 */}
+        <div
+          className="fixed z-[9998] bg-black"
+          style={{
+            top: '-100px',
+            left: '-100px',
+            right: '-100px',
+            bottom: '-100px',
+          }}
+        />
+
+        <div
+          className="fixed inset-0 flex flex-col items-center justify-center z-[9999] overflow-hidden"
+          style={{
+            paddingTop: 'calc(env(safe-area-inset-top, 0px) + 1rem)',
+            paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 5rem)',
+          }}
+        >
+          {/* 背景の星空エフェクト */}
+          <div className="absolute inset-0">
+            <div className="absolute inset-0 bg-gradient-to-b from-slate-950 via-purple-950/50 to-slate-950" />
+            <ParticleEffect count={30} color="purple" />
+          </div>
 
         {/* 中央の魔法陣（フェードイン） */}
         <div
@@ -293,6 +337,7 @@ export default function GuardianSummoning({ userId, onComplete }: GuardianSummon
           />
         )}
       </div>
+      </>
     );
   }
 
@@ -301,14 +346,25 @@ export default function GuardianSummoning({ userId, onComplete }: GuardianSummon
   // =====================================
   if (step === 'demographics') {
     return (
-      <div
-        className="fixed inset-0 bg-gradient-to-b from-slate-950 via-purple-950 to-slate-950 flex items-start justify-center p-4 z-[9999] overflow-y-auto"
-        style={{
-          paddingTop: 'calc(env(safe-area-inset-top, 0px) + 1rem)',
-          paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 6rem)',
-          WebkitOverflowScrolling: 'touch',
-        }}
-      >
+      <>
+        {/* PWA対応: セーフエリア外まで背景を拡張 */}
+        <div
+          className="fixed z-[9998] bg-gradient-to-b from-slate-950 via-purple-950 to-slate-950"
+          style={{
+            top: '-100px',
+            left: '-100px',
+            right: '-100px',
+            bottom: '-100px',
+          }}
+        />
+        <div
+          className="fixed inset-0 flex items-start justify-center p-4 z-[9999] overflow-y-auto"
+          style={{
+            paddingTop: 'calc(env(safe-area-inset-top, 0px) + 1rem)',
+            paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 6rem)',
+            WebkitOverflowScrolling: 'touch',
+          }}
+        >
         {/* 背景の魔法陣 */}
         <div className="absolute inset-0 flex items-center justify-center opacity-20">
           <MagicCircle size="lg" spinning={true} />
@@ -436,6 +492,7 @@ export default function GuardianSummoning({ userId, onComplete }: GuardianSummon
           </button>
         </div>
       </div>
+      </>
     );
   }
 
@@ -444,14 +501,25 @@ export default function GuardianSummoning({ userId, onComplete }: GuardianSummon
   // =====================================
   if (step === 'selection') {
     return (
-      <div
-        className="fixed inset-0 bg-gradient-to-b from-slate-950 via-purple-950 to-slate-950 z-[9999] overflow-y-auto"
-        style={{
-          paddingTop: 'calc(env(safe-area-inset-top, 0px) + 1rem)',
-          paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 6rem)',
-          WebkitOverflowScrolling: 'touch',
-        }}
-      >
+      <>
+        {/* PWA対応: セーフエリア外まで背景を拡張 */}
+        <div
+          className="fixed z-[9998] bg-gradient-to-b from-slate-950 via-purple-950 to-slate-950"
+          style={{
+            top: '-100px',
+            left: '-100px',
+            right: '-100px',
+            bottom: '-100px',
+          }}
+        />
+        <div
+          className="fixed inset-0 z-[9999] overflow-y-auto"
+          style={{
+            paddingTop: 'calc(env(safe-area-inset-top, 0px) + 1rem)',
+            paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 8rem)',
+            WebkitOverflowScrolling: 'touch',
+          }}
+        >
         <ParticleEffect count={25} color="gold" />
 
         <div className="min-h-full flex flex-col items-center justify-start p-4 pt-4">
@@ -590,6 +658,7 @@ export default function GuardianSummoning({ userId, onComplete }: GuardianSummon
           </div>
         </div>
       </div>
+      </>
     );
   }
 
@@ -602,13 +671,24 @@ export default function GuardianSummoning({ userId, onComplete }: GuardianSummon
     const placeholder = getPlaceholderStyle(selectedGuardian);
 
     return (
-      <div
-        className="fixed inset-0 bg-black flex items-center justify-center z-[9999] overflow-hidden"
-        style={{
-          paddingTop: 'env(safe-area-inset-top, 0px)',
-          paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 5rem)',
-        }}
-      >
+      <>
+        {/* PWA対応: セーフエリア外まで背景を拡張 */}
+        <div
+          className="fixed z-[9998] bg-black"
+          style={{
+            top: '-100px',
+            left: '-100px',
+            right: '-100px',
+            bottom: '-100px',
+          }}
+        />
+        <div
+          className="fixed inset-0 flex items-center justify-center z-[9999] overflow-hidden"
+          style={{
+            paddingTop: 'env(safe-area-inset-top, 0px)',
+            paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 5rem)',
+          }}
+        >
         {/* 背景の放射状グラデーション */}
         <div
           className="absolute inset-0 animate-pulse"
@@ -637,13 +717,17 @@ export default function GuardianSummoning({ userId, onComplete }: GuardianSummon
         <div className="relative z-10 text-center">
           <div
             className="w-64 h-64 md:w-80 md:h-80 rounded-full flex items-center justify-center mx-auto mb-8
-                       evolution-pulse"
+                       evolution-pulse overflow-hidden"
             style={{
               background: placeholder.background,
               boxShadow: `0 0 80px ${attr.color}80, 0 0 120px ${attr.color}40`
             }}
           >
-            <span className="text-8xl md:text-9xl">{placeholder.emoji}</span>
+            <img
+              src={getGuardianImagePath(selectedGuardian, 0)}
+              alt={guardian.name}
+              className="w-full h-full object-contain"
+            />
           </div>
 
           {/* キラキラエフェクト */}
@@ -699,6 +783,7 @@ export default function GuardianSummoning({ userId, onComplete }: GuardianSummon
           />
         ))}
       </div>
+      </>
     );
   }
 
@@ -711,26 +796,41 @@ export default function GuardianSummoning({ userId, onComplete }: GuardianSummon
     const placeholder = getPlaceholderStyle(selectedGuardian);
 
     return (
-      <div
-        className="fixed inset-0 bg-gradient-to-b from-slate-950 via-purple-950 to-slate-950 flex items-center justify-center z-[9999] overflow-hidden"
-        style={{
-          paddingTop: 'env(safe-area-inset-top, 0px)',
-          paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 5rem)',
-        }}
-      >
+      <>
+        {/* PWA対応: セーフエリア外まで背景を拡張 */}
+        <div
+          className="fixed z-[9998] bg-gradient-to-b from-slate-950 via-purple-950 to-slate-950"
+          style={{
+            top: '-100px',
+            left: '-100px',
+            right: '-100px',
+            bottom: '-100px',
+          }}
+        />
+        <div
+          className="fixed inset-0 flex items-center justify-center z-[9999] overflow-hidden"
+          style={{
+            paddingTop: 'env(safe-area-inset-top, 0px)',
+            paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 5rem)',
+          }}
+        >
         <ParticleEffect count={30} color="gold" />
 
         <div className="text-center px-4 max-w-lg">
           {/* 守護神イメージ */}
           <div
             className="w-48 h-48 md:w-56 md:h-56 mx-auto mb-6 rounded-full flex items-center justify-center
-                       guardian-floating"
+                       guardian-floating overflow-hidden"
             style={{
               background: placeholder.background,
               boxShadow: `0 0 60px ${attr.color}60`
             }}
           >
-            <span className="text-7xl md:text-8xl">{placeholder.emoji}</span>
+            <img
+              src={getGuardianImagePath(selectedGuardian, 0)}
+              alt={guardian.name}
+              className="w-full h-full object-contain"
+            />
           </div>
 
           {/* 契約完了メッセージ */}
@@ -796,6 +896,7 @@ export default function GuardianSummoning({ userId, onComplete }: GuardianSummon
           </button>
         </div>
       </div>
+      </>
     );
   }
 

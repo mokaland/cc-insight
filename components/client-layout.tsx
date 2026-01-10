@@ -53,6 +53,17 @@ function LayoutContent({ children }: { children: React.ReactNode }) {
       if (!user || isPublicPage) return;
 
       try {
+        // 守護神を持っているか確認（新規会員はログインボーナスをスキップ）
+        const { getUserGuardianProfile } = await import("@/lib/firestore");
+        const guardianProfile = await getUserGuardianProfile(user.uid);
+
+        if (!isMounted) return;
+
+        // 守護神を1体も持っていない場合はログインボーナスをスキップ
+        const hasAnyGuardian = guardianProfile &&
+          Object.values(guardianProfile.guardians).some(g => g?.unlocked);
+        if (!hasAnyGuardian) return;
+
         const result = await checkDailyLoginBonus(user.uid);
 
         // 🔧 マウント解除後のState更新を防止
@@ -87,7 +98,15 @@ function LayoutContent({ children }: { children: React.ReactNode }) {
   // 保護されたページ（認証必須）
   return (
     <AuthGuard>
-      <div className="flex min-h-dvh cosmic-bg relative overflow-hidden">
+      {/* PWA対応: セーフエリア外まで背景を拡張 */}
+      <div
+        className="fixed inset-0 cosmic-bg"
+        style={{
+          top: 'calc(-1 * env(safe-area-inset-top, 0px))',
+          bottom: 'calc(-1 * env(safe-area-inset-bottom, 0px))',
+        }}
+      />
+      <div className="flex min-h-dvh relative overflow-hidden">
         {/* 星雲背景レイヤー */}
         <div className="absolute inset-0 pointer-events-none overflow-hidden">
           <div className="nebula-bg absolute top-0 left-1/4 w-[min(600px,150vw)] h-[min(600px,150vw)] rounded-full blur-3xl opacity-30"
