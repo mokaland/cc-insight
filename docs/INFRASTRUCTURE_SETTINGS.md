@@ -161,7 +161,100 @@ NEXT_PUBLIC_FIREBASE_APP_ID=1:359311670016:web:998b8236071c672f46d1e5
 
 ---
 
-## 6. トラブルシューティング
+## 6. PWA・レイアウト設定
+
+### 現在のPWA設定（layout.tsx）
+
+```tsx
+// viewport設定
+export const viewport: Viewport = {
+  themeColor: "#111827",
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 1,
+  userScalable: false,
+  viewportFit: "cover",  // ← コンテンツが画面全体に広がる
+};
+
+// appleWebApp設定
+appleWebApp: {
+  capable: true,
+  statusBarStyle: "black-translucent",  // ← ステータスバーが透過
+  title: "キャリクラ",
+}
+```
+
+### 重要：safe-area対応が必須
+
+上記の設定により、PWA（ホーム画面追加）ではコンテンツがステータスバーの下まで描画されます。
+そのため、**すべてのページで `env(safe-area-inset-top)` を考慮する必要があります**。
+
+### レイアウト構造
+
+| ページ種別 | 使用レイアウト | safe-area対応 |
+|-----------|---------------|--------------|
+| 認証後（マイページ、レポート等） | `ClientLayout` | 対応済み |
+| 認証前（login, register） | 各ページで独自実装 | **要注意** |
+| フルスクリーンモーダル（召喚演出等） | コンポーネント内で実装 | **要注意** |
+
+### 実装パターン
+
+#### 1. ClientLayoutを使うページ（認証後）
+→ 自動でsafe-areaが適用される。追加対応不要。
+
+#### 2. 認証前ページ（login, register等）
+必ず以下のようにsafe-areaを含める：
+
+```tsx
+// 登録ページの例
+<div
+  className="min-h-screen ..."
+  style={{
+    paddingTop: 'calc(1.5rem + env(safe-area-inset-top, 0px))',
+    paddingBottom: 'env(safe-area-inset-bottom, 0px)'
+  }}
+>
+```
+
+#### 3. フルスクリーンモーダル/オーバーレイ
+`fixed inset-0` で全画面表示する場合も考慮が必要：
+
+```tsx
+<div
+  className="fixed inset-0 ..."
+  style={{
+    paddingTop: 'env(safe-area-inset-top, 0px)',
+    paddingBottom: 'env(safe-area-inset-bottom, 0px)'
+  }}
+>
+```
+
+### 新しいページを追加するときのチェックリスト
+
+- [ ] そのページは `ClientLayout` を通るか確認
+- [ ] 通らない場合、`env(safe-area-inset-top)` を `paddingTop` に追加
+- [ ] 下部にボタンがある場合、`env(safe-area-inset-bottom)` も考慮
+- [ ] **PWAモード（ホーム画面追加）でテスト**
+
+### 過去の失敗事例（2026-01-10）
+
+**問題**: 新規登録画面の上部がPWAで見切れる
+
+**原因**:
+1. `viewportFit: "cover"` + `statusBarStyle: "black-translucent"` でステータスバー下までコンテンツが描画
+2. 登録ページは `ClientLayout` を通らないため、safe-area対応が漏れていた
+3. 固定の `pt-20` ではPWAのステータスバー領域をカバーできなかった
+
+**解決**: `paddingTop: 'calc(1.5rem + env(safe-area-inset-top, 0px))'` を追加
+
+**教訓**:
+- PWA設定を変更したら、**全ページ**への影響を確認
+- 認証前/後で異なるレイアウトを使う場合、両方に同じ対応が必要
+- テストはPWAモード（ホーム画面追加）で行う
+
+---
+
+## 7. トラブルシューティング
 
 ### メール認証リンクが「期限切れ」になる
 1. Firebase Authentication → Authorized domains を確認
@@ -181,5 +274,6 @@ NEXT_PUBLIC_FIREBASE_APP_ID=1:359311670016:web:998b8236071c672f46d1e5
 
 | 日付 | 変更内容 | 担当 |
 |------|----------|------|
+| 2026-01-10 | PWA・レイアウト設定セクション追加。safe-area対応の実装ガイドと失敗事例を記載 | Claude |
 | 2026-01-10 | 初版作成。メール認証問題（APIキーリファラー追加）、承認問題（Firestoreルール修正）を解決 | Claude |
 
