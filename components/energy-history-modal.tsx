@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { X, TrendingUp, Calendar, Zap, Flame } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { motion, AnimatePresence } from "framer-motion";
@@ -24,28 +24,68 @@ interface ModalWrapperProps {
 }
 
 function ModalWrapper({ isOpen, onClose, children }: ModalWrapperProps) {
+  // 背景スクロールを防止
+  useEffect(() => {
+    if (isOpen) {
+      document.body.style.overflow = 'hidden';
+    }
+    return () => {
+      document.body.style.overflow = 'unset';
+    };
+  }, [isOpen]);
+
+  // ESCキーで閉じる
+  useEffect(() => {
+    const handleEsc = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose();
+    };
+    if (isOpen) {
+      window.addEventListener('keydown', handleEsc);
+    }
+    return () => {
+      window.removeEventListener('keydown', handleEsc);
+    };
+  }, [isOpen, onClose]);
+
+  // モーダル内スクロール時に背景へのスクロール伝播を防止
+  const handleTouchMove = useCallback((e: React.TouchEvent) => {
+    e.stopPropagation();
+  }, []);
+
   return (
     <AnimatePresence>
       {isOpen && (
         <>
-          {/* 背景オーバーレイ */}
+          {/* 背景オーバーレイ - 完全に覆う */}
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             onClick={onClose}
-            className="fixed inset-0 bg-black/80 backdrop-blur-sm z-[9998]"
+            className="fixed inset-0 bg-black/90 backdrop-blur-md z-[9998]"
+            style={{ touchAction: 'none' }}
           />
 
-          {/* モーダルコンテンツ */}
-          <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 md:pb-4 pb-[calc(var(--bottom-nav-height)+3rem)]">
+          {/* モーダルコンテンツ - セーフエリア対応 */}
+          <div
+            className="fixed inset-0 z-[9999] flex items-center justify-center p-4"
+            style={{
+              paddingTop: 'calc(env(safe-area-inset-top, 0px) + 1rem)',
+              paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 6rem)'
+            }}
+          >
             <motion.div
               initial={{ scale: 0.9, opacity: 0, y: 20 }}
               animate={{ scale: 1, opacity: 1, y: 0 }}
               exit={{ scale: 0.9, opacity: 0, y: 20 }}
               transition={{ type: "spring", damping: 25, stiffness: 300 }}
-              className="relative w-full max-w-lg max-h-[calc(100vh-var(--bottom-nav-height)-6rem)] md:max-h-[90vh] overflow-y-auto"
+              className="relative w-full max-w-lg max-h-full overflow-y-auto overscroll-contain"
               onClick={(e) => e.stopPropagation()}
+              onTouchMove={handleTouchMove}
+              style={{
+                WebkitOverflowScrolling: 'touch',
+                overscrollBehavior: 'contain'
+              }}
             >
               {children}
             </motion.div>
