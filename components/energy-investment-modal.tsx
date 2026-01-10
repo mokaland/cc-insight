@@ -812,6 +812,7 @@ export default function EnergyInvestmentModal({
                 boxShadow: evolutionPhase === "finale"
                   ? `0 0 ${auraConfig.glowIntensity}px ${auraConfig.glowColor}, 0 0 ${auraConfig.glowIntensity * 1.5}px ${auraConfig.glowColor}80${auraConfig.hasRainbow ? ', 0 0 100px rgba(255, 215, 0, 0.5)' : ''}`
                   : `0 0 80px #fbbf24, 0 0 120px ${attr.color}`,
+                transform: "rotateY(180deg)", // 親の回転に合わせて反転を補正
               }}
             >
               {/* オーラレイヤー（ステージに応じて増加） */}
@@ -1063,21 +1064,21 @@ export default function EnergyInvestmentModal({
                 </div>
               </motion.div>
 
-              {/* 称号・実績表示（カード直下に配置） */}
+              {/* 称号・実績表示（カード直下に配置、ボタンより上に収める） */}
               <motion.div
                 initial={{ y: 20, opacity: 0 }}
                 animate={{ y: 0, opacity: 1 }}
                 transition={{ delay: 1.0, duration: 0.5 }}
                 className="absolute z-10 pointer-events-none"
-                style={{ top: "68%", left: 0, right: 0 }}
+                style={{ top: "62%", left: 0, right: 0 }}
               >
-                <div className="flex flex-col items-center gap-2 px-4">
+                <div className="flex flex-col items-center gap-1 px-4">
                   {/* Stage 1: はじめての進化 */}
                   {evolutionData.to === 1 && (
                     <motion.span
-                      animate={{ scale: [1, 1.1, 1] }}
+                      animate={{ scale: [1, 1.05, 1] }}
                       transition={{ duration: 0.5, repeat: 2 }}
-                      className="px-3 py-1 rounded-full text-sm font-bold bg-gradient-to-r from-green-500 to-emerald-500 text-white"
+                      className="px-2 py-0.5 rounded-full text-xs font-bold bg-gradient-to-r from-green-500 to-emerald-500 text-white"
                     >
                       🎉 はじめての進化！
                     </motion.span>
@@ -1085,38 +1086,22 @@ export default function EnergyInvestmentModal({
                   {/* Stage 4: 究極体到達 */}
                   {evolutionData.to === 4 && (
                     <motion.span
-                      animate={{ scale: [1, 1.1, 1] }}
+                      animate={{ scale: [1, 1.05, 1] }}
                       transition={{ duration: 0.5, repeat: 2 }}
-                      className="px-3 py-1 rounded-full text-sm font-bold bg-gradient-to-r from-yellow-500 to-amber-500 text-white"
+                      className="px-2 py-0.5 rounded-full text-xs font-bold bg-gradient-to-r from-yellow-500 to-amber-500 text-white"
                     >
                       👑 究極体到達！
                     </motion.span>
                   )}
                   {/* Stage 3: 特性解放 */}
                   {evolutionData.to === 3 && (
-                    <>
-                      <motion.span
-                        animate={{ scale: [1, 1.1, 1] }}
-                        transition={{ duration: 0.5, repeat: 2 }}
-                        className="px-3 py-1 rounded-full text-sm font-bold bg-gradient-to-r from-purple-500 to-pink-500 text-white"
-                      >
-                        ✨ 特性解放！
-                      </motion.span>
-                      <motion.div
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        transition={{ delay: 1.5 }}
-                        className="px-3 py-1 rounded-lg text-center"
-                        style={{
-                          background: `${attr.color}40`,
-                          border: `1px solid ${attr.color}80`
-                        }}
-                      >
-                        <p className="text-xs text-white/90">
-                          「{guardian.ability.name}」発動！
-                        </p>
-                      </motion.div>
-                    </>
+                    <motion.span
+                      animate={{ scale: [1, 1.05, 1] }}
+                      transition={{ duration: 0.5, repeat: 2 }}
+                      className="px-2 py-0.5 rounded-full text-xs font-bold bg-gradient-to-r from-purple-500 to-pink-500 text-white"
+                    >
+                      ✨ 特性解放！「{guardian.ability.name}」
+                    </motion.span>
                   )}
                 </div>
               </motion.div>
