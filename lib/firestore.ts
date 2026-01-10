@@ -1788,23 +1788,25 @@ export async function saveSnsAccounts(
 
 /**
  * プロフィール完成ボーナスをエナジーに加算
+ * 注: guardianProfileは users/{userId}/guardianProfile フィールドに保存されている
  */
 async function addProfileCompletionBonus(userId: string): Promise<void> {
   try {
-    // guardian_profilesからエナジーデータを取得
-    const profileDoc = await getDoc(doc(db, "guardian_profiles", userId));
+    // getUserGuardianProfileを使用してエナジーデータを取得
+    const profile = await getUserGuardianProfile(userId);
 
-    if (profileDoc.exists()) {
-      const profile = profileDoc.data() as UserGuardianProfile;
+    if (profile) {
       const currentEnergy = profile.energy?.current || 0;
       const totalEarned = profile.energy?.totalEarned || 0;
 
-      // エナジーを加算
-      await setDoc(doc(db, "guardian_profiles", userId), {
-        energy: {
-          current: currentEnergy + PROFILE_COMPLETION_BONUS,
-          totalEarned: totalEarned + PROFILE_COMPLETION_BONUS,
-          lastEarnedAt: serverTimestamp()
+      // users/{userId}/guardianProfile.energy にエナジーを加算
+      await setDoc(doc(db, "users", userId), {
+        guardianProfile: {
+          energy: {
+            current: currentEnergy + PROFILE_COMPLETION_BONUS,
+            totalEarned: totalEarned + PROFILE_COMPLETION_BONUS,
+            lastEarnedAt: serverTimestamp()
+          }
         }
       }, { merge: true });
 
