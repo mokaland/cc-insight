@@ -3,13 +3,17 @@
 import { usePathname, useRouter } from "next/navigation";
 import { AuthProvider, AuthGuard } from "@/lib/auth-context";
 import { Sidebar } from "@/components/sidebar";
-import { LogOut, Home, ClipboardList, Trophy, LayoutDashboard, Users, Ticket } from "lucide-react";
+import {
+  LogOut, Home, ClipboardList, Trophy, LayoutDashboard, Users, Ticket,
+  Menu, X, Shield, Search, MessageSquare, Briefcase, Smartphone
+} from "lucide-react";
 import { useAuth } from "@/lib/auth-context";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useEffect, useState } from "react";
 import { checkDailyLoginBonus, addLoginBonusToProfile, type LoginBonusResult } from "@/lib/daily-login-bonus";
 import { DailyLoginModal } from "@/components/daily-login-modal";
+import { motion, AnimatePresence } from "framer-motion";
 
 // 完全公開ページ（認証不要・サイドバー非表示・ボトムナビ非表示）
 const publicPages = ["/login", "/register", "/verify-email", "/pending-approval", "/admin/login"];
@@ -147,13 +151,14 @@ function BottomNavigation() {
   const pathname = usePathname();
   const router = useRouter();
   const { userProfile, logout } = useAuth();
+  const [isDrawerOpen, setIsDrawerOpen] = useState(false);
 
-  // 管理者用のナビゲーション項目
-  const adminNavItems = [
+  // 管理者用：ボトムナビに表示する主要項目（3つ + メニューボタン）
+  const adminBottomNavItems = [
     {
-      label: "全体状況",
-      icon: LayoutDashboard,
-      href: "/dashboard",
+      label: "モニター",
+      icon: Shield,
+      href: "/admin/monitor",
     },
     {
       label: "メンバー",
@@ -161,7 +166,65 @@ function BottomNavigation() {
       href: "/admin/users",
     },
     {
+      label: "ランキング",
+      icon: Trophy,
+      href: "/ranking",
+    },
+  ];
+
+  // 管理者用：ドロワーに表示する全メニュー
+  const adminDrawerItems = [
+    {
+      label: "Active Monitor",
+      subtitle: "離脱防止監視",
+      icon: Shield,
+      href: "/admin/monitor",
+    },
+    {
+      label: "監査ダッシュボード",
+      subtitle: "異常値・言行一致",
+      icon: Search,
+      href: "/admin/audit",
+    },
+    {
+      label: "DMチャット",
+      subtitle: "メンバーとやり取り",
+      icon: MessageSquare,
+      href: "/admin/dm",
+    },
+    {
+      label: "副業チーム",
+      subtitle: "IG / TT / YT",
+      icon: Briefcase,
+      href: "/dashboard/side-job",
+    },
+    {
+      label: "退職サポートチーム",
+      subtitle: "IG / TT / YT",
+      icon: LogOut,
+      href: "/dashboard/resignation",
+    },
+    {
+      label: "スマホ物販チーム",
+      subtitle: "X",
+      icon: Smartphone,
+      href: "/dashboard/smartphone",
+    },
+    {
+      label: "ランキング",
+      subtitle: "全メンバー比較",
+      icon: Trophy,
+      href: "/ranking",
+    },
+    {
+      label: "ユーザー管理",
+      subtitle: "承認・検索",
+      icon: Users,
+      href: "/admin/users",
+    },
+    {
       label: "招待コード",
+      subtitle: "発行・管理",
       icon: Ticket,
       href: "/admin/invitations",
     },
@@ -192,63 +255,160 @@ function BottomNavigation() {
     }
   };
 
-  // 管理者と一般メンバーで異なるナビを表示
-  const navItems = userProfile?.role === "admin" ? adminNavItems : memberNavItems;
+  const handleNavigate = (href: string) => {
+    router.push(href);
+    setIsDrawerOpen(false);
+  };
+
+  const isAdmin = userProfile?.role === "admin";
+  const bottomNavItems = isAdmin ? adminBottomNavItems : memberNavItems;
 
   return (
-    <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50 glass-premium border-t border-white/10 pb-[var(--safe-area-bottom)] shadow-[0_-4px_24px_rgba(0,0,0,0.3)]" style={{ paddingBottom: 'max(env(safe-area-inset-bottom, 0px), 16px)' }}>
-      <div className="flex items-center justify-around h-14">
-        {navItems.map((item) => {
-          const isActive = pathname === item.href || pathname.startsWith(item.href);
-          const Icon = item.icon;
-          
-          return (
+    <>
+      {/* 管理者用ドロワーメニュー */}
+      <AnimatePresence>
+        {isDrawerOpen && isAdmin && (
+          <>
+            {/* オーバーレイ */}
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setIsDrawerOpen(false)}
+              className="md:hidden fixed inset-0 bg-black/80 z-[60]"
+            />
+            {/* ドロワー本体 */}
+            <motion.div
+              initial={{ x: "100%" }}
+              animate={{ x: 0 }}
+              exit={{ x: "100%" }}
+              transition={{ type: "spring", damping: 25, stiffness: 300 }}
+              className="md:hidden fixed right-0 top-0 bottom-0 w-72 bg-slate-900/95 backdrop-blur-xl border-l border-white/10 z-[70] overflow-y-auto"
+              style={{ paddingTop: 'env(safe-area-inset-top, 0px)', paddingBottom: 'calc(5rem + env(safe-area-inset-bottom, 0px))' }}
+            >
+              {/* ヘッダー */}
+              <div className="flex items-center justify-between p-4 border-b border-white/10">
+                <h2 className="text-lg font-bold bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">
+                  管理メニュー
+                </h2>
+                <button
+                  onClick={() => setIsDrawerOpen(false)}
+                  className="p-2 rounded-lg hover:bg-white/10 transition-colors"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              {/* メニュー項目 */}
+              <nav className="p-2 space-y-1">
+                {adminDrawerItems.map((item) => {
+                  const isActive = pathname === item.href || pathname.startsWith(item.href);
+                  const Icon = item.icon;
+
+                  return (
+                    <button
+                      key={item.href}
+                      onClick={() => handleNavigate(item.href)}
+                      className={cn(
+                        "w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all text-left",
+                        isActive
+                          ? "bg-gradient-to-r from-pink-500/20 to-purple-500/20 border border-pink-500/30"
+                          : "hover:bg-white/10"
+                      )}
+                    >
+                      <Icon className={cn("w-5 h-5 flex-shrink-0", isActive ? "text-pink-400" : "text-slate-400")} />
+                      <div className="flex-1 min-w-0">
+                        <span className={cn("block font-medium", isActive ? "text-white" : "text-slate-200")}>
+                          {item.label}
+                        </span>
+                        {item.subtitle && (
+                          <span className="block text-xs text-slate-500">{item.subtitle}</span>
+                        )}
+                      </div>
+                    </button>
+                  );
+                })}
+              </nav>
+
+              {/* ログアウト */}
+              <div className="p-4 border-t border-white/10 mt-4">
+                <button
+                  onClick={handleLogout}
+                  className="w-full flex items-center gap-3 px-4 py-3 rounded-xl bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 transition-all"
+                >
+                  <LogOut className="w-5 h-5" />
+                  <span className="font-medium">ログアウト</span>
+                </button>
+              </div>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
+
+      {/* ボトムナビゲーション */}
+      <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50 glass-premium border-t border-white/10 pb-[var(--safe-area-bottom)] shadow-[0_-4px_24px_rgba(0,0,0,0.3)]" style={{ paddingBottom: 'max(env(safe-area-inset-bottom, 0px), 16px)' }}>
+        <div className="flex items-center justify-around h-14">
+          {bottomNavItems.map((item) => {
+            const isActive = pathname === item.href || pathname.startsWith(item.href);
+            const Icon = item.icon;
+
+            return (
+              <button
+                key={item.href}
+                onClick={() => router.push(item.href)}
+                className={cn(
+                  "flex flex-col items-center justify-center gap-1 px-4 py-2 transition-all duration-200 active:scale-95 relative z-50"
+                )}
+                style={{ touchAction: "manipulation" }}
+              >
+                <Icon
+                  className={cn(
+                    "w-6 h-6 transition-all",
+                    isActive
+                      ? "text-pink-500"
+                      : "text-slate-300"
+                  )}
+                  style={isActive ? {
+                    filter: "drop-shadow(0 0 12px rgba(236, 72, 153, 0.8)) drop-shadow(0 0 6px rgba(168, 85, 247, 0.6))"
+                  } : undefined}
+                />
+                <span
+                  className={cn(
+                    "text-xs font-medium transition-colors",
+                    isActive
+                      ? "text-pink-400"
+                      : "text-slate-400"
+                  )}
+                >
+                  {item.label}
+                </span>
+              </button>
+            );
+          })}
+
+          {/* 管理者：メニューボタン / メンバー：ログアウトボタン */}
+          {isAdmin ? (
             <button
-              key={item.href}
-              onClick={() => router.push(item.href)}
-              className={cn(
-                "flex flex-col items-center justify-center gap-1 px-4 py-2 transition-all duration-200 active:scale-95 relative z-50"
-              )}
+              onClick={() => setIsDrawerOpen(true)}
+              className="flex flex-col items-center justify-center gap-1 px-4 py-2 transition-all duration-200 active:scale-95 text-purple-400 hover:text-purple-300 relative z-50"
               style={{ touchAction: "manipulation" }}
             >
-              <Icon
-                className={cn(
-                  "w-6 h-6 transition-all",
-                  isActive 
-                    ? "text-pink-500" 
-                    : "text-slate-300"
-                )}
-                style={isActive ? {
-                  filter: "drop-shadow(0 0 12px rgba(236, 72, 153, 0.8)) drop-shadow(0 0 6px rgba(168, 85, 247, 0.6))"
-                } : undefined}
-              />
-              <span
-                className={cn(
-                  "text-xs font-medium transition-colors",
-                  isActive 
-                    ? "text-pink-400" 
-                    : "text-slate-400"
-                )}
-              >
-                {item.label}
-              </span>
+              <Menu className="w-6 h-6" />
+              <span className="text-xs font-medium">メニュー</span>
             </button>
-          );
-        })}
-        
-        {/* ログアウトボタン */}
-        <button
-          onClick={handleLogout}
-          className="flex flex-col items-center justify-center gap-1 px-4 py-2 transition-all duration-200 active:scale-95 text-rose-600 hover:text-rose-700 relative z-50"
-          style={{ touchAction: "manipulation" }}
-        >
-          <LogOut className="w-6 h-6" />
-          <span className="text-xs font-medium">
-            ログアウト
-          </span>
-        </button>
-      </div>
-    </nav>
+          ) : (
+            <button
+              onClick={handleLogout}
+              className="flex flex-col items-center justify-center gap-1 px-4 py-2 transition-all duration-200 active:scale-95 text-rose-600 hover:text-rose-700 relative z-50"
+              style={{ touchAction: "manipulation" }}
+            >
+              <LogOut className="w-6 h-6" />
+              <span className="text-xs font-medium">ログアウト</span>
+            </button>
+          )}
+        </div>
+      </nav>
+    </>
   );
 }
 
