@@ -15,6 +15,101 @@
 import { Timestamp } from "firebase/firestore";
 
 // =====================================
+// 📱 SNSアカウント設定
+// =====================================
+
+export interface SnsAccounts {
+  instagram?: string;     // @username形式
+  youtube?: string;       // チャンネル名/ID
+  tiktok?: string;        // @username形式
+  x?: string;             // @username形式
+  profileCompleted?: boolean;  // 全入力完了フラグ
+  completedAt?: Timestamp;     // 完了日時
+  completionBonusClaimed?: boolean; // 完了ボーナス受取済みフラグ
+}
+
+// チーム別SNS入力順序
+export const SNS_ORDER_BY_TEAM = {
+  fukugyou: ['instagram', 'youtube', 'tiktok', 'x'] as const,
+  taishoku: ['instagram', 'youtube', 'tiktok', 'x'] as const,
+  buppan: ['x', 'instagram', 'youtube', 'tiktok'] as const,
+};
+
+export const SNS_LABELS: Record<string, { label: string; placeholder: string; icon: string }> = {
+  instagram: { label: 'Instagram', placeholder: '@username', icon: '📷' },
+  youtube: { label: 'YouTube', placeholder: 'チャンネル名またはID', icon: '🎬' },
+  tiktok: { label: 'TikTok', placeholder: '@username', icon: '🎵' },
+  x: { label: 'X (Twitter)', placeholder: '@username', icon: '𝕏' },
+};
+
+// プロフィール完成ボーナス
+export const PROFILE_COMPLETION_BONUS = 30; // 30エナジー
+
+// =====================================
+// 🎯 レベルシステム
+// =====================================
+
+export const MAX_LEVEL = 999;
+export const ENERGY_PER_LEVEL = 20; // 20エナジーごとに1レベルアップ
+
+/**
+ * 累計獲得エナジーからレベルを計算
+ * Level = min(999, floor(totalEnergyEarned / 20) + 1)
+ */
+export function calculateLevel(totalEnergyEarned: number): number {
+  return Math.min(MAX_LEVEL, Math.floor(totalEnergyEarned / ENERGY_PER_LEVEL) + 1);
+}
+
+/**
+ * 次のレベルまでに必要なエナジーを計算
+ */
+export function getEnergyToNextLevel(totalEnergyEarned: number): {
+  currentLevel: number;
+  nextLevel: number;
+  currentEnergy: number;
+  requiredForNext: number;
+  remaining: number;
+  progress: number; // 0-100%
+} | null {
+  const currentLevel = calculateLevel(totalEnergyEarned);
+
+  if (currentLevel >= MAX_LEVEL) {
+    return null; // MAX達成
+  }
+
+  const nextLevel = currentLevel + 1;
+  const requiredForNext = (nextLevel - 1) * ENERGY_PER_LEVEL;
+  const currentLevelStart = (currentLevel - 1) * ENERGY_PER_LEVEL;
+  const energyInCurrentLevel = totalEnergyEarned - currentLevelStart;
+  const remaining = requiredForNext - totalEnergyEarned;
+  const progress = Math.round((energyInCurrentLevel / ENERGY_PER_LEVEL) * 100);
+
+  return {
+    currentLevel,
+    nextLevel,
+    currentEnergy: totalEnergyEarned,
+    requiredForNext,
+    remaining: Math.max(0, remaining),
+    progress: Math.min(100, progress),
+  };
+}
+
+/**
+ * レベルに応じた称号を取得
+ */
+export function getLevelTitle(level: number): string {
+  if (level >= 500) return '伝説の勇者';
+  if (level >= 300) return '英雄';
+  if (level >= 200) return 'マスター';
+  if (level >= 100) return 'エキスパート';
+  if (level >= 50) return 'ベテラン';
+  if (level >= 25) return 'チャレンジャー';
+  if (level >= 10) return '冒険者';
+  if (level >= 5) return '見習い';
+  return 'ルーキー';
+}
+
+// =====================================
 // 🎭 属性定義
 // =====================================
 
@@ -268,20 +363,20 @@ export const EVOLUTION_STAGES: StageDefinition[] = [
 export function getAuraLevel(investedEnergy: number, stage: EvolutionStage): number {
   const currentStage = EVOLUTION_STAGES[stage];
   const nextStage = EVOLUTION_STAGES[stage + 1];
-  
+
   if (!nextStage) {
     // 究極体は常に最大
     return 100;
   }
-  
+
   const progressInStage = investedEnergy - currentStage.requiredEnergy;
   const energyForNextStage = nextStage.requiredEnergy - currentStage.requiredEnergy;
   const progress = progressInStage / energyForNextStage;
-  
+
   // オーラ強度を線形補間
   const baseAura = currentStage.auraIntensity;
   const targetAura = nextStage.auraIntensity;
-  
+
   return Math.min(100, Math.round(baseAura + (targetAura - baseAura) * progress));
 }
 
@@ -355,24 +450,24 @@ export function getCurrentStage(investedEnergy: number): EvolutionStage {
  * 次の進化に必要なエナジー量を計算
  */
 export function getEnergyToNextStage(
-  investedEnergy: number, 
+  investedEnergy: number,
   guardianId: GuardianId
 ): { required: number; current: number; remaining: number } | null {
   const currentStage = getCurrentStage(investedEnergy);
   const nextStageIndex = currentStage + 1;
-  
+
   if (nextStageIndex >= EVOLUTION_STAGES.length) {
     return null; // 究極体は進化不可
   }
-  
+
   const guardian = GUARDIANS[guardianId];
   let requiredEnergy = EVOLUTION_STAGES[nextStageIndex].requiredEnergy;
-  
+
   // 機珠の特性: コスト-15%
   if (hasActiveAbility('kitama', guardianId)) {
     requiredEnergy = Math.floor(requiredEnergy * 0.85);
   }
-  
+
   return {
     required: requiredEnergy,
     current: investedEnergy,
@@ -419,13 +514,13 @@ export function canUnlockGuardian(
 ): { canUnlock: boolean; reason?: string } {
   const guardian = GUARDIANS[guardianId];
   const condition = guardian.unlockCondition;
-  
+
   // すでに解放済み
   const existing = userProfile.guardians[guardianId];
   if (existing?.unlocked) {
     return { canUnlock: false, reason: 'すでに解放済みです' };
   }
-  
+
   switch (condition.type) {
     case 'initial':
       // 初期選択可能（1体も持っていない場合のみ無料）
@@ -438,7 +533,7 @@ export function canUnlockGuardian(
         return { canUnlock: true };
       }
       return { canUnlock: false, reason: 'エナジーが足りません（200必要）' };
-    
+
     case 'evolution':
       // 前提守護神の進化が必要
       const required = userProfile.guardians[condition.requiredGuardianId!];
@@ -452,7 +547,7 @@ export function canUnlockGuardian(
         return { canUnlock: false, reason: `エナジーが足りません（${condition.energyCost}必要）` };
       }
       return { canUnlock: true };
-    
+
     default:
       return { canUnlock: false, reason: '不明なエラー' };
   }

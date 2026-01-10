@@ -10,7 +10,7 @@ import {
 import dynamic from "next/dynamic";
 import { subscribeToReports, calculateTeamStats, teams, Report, getBulkUserGuardianProfiles } from "@/lib/firestore";
 import { useAuth } from "@/lib/auth-context";
-import { GUARDIANS, ATTRIBUTES, getGuardianImagePath, GuardianId, EVOLUTION_STAGES } from "@/lib/guardian-collection";
+import { GUARDIANS, ATTRIBUTES, getGuardianImagePath, GuardianId, EVOLUTION_STAGES, calculateLevel } from "@/lib/guardian-collection";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ContentLoader } from "@/components/ui/loading-spinner";
 import { cachedFetch } from "@/lib/firestore-cache";
@@ -564,6 +564,12 @@ export default function AllTeamsRankingPage() {
                         ? guardianProfiles[userId].energy?.current || 0
                         : 0;
 
+                      // レベル計算（累計獲得エナジーから）
+                      const totalEarned = userId && guardianProfiles[userId]
+                        ? guardianProfiles[userId].energy?.totalEarned || 0
+                        : 0;
+                      const memberLevel = calculateLevel(totalEarned);
+
                       return (
                         <div
                           key={userId || member.name}
@@ -572,6 +578,7 @@ export default function AllTeamsRankingPage() {
                             setSelectedMember({
                               ...member,
                               energy,
+                              totalEarned,
                               guardianData
                             });
                             setSelectedTeam({ name, color, type });
@@ -674,6 +681,7 @@ export default function AllTeamsRankingPage() {
                               )}
                             </div>
                             <div className="flex items-center gap-2 text-xs text-slate-400">
+                              <span className="text-yellow-400 font-bold">Lv.{memberLevel}</span>
                               <span style={{ color: guardianData ? guardianData.color : fallbackGuardian.color }} className="font-medium">
                                 {guardianData ? guardianData.stageName : fallbackGuardian.name}
                               </span>

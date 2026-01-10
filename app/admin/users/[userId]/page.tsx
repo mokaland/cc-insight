@@ -2,7 +2,8 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { User, teams, Report, getUserStats, getUserGuardianProfile } from "@/lib/firestore";
+import { User, teams, Report, getUserStats, getUserGuardianProfile, getUserSnsAccounts } from "@/lib/firestore";
+import { SnsAccounts } from "@/lib/guardian-collection";
 import { getDoc, doc, collection, query, where, orderBy, getDocs } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { GlassCard } from "@/components/glass-card";
@@ -21,7 +22,10 @@ import {
   Mail,
   Zap,
   Heart,
-  MessageCircle
+  MessageCircle,
+  Instagram,
+  Youtube,
+  Music2
 } from "lucide-react";
 import { ContentLoader } from "@/components/ui/loading-spinner";
 import { GUARDIANS, ATTRIBUTES, getGuardianImagePath, GuardianId, EVOLUTION_STAGES } from "@/lib/guardian-collection";
@@ -50,6 +54,7 @@ export default function UserDetailPage() {
   const [loading, setLoading] = useState(true);
   const [badges, setBadges] = useState<any[]>([]);
   const [guardianData, setGuardianData] = useState<any>(null);
+  const [snsAccounts, setSnsAccounts] = useState<SnsAccounts | null>(null);
 
   const loadUserData = useCallback(async () => {
     try {
@@ -87,6 +92,14 @@ export default function UserDetailPage() {
         }
       } catch (error) {
         console.error("守護神データ取得エラー:", error);
+      }
+
+      // SNSアカウント情報を取得
+      try {
+        const snsData = await getUserSnsAccounts(userId);
+        setSnsAccounts(snsData);
+      } catch (error) {
+        console.error("SNSアカウント取得エラー:", error);
       }
 
       // レポートを取得
@@ -502,6 +515,74 @@ export default function UserDetailPage() {
           </CardContent>
         </Card>
       )}
+
+      {/* SNSアカウント */}
+      <Card className="bg-white/5 backdrop-blur-xl border-white/10">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Instagram className="h-5 w-5 text-pink-500" />
+            SNSアカウント
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          {snsAccounts && (snsAccounts.instagram || snsAccounts.youtube || snsAccounts.tiktok || snsAccounts.x) ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {snsAccounts.instagram && (
+                <div className="flex items-center gap-3 p-3 rounded-lg bg-gradient-to-r from-pink-500/10 to-purple-500/10 border border-pink-500/20">
+                  <Instagram className="w-5 h-5 text-pink-400" />
+                  <div>
+                    <div className="text-xs text-muted-foreground">Instagram</div>
+                    <div className="font-medium text-pink-300">{snsAccounts.instagram}</div>
+                  </div>
+                </div>
+              )}
+              {snsAccounts.youtube && (
+                <div className="flex items-center gap-3 p-3 rounded-lg bg-gradient-to-r from-red-500/10 to-orange-500/10 border border-red-500/20">
+                  <Youtube className="w-5 h-5 text-red-400" />
+                  <div>
+                    <div className="text-xs text-muted-foreground">YouTube</div>
+                    <div className="font-medium text-red-300">{snsAccounts.youtube}</div>
+                  </div>
+                </div>
+              )}
+              {snsAccounts.tiktok && (
+                <div className="flex items-center gap-3 p-3 rounded-lg bg-gradient-to-r from-cyan-500/10 to-teal-500/10 border border-cyan-500/20">
+                  <Music2 className="w-5 h-5 text-cyan-400" />
+                  <div>
+                    <div className="text-xs text-muted-foreground">TikTok</div>
+                    <div className="font-medium text-cyan-300">{snsAccounts.tiktok}</div>
+                  </div>
+                </div>
+              )}
+              {snsAccounts.x && (
+                <div className="flex items-center gap-3 p-3 rounded-lg bg-gradient-to-r from-slate-500/10 to-gray-500/10 border border-slate-500/20">
+                  <span className="text-lg font-bold text-slate-400">𝕏</span>
+                  <div>
+                    <div className="text-xs text-muted-foreground">X (Twitter)</div>
+                    <div className="font-medium text-slate-300">{snsAccounts.x}</div>
+                  </div>
+                </div>
+              )}
+            </div>
+          ) : (
+            <div className="text-center py-6 text-muted-foreground">
+              <Instagram className="w-8 h-8 mx-auto mb-2 opacity-50" />
+              <p>SNSアカウントが登録されていません</p>
+            </div>
+          )}
+          {snsAccounts?.profileCompleted && (
+            <div className="mt-4 flex items-center gap-2 text-sm text-green-400">
+              <Zap className="w-4 h-4" />
+              プロフィール完成ボーナス受取済み
+              {snsAccounts.completedAt && (
+                <span className="text-muted-foreground">
+                  ({snsAccounts.completedAt.toDate?.()?.toLocaleDateString("ja-JP") || "日付不明"})
+                </span>
+              )}
+            </div>
+          )}
+        </CardContent>
+      </Card>
     </div>
   );
 }

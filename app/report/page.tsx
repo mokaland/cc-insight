@@ -35,7 +35,8 @@ import {
 import { teams, processReportWithEnergy, getTodayReport, updateReport, Report, getAllUsers, getUserGuardianProfile, getPreviousFollowerCounts } from "@/lib/firestore";
 import EnergyToast from "@/components/energy-toast";
 import { ReportSuccessCelebration } from "@/components/report-success-celebration";
-import { GUARDIANS, ATTRIBUTES } from "@/lib/guardian-collection";
+import { LevelUpCelebration } from "@/components/level-up-celebration";
+import { GUARDIANS, ATTRIBUTES, calculateLevel } from "@/lib/guardian-collection";
 
 export default function ReportPage() {
   const { user, userProfile, loading: authLoading } = useAuth();
@@ -48,7 +49,11 @@ export default function ReportPage() {
   const [showEnergyToast, setShowEnergyToast] = useState(false);
   const [showCelebration, setShowCelebration] = useState(false);
   const [guardianData, setGuardianData] = useState<any>(null);
-  
+
+  // レベルアップ演出用
+  const [showLevelUp, setShowLevelUp] = useState(false);
+  const [levelUpInfo, setLevelUpInfo] = useState<{ before: number; after: number } | null>(null);
+
   // 🔒 デイリーロック用
   const [existingReport, setExistingReport] = useState<Report | null>(null);
   const [isEditMode, setIsEditMode] = useState(false);
@@ -57,8 +62,8 @@ export default function ReportPage() {
   // ログインユーザーのチームを自動設定
   const selectedTeam = userProfile?.team || "";
 
-  // Shorts系（副業・退職）用の15項目（SNS別投稿数追加）
-  const [accountId, setAccountId] = useState("");
+  // Shorts系（副業・退職）用の項目（SNS別投稿数追加）
+  // ※ accountIdはマイページのSNS設定に移行したため削除
   const [igViews, setIgViews] = useState("");
   const [igProfileAccess, setIgProfileAccess] = useState("");
   const [igExternalTaps, setIgExternalTaps] = useState("");
@@ -92,7 +97,7 @@ export default function ReportPage() {
     const draftKey = `report-draft-${user.uid}-${date}`;
     const draft = {
       // Shorts系データ
-      accountId, igViews, igProfileAccess, igExternalTaps, igInteractions,
+      igViews, igProfileAccess, igExternalTaps, igInteractions,
       weeklyStories, igFollowers, ytFollowers, tiktokFollowers,
       igPosts, ytPosts, tiktokPosts, todayComment,
       // X系データ
@@ -109,7 +114,7 @@ export default function ReportPage() {
 
     return () => clearTimeout(timer);
   }, [
-    user, date, accountId, igViews, igProfileAccess, igExternalTaps, igInteractions,
+    user, date, igViews, igProfileAccess, igExternalTaps, igInteractions,
     weeklyStories, igFollowers, ytFollowers, tiktokFollowers,
     igPosts, ytPosts, tiktokPosts, todayComment,
     xPostCount, xPostUrls, xLikeCount, xReplyCount, xFollowers, xTodayComment, isXTeam
@@ -129,7 +134,6 @@ export default function ReportPage() {
         if (Date.now() - draft.savedAt < 24 * 60 * 60 * 1000) {
           // Shorts系データ復元
           if (!isXTeam) {
-            setAccountId(draft.accountId || "");
             setIgViews(draft.igViews || "");
             setIgProfileAccess(draft.igProfileAccess || "");
             setIgExternalTaps(draft.igExternalTaps || "");
@@ -178,7 +182,6 @@ export default function ReportPage() {
           setXFollowers(String((existing as any).xFollowers || "")); // 🆕 Xフォロワー数復元
           setXTodayComment(existing.todayComment || "");
         } else {
-          setAccountId(existing.accountId || "");
           setIgViews(String(existing.igViews || ""));
           setIgProfileAccess(String(existing.igProfileAccess || ""));
           setIgExternalTaps(String(existing.igExternalTaps || ""));
@@ -309,7 +312,6 @@ export default function ReportPage() {
         xFollowers: xFollowerGrowth, // ✅ 差分（増分）を保存
         todayComment: xTodayComment || "",
       } : {
-        accountId: accountId || "",
         igViews: parseInt(igViews) || 0,
         igProfileAccess: parseInt(igProfileAccess) || 0,
         igExternalTaps: parseInt(igExternalTaps) || 0,
@@ -361,34 +363,46 @@ export default function ReportPage() {
       // エナジー獲得処理（新規作成時のみ）
       if (!isEditMode) {
         try {
+          // エナジー処理前のレベルを取得
+          const beforeProfile = await getUserGuardianProfile(user.uid);
+          const beforeTotalEarned = beforeProfile?.energy?.totalEarned || 0;
+          const beforeLevel = calculateLevel(beforeTotalEarned);
+
           const result = await processReportWithEnergy(user.uid);
           if (result.energyEarned > 0) {
             setEarnedXP(result.energyEarned);
-            
-            // 守護神データ取得
+
+            // 守護神データ取得 & レベルアップ判定
             try {
               const profile = await getUserGuardianProfile(user.uid);
               if (profile && profile.activeGuardianId) {
                 const guardian = GUARDIANS[profile.activeGuardianId];
                 const instance = profile.guardians[profile.activeGuardianId];
                 const attr = ATTRIBUTES[guardian.attribute];
-                
+
                 if (guardian && instance && attr) {
                   setGuardianData({
                     emoji: attr.emoji,
                     name: guardian.name,
                     color: attr.color,
-                    stageName: instance.stage === 0 ? "卵" : 
+                    stageName: instance.stage === 0 ? "卵" :
                               instance.stage === 1 ? "幼体" :
                               instance.stage === 2 ? "成長体" :
                               instance.stage === 3 ? "成熟体" : "究極体"
                   });
                 }
+
+                // レベルアップ判定
+                const afterTotalEarned = profile.energy?.totalEarned || 0;
+                const afterLevel = calculateLevel(afterTotalEarned);
+                if (afterLevel > beforeLevel) {
+                  setLevelUpInfo({ before: beforeLevel, after: afterLevel });
+                }
               }
             } catch (guardianError) {
               console.error("守護神データ取得エラー:", guardianError);
             }
-            
+
             // セレブレーション表示
             setShowCelebration(true);
           }
@@ -454,7 +468,6 @@ export default function ReportPage() {
 
   const resetForm = () => {
     // Shorts系
-    setAccountId("");
     setIgViews("");
     setIgProfileAccess("");
     setIgExternalTaps("");
@@ -795,21 +808,6 @@ export default function ReportPage() {
                         <span className="font-semibold">Instagram / TikTok / YouTube 活動報告</span>
                       </div>
 
-                      {/* アカウントID */}
-                      <div className="space-y-2">
-                        <Label className="flex items-center gap-2 text-white">
-                          <User className="w-4 h-4" style={{ color: teamColor }} />
-                          アカウントID
-                        </Label>
-                        <Input
-                          placeholder="@your_account"
-                          value={accountId}
-                          onChange={(e) => setAccountId(e.target.value)}
-                          className="bg-white/5"
-                          style={{ borderColor: `${teamColor}30` }}
-                        />
-                      </div>
-
                       {/* Instagram数値 */}
                       <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
                         <div className="space-y-2">
@@ -1078,12 +1076,30 @@ export default function ReportPage() {
         isOpen={showCelebration}
         onClose={() => {
           setShowCelebration(false);
-          // セレブレーション終了後、マイページへの誘導ボタンを表示（オプション）
+          // レベルアップした場合は、セレブレーション終了後にレベルアップ演出を表示
+          if (levelUpInfo) {
+            setTimeout(() => {
+              setShowLevelUp(true);
+            }, 300);
+          }
         }}
         earnedEnergy={earnedXP}
         guardianData={guardianData}
         teamColor={teamColor}
       />
+
+      {/* 🎊 レベルアップ演出 */}
+      {levelUpInfo && (
+        <LevelUpCelebration
+          isOpen={showLevelUp}
+          onClose={() => {
+            setShowLevelUp(false);
+            setLevelUpInfo(null);
+          }}
+          beforeLevel={levelUpInfo.before}
+          afterLevel={levelUpInfo.after}
+        />
+      )}
     </div>
   );
 }

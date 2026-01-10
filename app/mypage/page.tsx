@@ -14,9 +14,19 @@ import {
   getAuraLevel,
   getPlaceholderStyle,
   getGuardianImagePath,
-  getEnergyToNextStage
+  getEnergyToNextStage,
+  calculateLevel,
+  getLevelTitle,
+  getEnergyToNextLevel,
+  SNS_ORDER_BY_TEAM,
+  SNS_LABELS,
+  SnsAccounts,
+  PROFILE_COMPLETION_BONUS
 } from "@/lib/guardian-collection";
-import { Sparkles, Crown } from "lucide-react";
+import { getUserSnsAccounts, saveSnsAccounts } from "@/lib/firestore";
+import { Sparkles, Crown, Settings, Check, Gift } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import Link from "next/link";
 import Image from "next/image";
 import { motion, useSpring, useTransform } from "framer-motion";
@@ -80,6 +90,11 @@ export default function MyPage() {
   const [totalModalOpen, setTotalModalOpen] = useState(false);
   const [streakModalOpen, setStreakModalOpen] = useState(false);
 
+  // SNS設定
+  const [snsAccounts, setSnsAccounts] = useState<SnsAccounts>({});
+  const [snsLoading, setSnsLoading] = useState(false);
+  const [snsMessage, setSnsMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+
   useEffect(() => {
     const loadData = async () => {
       if (!user) return;
@@ -128,6 +143,11 @@ export default function MyPage() {
             }
           }
         }
+        // SNSアカウント情報を取得
+        const snsData = await getUserSnsAccounts(user.uid);
+        if (snsData) {
+          setSnsAccounts(snsData);
+        }
       } catch (error) {
         console.error("データ取得エラー:", error);
       } finally {
@@ -154,7 +174,56 @@ export default function MyPage() {
   const activeGuardianId = profile.activeGuardianId;
   const activeGuardian = activeGuardianId ? GUARDIANS[activeGuardianId] : null;
   const activeInstance = activeGuardianId ? profile.guardians[activeGuardianId] : null;
-  
+
+  // レベル計算
+  const totalEarned = profile.energy.totalEarned || 0;
+  const currentLevel = calculateLevel(totalEarned);
+  const levelTitle = getLevelTitle(currentLevel);
+  const levelProgress = getEnergyToNextLevel(totalEarned);
+
+  // チームに応じたSNS入力順序
+  const teamId = userProfile?.team as keyof typeof SNS_ORDER_BY_TEAM || 'fukugyou';
+  const snsOrder = SNS_ORDER_BY_TEAM[teamId] || SNS_ORDER_BY_TEAM.fukugyou;
+
+  // SNS保存処理
+  const handleSaveSns = async () => {
+    if (!user) return;
+    setSnsLoading(true);
+    setSnsMessage(null);
+
+    try {
+      const result = await saveSnsAccounts(user.uid, {
+        instagram: snsAccounts.instagram,
+        youtube: snsAccounts.youtube,
+        tiktok: snsAccounts.tiktok,
+        x: snsAccounts.x,
+      });
+
+      if (result.success) {
+        setSnsMessage({ type: 'success', text: result.message });
+        if (result.bonusAwarded) {
+          // ボーナス受取フラグを更新
+          setSnsAccounts(prev => ({
+            ...prev,
+            profileCompleted: true,
+            completionBonusClaimed: true,
+          }));
+          // プロフィールのエナジーを更新
+          const updatedProfile = await getUserGuardianProfile(user.uid);
+          if (updatedProfile) {
+            setProfile(updatedProfile);
+          }
+        }
+      } else {
+        setSnsMessage({ type: 'error', text: result.message });
+      }
+    } catch {
+      setSnsMessage({ type: 'error', text: '保存に失敗しました' });
+    } finally {
+      setSnsLoading(false);
+    }
+  };
+
   if (!activeGuardian || !activeInstance) {
     return (
       <div className="min-h-[70vh] flex items-center justify-center relative overflow-hidden cosmic-bg">
@@ -863,6 +932,123 @@ export default function MyPage() {
           </GlassCard>
         </Link>
       </div>
+
+      {/* 🎯 レベル & 称号 */}
+      <GlassCard glowColor="#F59E0B" className="p-6">
+        <div className="flex items-center gap-3 mb-4">
+          <Crown className="w-6 h-6 text-yellow-400" />
+          <h2 className="text-2xl font-bold text-white">レベル & 称号</h2>
+        </div>
+
+        <div className="flex flex-col md:flex-row items-center gap-6">
+          {/* レベル表示 */}
+          <div className="text-center">
+            <p className="text-6xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-yellow-400 via-amber-400 to-orange-400">
+              Lv.{currentLevel}
+            </p>
+            <p className="text-xl font-bold text-purple-400 mt-2">
+              {levelTitle}
+            </p>
+          </div>
+
+          {/* レベル進捗バー */}
+          {levelProgress && (
+            <div className="flex-1 w-full">
+              <div className="flex justify-between text-sm text-slate-400 mb-2">
+                <span>Lv.{levelProgress.currentLevel}</span>
+                <span>Lv.{levelProgress.nextLevel}</span>
+              </div>
+              <div className="h-3 bg-slate-700 rounded-full overflow-hidden">
+                <motion.div
+                  initial={{ width: 0 }}
+                  animate={{ width: `${levelProgress.progress}%` }}
+                  transition={{ duration: 1, ease: "easeOut" }}
+                  className="h-full bg-gradient-to-r from-yellow-500 to-amber-500 rounded-full"
+                />
+              </div>
+              <p className="text-xs text-slate-400 mt-2 text-center">
+                次のレベルまで あと {levelProgress.remaining}E
+              </p>
+            </div>
+          )}
+
+          {currentLevel >= 999 && (
+            <div className="flex-1 text-center">
+              <p className="text-xl text-yellow-400 font-bold">MAX LEVEL!</p>
+              <p className="text-sm text-slate-400 mt-1">最高レベルに到達しました</p>
+            </div>
+          )}
+        </div>
+      </GlassCard>
+
+      {/* 📱 SNSアカウント設定 */}
+      <GlassCard glowColor="#3B82F6" className="p-6">
+        <div className="flex items-center gap-3 mb-4">
+          <Settings className="w-6 h-6 text-blue-400" />
+          <h2 className="text-2xl font-bold text-white">SNSアカウント設定</h2>
+        </div>
+
+        {/* ボーナス案内 */}
+        {!snsAccounts.completionBonusClaimed && (
+          <div className="glass-bg p-3 rounded-xl border border-yellow-500/30 mb-4 flex items-center gap-3">
+            <Gift className="w-5 h-5 text-yellow-400 flex-shrink-0" />
+            <p className="text-sm text-yellow-300">
+              全て入力すると <span className="font-bold">{PROFILE_COMPLETION_BONUS}エナジー</span> 獲得！
+            </p>
+          </div>
+        )}
+
+        {snsAccounts.completionBonusClaimed && (
+          <div className="glass-bg p-3 rounded-xl border border-green-500/30 mb-4 flex items-center gap-3">
+            <Check className="w-5 h-5 text-green-400 flex-shrink-0" />
+            <p className="text-sm text-green-300">ボーナス受取済み</p>
+          </div>
+        )}
+
+        {/* SNS入力フォーム */}
+        <div className="space-y-4">
+          {snsOrder.map((snsKey) => {
+            const snsInfo = SNS_LABELS[snsKey];
+            return (
+              <div key={snsKey} className="space-y-2">
+                <Label className="flex items-center gap-2 text-white">
+                  <span className="text-lg">{snsInfo.icon}</span>
+                  {snsInfo.label}
+                </Label>
+                <Input
+                  placeholder={snsInfo.placeholder}
+                  value={snsAccounts[snsKey as keyof SnsAccounts] as string || ''}
+                  onChange={(e) => setSnsAccounts(prev => ({
+                    ...prev,
+                    [snsKey]: e.target.value
+                  }))}
+                  className="bg-white/5 border-slate-600"
+                />
+              </div>
+            );
+          })}
+        </div>
+
+        {/* メッセージ表示 */}
+        {snsMessage && (
+          <div className={`mt-4 p-3 rounded-xl ${
+            snsMessage.type === 'success'
+              ? 'bg-green-500/20 border border-green-500/30 text-green-300'
+              : 'bg-red-500/20 border border-red-500/30 text-red-300'
+          }`}>
+            {snsMessage.text}
+          </div>
+        )}
+
+        {/* 保存ボタン */}
+        <Button
+          onClick={handleSaveSns}
+          disabled={snsLoading}
+          className="w-full mt-4 bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600"
+        >
+          {snsLoading ? '保存中...' : '保存'}
+        </Button>
+      </GlassCard>
 
       {/* モーダル */}
       <EnergyHistoryModal

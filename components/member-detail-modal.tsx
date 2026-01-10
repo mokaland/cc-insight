@@ -1,9 +1,10 @@
 "use client";
 
-import { X, AlertTriangle, TrendingUp, Calendar, MessageCircle } from "lucide-react";
+import { X, AlertTriangle, TrendingUp, Calendar, MessageCircle, Crown } from "lucide-react";
 import { useEffect, useState } from "react";
 import Image from "next/image";
 import { getUserRecentReports, detectAnomalies, Report, AnomalyFlags } from "@/lib/firestore";
+import { calculateLevel, getLevelTitle } from "@/lib/guardian-collection";
 
 interface MemberDetailModalProps {
   member: any;
@@ -71,6 +72,11 @@ export function MemberDetailModal({
   if (!isOpen || !member) return null;
 
   const hasAnomalies = anomalies && Object.values(anomalies).some(v => v);
+
+  // レベル計算
+  const totalEarned = member.totalEarned || 0;
+  const memberLevel = calculateLevel(totalEarned);
+  const levelTitle = getLevelTitle(memberLevel);
 
   return (
     <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 md:pb-4 pb-[calc(var(--bottom-nav-height)+3rem)]">
@@ -175,11 +181,17 @@ export function MemberDetailModal({
           <h2 className="text-3xl font-bold mb-2" style={{ color: teamColor }}>
             {member.name}
           </h2>
+          {/* レベル & 称号 */}
+          <div className="flex items-center justify-center gap-2 mb-2">
+            <Crown className="w-4 h-4 text-yellow-400" />
+            <span className="text-xl font-bold text-yellow-400">Lv.{memberLevel}</span>
+            <span className="text-purple-400 font-medium">{levelTitle}</span>
+          </div>
           <p className="text-slate-300 text-sm mb-1">
             {teamName}
           </p>
           {member.guardianData && (
-            <p 
+            <p
               className="text-lg font-medium"
               style={{ color: member.guardianData.color }}
             >

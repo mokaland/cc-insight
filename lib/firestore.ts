@@ -25,7 +25,9 @@ import {
   createGuardianInstance,
   GUARDIANS,
   canUnlockGuardian,
-  getEnergyToNextStage
+  getEnergyToNextStage,
+  SnsAccounts,
+  PROFILE_COMPLETION_BONUS
 } from "./guardian-collection";
 
 // 型エイリアス（後方互換性のため）
@@ -501,9 +503,12 @@ export interface User {
   profileCompleted?: boolean;         // プロフィール入力完了フラグ
   
   // 🔥 ストリークシステム（後方互換性のため残す）
-  currentStreak?: number; 
-  maxStreak?: number; 
+  currentStreak?: number;
+  maxStreak?: number;
   lastReportDate?: Timestamp;
+
+  // 📱 SNSアカウント設定
+  snsAccounts?: SnsAccounts;
 }
 
 // 全ユーザーを取得
@@ -1691,5 +1696,132 @@ export async function deleteOldErrorLogs(daysOld: number = 30): Promise<number> 
   } catch (error) {
     console.error("Error deleting old error logs:", error);
     return 0;
+  }
+}
+
+// =====================================
+// 📱 SNSアカウント設定
+// =====================================
+
+/**
+ * ユーザーのSNSアカウント情報を取得
+ */
+export async function getUserSnsAccounts(userId: string): Promise<SnsAccounts | null> {
+  try {
+    const userDoc = await getDoc(doc(db, "users", userId));
+    if (userDoc.exists()) {
+      return userDoc.data()?.snsAccounts || null;
+    }
+    return null;
+  } catch (error) {
+    console.error("Error fetching SNS accounts:", error);
+    return null;
+  }
+}
+
+/**
+ * SNSアカウント情報を保存し、全入力完了時にボーナスを付与
+ * @returns { success: boolean, bonusAwarded: boolean, message: string }
+ */
+export async function saveSnsAccounts(
+  userId: string,
+  snsData: Pick<SnsAccounts, 'instagram' | 'youtube' | 'tiktok' | 'x'>
+): Promise<{ success: boolean; bonusAwarded: boolean; message: string }> {
+  try {
+    // 現在のユーザーデータを取得
+    const userDoc = await getDoc(doc(db, "users", userId));
+    if (!userDoc.exists()) {
+      return { success: false, bonusAwarded: false, message: "ユーザーが見つかりません" };
+    }
+
+    const currentData = userDoc.data();
+    const currentSnsAccounts = currentData?.snsAccounts || {};
+
+    // 全4項目が入力されているかチェック
+    const allFieldsFilled = Boolean(
+      snsData.instagram?.trim() &&
+      snsData.youtube?.trim() &&
+      snsData.tiktok?.trim() &&
+      snsData.x?.trim()
+    );
+
+    // ボーナス付与判定（全入力 & 未受取）
+    const shouldAwardBonus = allFieldsFilled && !currentSnsAccounts.completionBonusClaimed;
+
+    // SNSアカウント情報の更新データ
+    const updatedSnsAccounts: Partial<SnsAccounts> = {
+      instagram: snsData.instagram?.trim() || undefined,
+      youtube: snsData.youtube?.trim() || undefined,
+      tiktok: snsData.tiktok?.trim() || undefined,
+      x: snsData.x?.trim() || undefined,
+      profileCompleted: allFieldsFilled,
+    };
+
+    // ボーナス付与時は追加フィールドを設定
+    if (shouldAwardBonus) {
+      updatedSnsAccounts.completedAt = serverTimestamp() as unknown as Timestamp;
+      updatedSnsAccounts.completionBonusClaimed = true;
+    }
+
+    // Firestoreに保存
+    await setDoc(doc(db, "users", userId), {
+      snsAccounts: updatedSnsAccounts
+    }, { merge: true });
+
+    // ボーナス付与時はエナジーも加算
+    if (shouldAwardBonus) {
+      await addProfileCompletionBonus(userId);
+    }
+
+    return {
+      success: true,
+      bonusAwarded: shouldAwardBonus,
+      message: shouldAwardBonus
+        ? `🎉 プロフィール完成ボーナス +${PROFILE_COMPLETION_BONUS}E！`
+        : "SNSアカウント情報を保存しました"
+    };
+  } catch (error) {
+    console.error("Error saving SNS accounts:", error);
+    return { success: false, bonusAwarded: false, message: "保存に失敗しました" };
+  }
+}
+
+/**
+ * プロフィール完成ボーナスをエナジーに加算
+ */
+async function addProfileCompletionBonus(userId: string): Promise<void> {
+  try {
+    // guardian_profilesからエナジーデータを取得
+    const profileDoc = await getDoc(doc(db, "guardian_profiles", userId));
+
+    if (profileDoc.exists()) {
+      const profile = profileDoc.data() as UserGuardianProfile;
+      const currentEnergy = profile.energy?.current || 0;
+      const totalEarned = profile.energy?.totalEarned || 0;
+
+      // エナジーを加算
+      await setDoc(doc(db, "guardian_profiles", userId), {
+        energy: {
+          current: currentEnergy + PROFILE_COMPLETION_BONUS,
+          totalEarned: totalEarned + PROFILE_COMPLETION_BONUS,
+          lastEarnedAt: serverTimestamp()
+        }
+      }, { merge: true });
+
+      // エナジー履歴に記録（bonus_history コレクションに追加）
+      const today = new Date().toISOString().split('T')[0];
+      const bonusHistoryDocId = `${userId}_profile_bonus_${today}`;
+      await setDoc(doc(db, "bonus_history", bonusHistoryDocId), {
+        userId,
+        type: 'profile_completion',
+        amount: PROFILE_COMPLETION_BONUS,
+        description: 'プロフィール完成ボーナス',
+        date: today,
+        createdAt: serverTimestamp()
+      });
+    }
+  } catch (error) {
+    console.error("Error adding profile completion bonus:", error);
+    throw error;
   }
 }
