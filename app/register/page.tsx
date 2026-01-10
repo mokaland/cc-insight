@@ -82,7 +82,7 @@ export default function RegisterPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-start justify-center bg-gradient-to-br from-slate-950 via-indigo-950 to-slate-900 p-4 pt-20 pb-12 overflow-y-auto relative" style={{ WebkitOverflowScrolling: 'touch' }}>
+    <div className="min-h-screen flex flex-col items-center justify-start bg-gradient-to-br from-slate-950 via-indigo-950 to-slate-900 px-4 pt-20 pb-12 overflow-auto relative" style={{ WebkitOverflowScrolling: 'touch' }}>
       {/* 守護神テーマ背景エフェクト */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-indigo-500/20 rounded-full blur-3xl animate-pulse" />
