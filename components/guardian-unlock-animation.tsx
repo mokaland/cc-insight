@@ -449,13 +449,16 @@ export default function GuardianUnlockAnimation({
           <motion.div
             initial={{ y: 80, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
-            className="absolute bottom-16 md:bottom-24 text-center px-4"
+            className="absolute left-0 right-0 text-center px-4"
+            style={{
+              bottom: "calc(env(safe-area-inset-bottom, 0px) + 5rem)"
+            }}
           >
             <motion.h2
               initial={{ scale: 0.5 }}
               animate={{ scale: [0.5, 1.2, 1] }}
               transition={{ duration: 0.5 }}
-              className="text-4xl md:text-5xl font-bold text-white mb-4"
+              className="text-3xl md:text-4xl font-bold text-white mb-3"
             >
               ✨ 契約成立！
             </motion.h2>
@@ -464,22 +467,19 @@ export default function GuardianUnlockAnimation({
               animate={{ opacity: 1 }}
               transition={{ delay: 0.3 }}
             >
-              <p className="text-xl md:text-2xl text-gray-300 mb-2">
+              <p className="text-base md:text-lg text-gray-300 mb-1">
                 <span style={{ color: attr.color }} className="font-bold">
                   {guardian.name}
                 </span>{" "}
-                が
-              </p>
-              <p className="text-xl md:text-2xl text-gray-300 mb-4">
-                あなたの守護神になりました！
+                があなたの守護神になりました！
               </p>
               <motion.div
                 initial={{ scale: 0 }}
                 animate={{ scale: 1 }}
                 transition={{ delay: 0.5, type: "spring" }}
-                className="inline-block p-3 bg-gradient-to-r from-purple-900/80 to-pink-900/80 rounded-xl border border-yellow-400/50"
+                className="inline-block p-2 px-4 bg-gradient-to-r from-purple-900/80 to-pink-900/80 rounded-xl border border-yellow-400/50 mt-2"
               >
-                <p className="text-yellow-400 font-bold">
+                <p className="text-yellow-400 font-bold text-sm">
                   🎯 エナジーを注入して育てよう！
                 </p>
               </motion.div>
