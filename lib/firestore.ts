@@ -295,10 +295,21 @@ export function calculateTeamStats(reports: Report[], teamId: string) {
   });
 
   const members = Object.values(memberStats)
-    .map((m: any) => ({
-      ...m,
-      achievementRate: Math.round((m.posts / (team.dailyPostGoal * 7)) * 100)
-    }))
+    .map((m: any) => {
+      const followerData = latestFollowers[m.name] || { ig: 0, yt: 0, tiktok: 0, x: 0 };
+      return {
+        ...m,
+        // モーダル表示用のエイリアス追加
+        profileAccess: m.impressions,  // impressions = プロフアクセス
+        // フォロワー関連データ
+        igFollowers: followerData.ig,
+        ytFollowers: followerData.yt,
+        tiktokFollowers: followerData.tiktok,
+        xFollowers: followerData.x,
+        totalFollowers: followerData.ig + followerData.yt + followerData.tiktok + followerData.x,
+        achievementRate: Math.round((m.posts / (team.dailyPostGoal * 7)) * 100)
+      };
+    })
     .sort((a: any, b: any) => b.views - a.views);
 
   const totalViews = members.reduce((sum: number, m: any) => sum + m.views, 0);
@@ -863,51 +874,53 @@ export async function investGuardianEnergy(
   userId: string,
   guardianId: GuardianId,
   amount: number
-): Promise<{ success: boolean; evolved: boolean; newStage: number; message: string }> {
+): Promise<{ success: boolean; evolved: boolean; previousStage: number; newStage: number; message: string }> {
   try {
     const profile = await getUserGuardianProfile(userId);
     if (!profile) {
-      return { success: false, evolved: false, newStage: 0, message: "プロファイルが見つかりません" };
+      return { success: false, evolved: false, previousStage: 0, newStage: 0, message: "プロファイルが見つかりません" };
     }
-    
+
     const guardian = profile.guardians[guardianId];
     if (!guardian || !guardian.unlocked) {
-      return { success: false, evolved: false, newStage: 0, message: "この守護神は解放されていません" };
+      return { success: false, evolved: false, previousStage: 0, newStage: 0, message: "この守護神は解放されていません" };
     }
-    
+
     // エナジーチェック
     if (profile.energy.current < amount) {
-      return { success: false, evolved: false, newStage: guardian.stage, message: "エナジーが足りません" };
+      return { success: false, evolved: false, previousStage: guardian.stage, newStage: guardian.stage, message: "エナジーが足りません" };
     }
-    
+
     // 投資実行
     const { investEnergy } = await import("./energy-system");
     const result = investEnergy(guardian, amount, profile.energy.current);
-    
+
     if (!result.success) {
-      return { 
-        success: false, 
-        evolved: false, 
-        newStage: guardian.stage, 
-        message: result.message 
+      return {
+        success: false,
+        evolved: false,
+        previousStage: guardian.stage,
+        newStage: guardian.stage,
+        message: result.message
       };
     }
-    
+
     // プロファイル更新
     profile.guardians[guardianId] = result.newGuardian;
     profile.energy.current = result.remainingEnergy;
-    
+
     await updateUserGuardianProfile(userId, profile);
-    
+
     return {
       success: true,
       evolved: result.evolved,
+      previousStage: result.previousStage,
       newStage: result.newStage,
       message: result.message
     };
   } catch (error) {
     console.error("Error investing energy:", error);
-    return { success: false, evolved: false, newStage: 0, message: "エラーが発生しました" };
+    return { success: false, evolved: false, previousStage: 0, newStage: 0, message: "エラーが発生しました" };
   }
 }
 

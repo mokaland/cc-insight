@@ -182,6 +182,12 @@ function getSuccessMessage(amount: number, remaining: number | null, guardianNam
   };
 }
 
+// 進化ステップの型（1段階ごとの進化を表す）
+interface EvolutionStep {
+  from: number;
+  to: number;
+}
+
 export default function EnergyInvestmentModal({
   guardianId,
   profile,
@@ -199,6 +205,10 @@ export default function EnergyInvestmentModal({
   const [successData, setSuccessData] = useState<{ amount: number; remaining: number | null; newInvested: number } | null>(null);
   const [fireworks, setFireworks] = useState<{ id: number; x: number; y: number }[]>([]);
   const [fireworkId, setFireworkId] = useState(0);
+  // 複数段階進化用のキュー
+  const [evolutionQueue, setEvolutionQueue] = useState<EvolutionStep[]>([]);
+  const [currentEvolutionIndex, setCurrentEvolutionIndex] = useState(0);
+  const [finalNewStage, setFinalNewStage] = useState<number | null>(null);
 
   // タップで花火を追加
   const handleTapFirework = (e: React.MouseEvent<HTMLDivElement>) => {
@@ -289,12 +299,26 @@ export default function EnergyInvestmentModal({
 
     try {
       const result = await investGuardianEnergy(userId, guardianId, investAmount);
-      
+
       if (result.success) {
         if (result.evolved) {
-          // 進化演出を表示（useEffectでフェーズ管理）
-          setEvolutionData({ from: stage, to: result.newStage });
-          setShowEvolutionAnimation(true);
+          // 複数段階進化の場合は、1段階ずつのキューを作成
+          // 例: Stage 1 → Stage 3 の場合、[{from:1, to:2}, {from:2, to:3}]
+          const steps: EvolutionStep[] = [];
+          for (let s = result.previousStage; s < result.newStage; s++) {
+            steps.push({ from: s, to: s + 1 });
+          }
+
+          // 進化ステップが複数ある場合はキューで管理
+          setEvolutionQueue(steps);
+          setCurrentEvolutionIndex(0);
+          setFinalNewStage(result.newStage);
+
+          // 最初の進化演出を開始
+          if (steps.length > 0) {
+            setEvolutionData(steps[0]);
+            setShowEvolutionAnimation(true);
+          }
         } else {
           // 進化しなかった場合は成功演出を表示
           const newInvested = investedEnergy + investAmount;
@@ -1179,34 +1203,70 @@ export default function EnergyInvestmentModal({
                   transition={{ delay: 0.3, duration: 0.5 }}
                   className="flex flex-col items-center gap-3 w-full max-w-sm mx-auto"
                 >
-                  {/* 詳細を見るボタン */}
-                  <button
-                    onClick={() => {
-                      setShowEvolutionAnimation(false);
-                      onSuccess();
-                      router.push(`/guardian/${guardianId}`);
-                    }}
-                    className="w-full py-4 rounded-xl font-bold text-lg text-white transition-all flex items-center justify-center gap-2"
-                    style={{
-                      background: `linear-gradient(135deg, ${attr.color}, ${attr.color}cc)`,
-                      boxShadow: `0 0 30px ${attr.color}80`,
-                    }}
-                  >
-                    <Eye className="w-5 h-5" />
-                    詳細を見る
-                  </button>
+                  {/* 次の進化がある場合は「次へ」ボタンを表示 */}
+                  {currentEvolutionIndex < evolutionQueue.length - 1 ? (
+                    <>
+                      {/* 進化進捗表示 */}
+                      <p className="text-sm text-white/60 mb-1">
+                        進化 {currentEvolutionIndex + 1} / {evolutionQueue.length}
+                      </p>
+                      <button
+                        onClick={() => {
+                          // 次の進化演出へ
+                          const nextIndex = currentEvolutionIndex + 1;
+                          setCurrentEvolutionIndex(nextIndex);
+                          setEvolutionPhase("idle");
+                          setFireworks([]);
+                          // 少し遅延を入れてから次の演出を開始
+                          setTimeout(() => {
+                            setEvolutionData(evolutionQueue[nextIndex]);
+                          }, 100);
+                        }}
+                        className="w-full py-4 rounded-xl font-bold text-lg text-white transition-all flex items-center justify-center gap-2 bg-gradient-to-r from-purple-600 to-pink-600"
+                        style={{
+                          boxShadow: `0 0 30px rgba(168, 85, 247, 0.5)`,
+                        }}
+                      >
+                        🎉 次の進化へ！
+                      </button>
+                    </>
+                  ) : (
+                    <>
+                      {/* 最後の進化の場合は通常のボタン */}
+                      {/* 詳細を見るボタン */}
+                      <button
+                        onClick={() => {
+                          setShowEvolutionAnimation(false);
+                          setEvolutionQueue([]);
+                          setCurrentEvolutionIndex(0);
+                          onSuccess();
+                          router.push(`/guardian/${guardianId}`);
+                        }}
+                        className="w-full py-4 rounded-xl font-bold text-lg text-white transition-all flex items-center justify-center gap-2"
+                        style={{
+                          background: `linear-gradient(135deg, ${attr.color}, ${attr.color}cc)`,
+                          boxShadow: `0 0 30px ${attr.color}80`,
+                        }}
+                      >
+                        <Eye className="w-5 h-5" />
+                        詳細を見る
+                      </button>
 
-                  {/* 閉じるボタン */}
-                  <button
-                    onClick={() => {
-                      setShowEvolutionAnimation(false);
-                      onSuccess();
-                    }}
-                    className="w-full py-3 rounded-xl font-bold text-white/80 bg-slate-800/80 hover:bg-slate-700/80 transition-all flex items-center justify-center gap-2"
-                  >
-                    <X className="w-5 h-5" />
-                    閉じる
-                  </button>
+                      {/* 閉じるボタン */}
+                      <button
+                        onClick={() => {
+                          setShowEvolutionAnimation(false);
+                          setEvolutionQueue([]);
+                          setCurrentEvolutionIndex(0);
+                          onSuccess();
+                        }}
+                        className="w-full py-3 rounded-xl font-bold text-white/80 bg-slate-800/80 hover:bg-slate-700/80 transition-all flex items-center justify-center gap-2"
+                      >
+                        <X className="w-5 h-5" />
+                        閉じる
+                      </button>
+                    </>
+                  )}
 
                   {/* タップで花火ヒント */}
                   <motion.p
@@ -1338,85 +1398,110 @@ export default function EnergyInvestmentModal({
           )}
         </div>
 
-        {/* エナジー投資 */}
-        <div className="mb-6">
-          <div className="flex items-center justify-between mb-3">
-            <label className="text-white font-bold flex items-center">
-              <Zap className="w-5 h-5 mr-2 text-yellow-400" />
-              投資するエナジー
-            </label>
-            <p className="text-gray-400">
-              保有: <span className="text-yellow-400 font-bold">{currentEnergy}E</span>
-            </p>
-          </div>
-          
-          <input
-            type="range"
-            min="0"
-            max={Math.min(currentEnergy, 500)}
-            step="10"
-            value={investAmount}
-            onChange={(e) => setInvestAmount(parseInt(e.target.value))}
-            className="w-full mb-3"
-          />
-          
-          <div className="flex items-center justify-between mb-4">
-            <input
-              type="number"
-              value={investAmount}
-              onChange={(e) => setInvestAmount(Math.max(0, Math.min(currentEnergy, parseInt(e.target.value) || 0)))}
-              className="px-4 py-2 bg-slate-800 text-white rounded-lg w-32"
-            />
-            <div className="flex gap-2">
-              <button
-                onClick={() => setInvestAmount(Math.min(currentEnergy, 10))}
-                className="px-3 py-1 bg-slate-700 hover:bg-slate-600 text-white rounded text-sm"
-              >
-                10
-              </button>
-              <button
-                onClick={() => setInvestAmount(Math.min(currentEnergy, 50))}
-                className="px-3 py-1 bg-slate-700 hover:bg-slate-600 text-white rounded text-sm"
-              >
-                50
-              </button>
-              <button
-                onClick={() => setInvestAmount(Math.min(currentEnergy, 100))}
-                className="px-3 py-1 bg-slate-700 hover:bg-slate-600 text-white rounded text-sm"
-              >
-                100
-              </button>
-              <button
-                onClick={() => setInvestAmount(currentEnergy)}
-                className="px-3 py-1 bg-purple-700 hover:bg-purple-600 text-white rounded text-sm"
-              >
-                MAX
-              </button>
+        {/* エナジー投資 - Stage 4の場合は表示しない */}
+        {stage >= 4 ? (
+          <div className="mb-6 text-center">
+            <div className="bg-gradient-to-r from-yellow-900/30 to-amber-900/30 border border-yellow-500/50 rounded-xl p-6">
+              <div className="text-5xl mb-3">👑</div>
+              <h3 className="text-xl font-bold text-yellow-400 mb-2">究極体到達</h3>
+              <p className="text-gray-300">
+                {guardian.name}は最終形態に到達しました。
+              </p>
+              <p className="text-gray-400 text-sm mt-2">
+                これ以上の成長はできませんが、永遠にあなたを守り続けます。
+              </p>
             </div>
           </div>
-        </div>
+        ) : (
+          <>
+            <div className="mb-6">
+              <div className="flex items-center justify-between mb-3">
+                <label className="text-white font-bold flex items-center">
+                  <Zap className="w-5 h-5 mr-2 text-yellow-400" />
+                  投資するエナジー
+                </label>
+                <p className="text-gray-400">
+                  保有: <span className="text-yellow-400 font-bold">{currentEnergy}E</span>
+                </p>
+              </div>
 
-        {/* 投資ボタン */}
-        <button
-          onClick={handleInvest}
-          disabled={isInvesting || investAmount <= 0 || investAmount > currentEnergy}
-          className={`
-            w-full py-4 rounded-lg font-bold text-lg transition-all flex items-center justify-center
-            ${investAmount > 0 && investAmount <= currentEnergy
-              ? 'bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white'
-              : 'bg-slate-700 text-gray-500 cursor-not-allowed'
-            }
-          `}
-        >
-          {isInvesting ? (
-            <>処理中...</>
-          ) : (
-            <>
-              <TrendingUp className="w-5 h-5 mr-2" />
-              {investAmount}エナジーを注入する
-            </>
-          )}
-        </button>
+              <input
+                type="range"
+                min="0"
+                max={Math.min(currentEnergy, 500)}
+                step="10"
+                value={investAmount}
+                onChange={(e) => setInvestAmount(parseInt(e.target.value))}
+                className="w-full mb-3"
+              />
+
+              <div className="flex items-center justify-between mb-4">
+                <input
+                  type="text"
+                  inputMode="numeric"
+                  pattern="[0-9]*"
+                  value={investAmount}
+                  onChange={(e) => {
+                    // 数字以外を除去し、先頭の0を削除
+                    const rawValue = e.target.value.replace(/[^0-9]/g, '');
+                    const cleanValue = rawValue.replace(/^0+/, '') || '0';
+                    const numValue = parseInt(cleanValue) || 0;
+                    setInvestAmount(Math.max(0, Math.min(currentEnergy, numValue)));
+                  }}
+                  className="px-4 py-2 bg-slate-800 text-white rounded-lg w-32 text-center"
+                />
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => setInvestAmount(Math.min(currentEnergy, 10))}
+                    className="px-3 py-1 bg-slate-700 hover:bg-slate-600 text-white rounded text-sm"
+                  >
+                    10
+                  </button>
+                  <button
+                    onClick={() => setInvestAmount(Math.min(currentEnergy, 50))}
+                    className="px-3 py-1 bg-slate-700 hover:bg-slate-600 text-white rounded text-sm"
+                  >
+                    50
+                  </button>
+                  <button
+                    onClick={() => setInvestAmount(Math.min(currentEnergy, 100))}
+                    className="px-3 py-1 bg-slate-700 hover:bg-slate-600 text-white rounded text-sm"
+                  >
+                    100
+                  </button>
+                  <button
+                    onClick={() => setInvestAmount(currentEnergy)}
+                    className="px-3 py-1 bg-purple-700 hover:bg-purple-600 text-white rounded text-sm"
+                  >
+                    MAX
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            {/* 投資ボタン */}
+            <button
+              onClick={handleInvest}
+              disabled={isInvesting || investAmount <= 0 || investAmount > currentEnergy}
+              className={`
+                w-full py-4 rounded-lg font-bold text-lg transition-all flex items-center justify-center
+                ${investAmount > 0 && investAmount <= currentEnergy
+                  ? 'bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white'
+                  : 'bg-slate-700 text-gray-500 cursor-not-allowed'
+                }
+              `}
+            >
+              {isInvesting ? (
+                <>処理中...</>
+              ) : (
+                <>
+                  <TrendingUp className="w-5 h-5 mr-2" />
+                  {investAmount}エナジーを注入する
+                </>
+              )}
+            </button>
+          </>
+        )}
       </div>
     </div>
   );

@@ -390,6 +390,10 @@ export default function AllTeamsRankingPage() {
                   <h2 className="text-2xl font-bold" style={{ color }}>
                     {name}
                   </h2>
+                  {/* チームタイプバッジ（デバッグ用） */}
+                  <span className={`text-xs px-2 py-0.5 rounded-full ${isShorts ? 'bg-purple-500/20 text-purple-400' : 'bg-blue-500/20 text-blue-400'}`}>
+                    {isShorts ? 'Shorts' : 'X'}
+                  </span>
                 </div>
 
                 {/* CSV出力ボタン */}

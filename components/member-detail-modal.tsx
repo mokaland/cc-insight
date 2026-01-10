@@ -177,6 +177,10 @@ export function MemberDetailModal({
           </h2>
           <p className="text-slate-300 text-sm mb-1">
             {teamName}
+            {/* チームタイプ表示 */}
+            <span className={`ml-2 text-xs px-2 py-0.5 rounded-full ${isShorts ? 'bg-purple-500/20 text-purple-400' : 'bg-blue-500/20 text-blue-400'}`}>
+              {isShorts ? 'Shorts系' : 'X系'}
+            </span>
           </p>
           {member.guardianData && (
             <p 
@@ -201,36 +205,36 @@ export function MemberDetailModal({
           {/* チームタイプ別KPI */}
           {isShorts ? (
             <>
-              <StatRow 
-                label="👁️ 再生数" 
-                value={member.views?.toLocaleString() || '0'} 
+              <StatRow
+                label="👁️ 再生数"
+                value={member.views?.toLocaleString() || '0'}
               />
-              <StatRow 
-                label="👤 プロフアクセス" 
-                value={member.profileAccess?.toLocaleString() || '0'} 
+              <StatRow
+                label="👤 プロフアクセス"
+                value={member.profileAccess?.toLocaleString() || '0'}
               />
-              <StatRow 
-                label="💬 交流数" 
-                value={member.interactions?.toLocaleString() || '0'} 
+              <StatRow
+                label="💬 交流数"
+                value={member.interactions?.toLocaleString() || '0'}
               />
-              <StatRow 
-                label="📈 フォロワー増加" 
-                value={member.followerGrowth?.toLocaleString() || '0'} 
+              <StatRow
+                label="👥 総フォロワー"
+                value={member.totalFollowers?.toLocaleString() || '0'}
               />
             </>
           ) : (
             <>
-              <StatRow 
-                label="❤️ いいね回り" 
-                value={member.likes?.toLocaleString() || '0'} 
+              <StatRow
+                label="❤️ いいね回り"
+                value={member.likes?.toLocaleString() || '0'}
               />
-              <StatRow 
-                label="💬 リプライ回り" 
-                value={member.replies?.toLocaleString() || '0'} 
+              <StatRow
+                label="💬 リプライ回り"
+                value={member.replies?.toLocaleString() || '0'}
               />
-              <StatRow 
-                label="⚡ 総活動量" 
-                value={((member.likes || 0) + (member.replies || 0)).toLocaleString()} 
+              <StatRow
+                label="⚡ 総活動量"
+                value={((member.likes || 0) + (member.replies || 0)).toLocaleString()}
               />
             </>
           )}

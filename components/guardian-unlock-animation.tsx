@@ -465,7 +465,7 @@ export default function GuardianUnlockAnimation({
                   initial={{ scale: 0.5 }}
                   animate={{ scale: [0.5, 1.2, 1] }}
                   transition={{ duration: 0.5 }}
-                  className="text-xl md:text-2xl font-bold text-white"
+                  className="text-3xl md:text-4xl font-bold text-white"
                   style={{
                     textShadow: `0 0 40px ${attr.color}`,
                     filter: 'drop-shadow(0 0 15px rgba(251, 191, 36, 0.5))'
@@ -479,7 +479,7 @@ export default function GuardianUnlockAnimation({
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
                   transition={{ delay: 0.5, duration: 0.4 }}
-                  className="text-sm md:text-base text-white"
+                  className="text-lg md:text-xl text-white"
                 >
                   <span style={{ color: attr.color }} className="font-bold">
                     {guardian.name}
@@ -492,9 +492,9 @@ export default function GuardianUnlockAnimation({
                   initial={{ scale: 0 }}
                   animate={{ scale: 1 }}
                   transition={{ delay: 0.8, type: "spring" }}
-                  className="inline-block p-1.5 px-3 bg-gradient-to-r from-purple-900/80 to-pink-900/80 rounded-lg border border-yellow-400/50 mt-1"
+                  className="inline-block p-2 px-4 bg-gradient-to-r from-purple-900/80 to-pink-900/80 rounded-lg border border-yellow-400/50 mt-2"
                 >
-                  <p className="text-yellow-400 font-bold text-xs">
+                  <p className="text-yellow-400 font-bold text-sm">
                     🎯 エナジーを注入して育てよう！
                   </p>
                 </motion.div>
@@ -507,7 +507,7 @@ export default function GuardianUnlockAnimation({
               animate={{ opacity: 1 }}
               className="absolute bottom-0 left-0 right-0 px-4"
               style={{
-                paddingBottom: "calc(env(safe-area-inset-bottom, 0px) + 5.5rem)"
+                paddingBottom: "calc(env(safe-area-inset-bottom, 0px) + 6.75rem)"
               }}
             >
               <motion.div

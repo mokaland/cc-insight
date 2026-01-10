@@ -289,6 +289,19 @@ export function investEnergy(
     };
   }
 
+  // Stage 4（究極体）は最終形態のため、これ以上投資できない
+  if (guardian.stage >= 4) {
+    return {
+      success: false,
+      newGuardian: guardian,
+      evolved: false,
+      previousStage: guardian.stage,
+      newStage: guardian.stage,
+      remainingEnergy: currentEnergy,
+      message: "究極体はこれ以上成長できません"
+    };
+  }
+
   const previousStage = guardian.stage;
   const newInvestedEnergy = guardian.investedEnergy + amount;
   const newStage = getCurrentStage(newInvestedEnergy);
@@ -300,9 +313,14 @@ export function investEnergy(
     ? [...guardian.unlockedStages]
     : Array.from({ length: previousStage + 1 }, (_, i) => i as 0 | 1 | 2 | 3 | 4);
 
-  // 進化した場合、新しいステージを解放済みに追加
-  if (evolved && !unlockedStages.includes(newStage)) {
-    unlockedStages.push(newStage);
+  // 進化した場合、previousStageからnewStageまでの全ての中間ステージを追加
+  // 例: Stage 1 → Stage 3 の場合、Stage 2 と Stage 3 の両方を追加
+  if (evolved) {
+    for (let s = previousStage + 1; s <= newStage; s++) {
+      if (!unlockedStages.includes(s as 0 | 1 | 2 | 3 | 4)) {
+        unlockedStages.push(s as 0 | 1 | 2 | 3 | 4);
+      }
+    }
     // ソートして順序を保証
     unlockedStages.sort((a, b) => a - b);
   }
