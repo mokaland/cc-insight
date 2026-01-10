@@ -17,6 +17,7 @@ import {
 } from "@/lib/guardian-collection";
 import { investGuardianEnergy } from "@/lib/firestore";
 import { Zap, X, TrendingUp, Sparkles, Star, Heart, Eye } from "lucide-react";
+import { getEvolutionMessage } from "@/lib/guardian-messages";
 
 // 進化演出のフェーズ
 type EvolutionPhase =
@@ -791,53 +792,109 @@ export default function EnergyInvestmentModal({
           </>
         )}
 
-        {/* Phase 5: フィナーレ - ボタンのみ（下部に配置） */}
+        {/* Phase 5: フィナーレ - メッセージ（カードの上）とボタン（下部） */}
         <AnimatePresence>
           {evolutionPhase === "finale" && (
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              className="absolute bottom-0 left-0 right-0 px-4"
-              style={{
-                paddingBottom: "calc(env(safe-area-inset-bottom, 0px) + 5rem)"
-              }}
-            >
-              <motion.div
-                initial={{ y: 20, opacity: 0 }}
-                animate={{ y: 0, opacity: 1 }}
-                transition={{ delay: 0.3, duration: 0.5 }}
-                className="flex flex-col items-center gap-3 w-full max-w-sm mx-auto"
-              >
-                {/* 詳細を見るボタン */}
-                <button
-                  onClick={() => {
-                    setShowEvolutionAnimation(false);
-                    onSuccess();
-                    router.push(`/guardian/${guardianId}`);
-                  }}
-                  className="w-full py-4 rounded-xl font-bold text-lg text-white transition-all flex items-center justify-center gap-2"
-                  style={{
-                    background: `linear-gradient(135deg, ${attr.color}, ${attr.color}cc)`,
-                    boxShadow: `0 0 30px ${attr.color}80`,
-                  }}
-                >
-                  <Eye className="w-5 h-5" />
-                  詳細を見る
-                </button>
+            <>
+              {/* ガーディアンからのメッセージ（カードの上） */}
+              {(() => {
+                const evolutionMessage = getEvolutionMessage(guardianId, evolutionData.to as EvolutionStage);
+                if (!evolutionMessage) return null;
 
-                {/* 閉じるボタン */}
-                <button
-                  onClick={() => {
-                    setShowEvolutionAnimation(false);
-                    onSuccess();
-                  }}
-                  className="w-full py-3 rounded-xl font-bold text-white/80 bg-slate-800/80 hover:bg-slate-700/80 transition-all flex items-center justify-center gap-2"
+                return (
+                  <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.5, duration: 0.6 }}
+                    className="absolute top-0 left-0 right-0 px-6 text-center z-20"
+                    style={{
+                      paddingTop: "calc(env(safe-area-inset-top, 0px) + 2rem)"
+                    }}
+                  >
+                    <div
+                      className="inline-block px-6 py-4 rounded-2xl backdrop-blur-md max-w-sm mx-auto"
+                      style={{
+                        background: `linear-gradient(135deg, ${attr.color}20, ${attr.color}10)`,
+                        border: `1px solid ${attr.color}40`,
+                        boxShadow: `0 4px 30px ${attr.color}20`
+                      }}
+                    >
+                      {/* メッセージ本文（3行） */}
+                      <div className="space-y-1 mb-3">
+                        {evolutionMessage.lines.map((line, index) => (
+                          <motion.p
+                            key={index}
+                            initial={{ opacity: 0, x: -10 }}
+                            animate={{ opacity: 1, x: 0 }}
+                            transition={{ delay: 0.7 + index * 0.2, duration: 0.4 }}
+                            className="text-white text-sm md:text-base leading-relaxed"
+                          >
+                            {line}
+                          </motion.p>
+                        ))}
+                      </div>
+
+                      {/* ガーディアン名 */}
+                      <motion.p
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        transition={{ delay: 1.3, duration: 0.4 }}
+                        className="text-right text-xs md:text-sm"
+                        style={{ color: attr.color }}
+                      >
+                        ─ {evolutionMessage.guardianName}より
+                      </motion.p>
+                    </div>
+                  </motion.div>
+                );
+              })()}
+
+              {/* ボタン（下部に配置） */}
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                className="absolute bottom-0 left-0 right-0 px-4"
+                style={{
+                  paddingBottom: "calc(env(safe-area-inset-bottom, 0px) + 5rem)"
+                }}
+              >
+                <motion.div
+                  initial={{ y: 20, opacity: 0 }}
+                  animate={{ y: 0, opacity: 1 }}
+                  transition={{ delay: 0.3, duration: 0.5 }}
+                  className="flex flex-col items-center gap-3 w-full max-w-sm mx-auto"
                 >
-                  <X className="w-5 h-5" />
-                  閉じる
-                </button>
+                  {/* 詳細を見るボタン */}
+                  <button
+                    onClick={() => {
+                      setShowEvolutionAnimation(false);
+                      onSuccess();
+                      router.push(`/guardian/${guardianId}`);
+                    }}
+                    className="w-full py-4 rounded-xl font-bold text-lg text-white transition-all flex items-center justify-center gap-2"
+                    style={{
+                      background: `linear-gradient(135deg, ${attr.color}, ${attr.color}cc)`,
+                      boxShadow: `0 0 30px ${attr.color}80`,
+                    }}
+                  >
+                    <Eye className="w-5 h-5" />
+                    詳細を見る
+                  </button>
+
+                  {/* 閉じるボタン */}
+                  <button
+                    onClick={() => {
+                      setShowEvolutionAnimation(false);
+                      onSuccess();
+                    }}
+                    className="w-full py-3 rounded-xl font-bold text-white/80 bg-slate-800/80 hover:bg-slate-700/80 transition-all flex items-center justify-center gap-2"
+                  >
+                    <X className="w-5 h-5" />
+                    閉じる
+                  </button>
+                </motion.div>
               </motion.div>
-            </motion.div>
+            </>
           )}
         </AnimatePresence>
       </div>
