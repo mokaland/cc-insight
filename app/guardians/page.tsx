@@ -236,7 +236,7 @@ export default function GuardiansPage() {
                       key={stage}
                       onClick={() => {
                         if (isStageUnlocked) {
-                          router.push(`/guardian/${guardian.id}`);
+                          router.push(`/guardian/${guardian.id}?stage=${stage}`);
                         } else if (isUnlocked) {
                           setSelectedGuardian(guardian.id);
                           setShowEnergyModal(true);

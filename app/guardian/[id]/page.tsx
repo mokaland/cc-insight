@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useAuth } from "@/lib/auth-context";
-import { useRouter, useParams } from "next/navigation";
+import { useRouter, useParams, useSearchParams } from "next/navigation";
 import { getUserGuardianProfile, updateGuardianMemo } from "@/lib/firestore";
 import {
   GUARDIANS,
@@ -40,11 +40,15 @@ export default function GuardianDetailPage() {
   const { user } = useAuth();
   const router = useRouter();
   const params = useParams();
+  const searchParams = useSearchParams();
   const guardianId = params.id as GuardianId;
+  const stageParam = searchParams.get("stage");
 
   const [profile, setProfile] = useState<UserGuardianProfile | null>(null);
   const [loading, setLoading] = useState(true);
-  const [selectedStage, setSelectedStage] = useState<EvolutionStage>(1);
+  const [selectedStage, setSelectedStage] = useState<EvolutionStage>(
+    stageParam ? (parseInt(stageParam) as EvolutionStage) : 1
+  );
   const [isEditingMemo, setIsEditingMemo] = useState(false);
   const [memoText, setMemoText] = useState("");
   const [savingMemo, setSavingMemo] = useState(false);
@@ -64,16 +68,25 @@ export default function GuardianDetailPage() {
   }, [user?.uid]);
 
   useEffect(() => {
-    // プロファイル読み込み後、現在のステージを選択
+    // プロファイル読み込み後、ステージを選択
     if (profile && guardianId) {
       const instance = profile.guardians[guardianId];
       if (instance?.unlocked) {
-        // 現在のステージが1以上ならそれを選択、そうでなければ1
-        setSelectedStage(Math.max(1, instance.stage) as EvolutionStage);
+        // URLパラメータがある場合はそれを優先、なければ現在のステージ
+        if (stageParam) {
+          const paramStage = parseInt(stageParam) as EvolutionStage;
+          // 解放済みステージの範囲内かチェック
+          if (paramStage >= 1 && paramStage <= 4) {
+            setSelectedStage(paramStage);
+          }
+        } else {
+          // パラメータがない場合は現在のステージ（1以上）を選択
+          setSelectedStage(Math.max(1, instance.stage) as EvolutionStage);
+        }
         setMemoText(instance.memo || "");
       }
     }
-  }, [profile, guardianId]);
+  }, [profile, guardianId, stageParam]);
 
   async function loadProfile() {
     if (!user) return;
