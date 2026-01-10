@@ -458,7 +458,7 @@ export default function EnergyInvestmentModal({
         className="fixed inset-0 bg-black flex flex-col items-center z-[9999] overflow-hidden"
         style={{
           paddingTop: "calc(env(safe-area-inset-top, 0px) + 2rem)",
-          paddingBottom: "calc(env(safe-area-inset-bottom, 0px) + 5rem)",
+          paddingBottom: "calc(env(safe-area-inset-bottom, 0px) + 6rem)",
           justifyContent: "center"
         }}
       >
@@ -820,14 +820,15 @@ export default function EnergyInvestmentModal({
                       }}
                     >
                       {/* メッセージ本文（3行） */}
-                      <div className="space-y-1 mb-3">
+                      <div className="space-y-1.5 mb-3">
                         {evolutionMessage.lines.map((line, index) => (
                           <motion.p
                             key={index}
                             initial={{ opacity: 0, x: -10 }}
                             animate={{ opacity: 1, x: 0 }}
                             transition={{ delay: 0.7 + index * 0.2, duration: 0.4 }}
-                            className="text-white text-sm md:text-base leading-relaxed"
+                            className="text-white leading-relaxed"
+                            style={{ fontSize: "0.95rem" }}
                           >
                             {line}
                           </motion.p>
@@ -839,8 +840,8 @@ export default function EnergyInvestmentModal({
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
                         transition={{ delay: 1.3, duration: 0.4 }}
-                        className="text-right text-xs md:text-sm"
-                        style={{ color: attr.color }}
+                        className="text-right"
+                        style={{ color: attr.color, fontSize: "0.85rem" }}
                       >
                         ─ {evolutionMessage.guardianName}より
                       </motion.p>
@@ -855,7 +856,7 @@ export default function EnergyInvestmentModal({
                 animate={{ opacity: 1 }}
                 className="absolute bottom-0 left-0 right-0 px-4"
                 style={{
-                  paddingBottom: "calc(env(safe-area-inset-bottom, 0px) + 5rem)"
+                  paddingBottom: "calc(env(safe-area-inset-bottom, 0px) + 6rem)"
                 }}
               >
                 <motion.div
