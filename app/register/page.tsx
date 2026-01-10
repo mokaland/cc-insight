@@ -82,7 +82,7 @@ export default function RegisterPage() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-start bg-gradient-to-br from-slate-950 via-indigo-950 to-slate-900 px-4 pb-12 overflow-auto relative" style={{ WebkitOverflowScrolling: 'touch', paddingTop: 'calc(5rem + env(safe-area-inset-top, 0px))' }}>
+    <div className="min-h-screen flex flex-col items-center justify-start bg-gradient-to-br from-slate-950 via-indigo-950 to-slate-900 px-4 pb-12 overflow-auto relative" style={{ WebkitOverflowScrolling: 'touch', paddingTop: 'calc(1.5rem + env(safe-area-inset-top, 0px))' }}>
       {/* 守護神テーマ背景エフェクト */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-indigo-500/20 rounded-full blur-3xl animate-pulse" />
@@ -123,7 +123,7 @@ export default function RegisterPage() {
 
       <div className="w-full max-w-md relative z-10">
         {/* ロゴ/タイトル */}
-        <div className="text-center mb-8 mt-10">
+        <div className="text-center mb-8 mt-4">
           <div className="inline-flex items-center justify-center w-20 h-20 rounded-2xl overflow-hidden mb-4 shadow-[0_0_40px_rgba(99,102,241,0.6)] ring-2 ring-sky-400/50">
             <Image
               src="/icon-192x192.png"
