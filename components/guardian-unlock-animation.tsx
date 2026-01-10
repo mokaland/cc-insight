@@ -363,26 +363,18 @@ export default function GuardianUnlockAnimation({
               boxShadow: `0 0 80px #fbbf24, 0 0 120px ${attr.color}`,
             }}
           >
-            {/* 親の回転で反転するためscaleX(-1)で補正 */}
-            <div
-              className="w-full h-full"
-              style={{ transform: "scaleX(-1)" }}
-            >
-              <img
-                src={getGuardianImagePath(guardianId, 0)}
-                alt={guardian.name}
-                className="w-full h-full object-contain"
-                onError={(e) => {
-                  // 画像読み込み失敗時は卵画像を表示
-                  e.currentTarget.src = "/images/ui/guardian-egg.png";
-                }}
-              />
-            </div>
-            {/* Stage 0 バッジ - 親の回転で反転するためscaleX(-1)で補正 */}
-            <div
-              className="absolute bottom-4 left-0 right-0 text-center"
-              style={{ transform: "scaleX(-1)" }}
-            >
+            {/* 親の回転が0度で終わるため、反転補正は不要 */}
+            <img
+              src={getGuardianImagePath(guardianId, 0)}
+              alt={guardian.name}
+              className="w-full h-full object-contain"
+              onError={(e) => {
+                // 画像読み込み失敗時は卵画像を表示
+                e.currentTarget.src = "/images/ui/guardian-egg.png";
+              }}
+            />
+            {/* Stage 0 バッジ */}
+            <div className="absolute bottom-4 left-0 right-0 text-center">
               <span className="text-yellow-400 text-sm font-bold bg-black/70 px-3 py-1 rounded-full">
                 Stage 0
               </span>
