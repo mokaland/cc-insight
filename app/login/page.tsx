@@ -193,11 +193,15 @@ export default function MemberLoginPage() {
           <Link href="/register">
             <Button
               type="button"
-              variant="outline"
-              className="w-full h-12 border-2 border-sky-500/50 bg-sky-500/10 text-sky-300 hover:bg-sky-500/20 hover:text-sky-200 font-semibold shadow-[0_0_20px_rgba(56,189,248,0.3)]"
+              className="w-full h-12 bg-gradient-to-r from-pink-500 via-rose-500 to-pink-600 text-white font-bold text-lg hover:opacity-90 shadow-[0_0_30px_rgba(236,72,153,0.5)] relative overflow-hidden group"
             >
-              <UserPlus className="w-5 h-5 mr-2" />
-              新規登録
+              {/* ホバー時のアニメーション */}
+              <span className="absolute inset-0 w-full h-full bg-gradient-to-r from-rose-500 via-pink-500 to-pink-600 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+
+              <span className="relative z-10 flex items-center justify-center gap-2">
+                <UserPlus className="w-5 h-5" />
+                新規登録
+              </span>
             </Button>
           </Link>
 
