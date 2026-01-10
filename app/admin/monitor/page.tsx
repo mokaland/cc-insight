@@ -9,7 +9,7 @@
  * 「今、誰を助けるべきか」が一目で分かる状態にする
  */
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/lib/auth-context";
 import { GlassCard } from "@/components/glass-card";
@@ -96,6 +96,34 @@ export default function ActiveMonitorPage() {
   const [broadcastMessage, setBroadcastMessage] = useState("");
   const [broadcastTarget, setBroadcastTarget] = useState<"all" | "danger" | "warning" | "attention">("danger");
   const [isSending, setIsSending] = useState(false);
+  const scrollYRef = useRef(0);
+
+  // モーダル表示時の背景スクロール制御（iOS Safari/PWA対応）
+  useEffect(() => {
+    if (showBroadcast || showComparison) {
+      // 現在のスクロール位置を保存
+      scrollYRef.current = window.scrollY;
+
+      // body固定でスクロール防止
+      document.body.style.position = 'fixed';
+      document.body.style.top = `-${scrollYRef.current}px`;
+      document.body.style.left = '0';
+      document.body.style.right = '0';
+      document.body.style.width = '100%';
+      document.body.style.overflow = 'hidden';
+
+      return () => {
+        // スクロール位置を復元
+        document.body.style.position = '';
+        document.body.style.top = '';
+        document.body.style.left = '';
+        document.body.style.right = '';
+        document.body.style.width = '';
+        document.body.style.overflow = '';
+        window.scrollTo(0, scrollYRef.current);
+      };
+    }
+  }, [showBroadcast, showComparison]);
 
   const sendBroadcastNotification = async () => {
     if (!broadcastMessage.trim()) {
@@ -729,9 +757,26 @@ export default function ActiveMonitorPage() {
 
       {/* 比較モーダル */}
       {showComparison && comparisonMembers.length === 2 && (
-        <div className="fixed inset-0 bg-black/70 backdrop-blur-md z-[9999] flex items-center justify-center p-4">
-          <div className="bg-slate-900 rounded-2xl border-2 border-purple-500/30 max-w-6xl w-full max-h-[90vh] overflow-y-auto">
-            <div className="sticky top-0 bg-slate-900 border-b border-purple-500/30 p-6 flex items-center justify-between">
+        <div
+          className="fixed inset-0 bg-black/70 backdrop-blur-md z-[9999] flex items-start md:items-center justify-center overflow-hidden"
+          style={{
+            paddingTop: 'max(env(safe-area-inset-top, 0px), 16px)',
+            paddingBottom: 'max(env(safe-area-inset-bottom, 0px), 16px)',
+            paddingLeft: 'env(safe-area-inset-left, 16px)',
+            paddingRight: 'env(safe-area-inset-right, 16px)',
+          }}
+          onClick={() => setShowComparison(false)}
+          onTouchMove={(e) => e.stopPropagation()}
+        >
+          <div
+            className="bg-slate-900 rounded-2xl border-2 border-purple-500/30 max-w-6xl w-full max-h-[calc(100dvh-env(safe-area-inset-top,0px)-env(safe-area-inset-bottom,0px)-32px)] overflow-y-auto overscroll-contain"
+            style={{
+              WebkitOverflowScrolling: 'touch',
+            }}
+            onClick={(e) => e.stopPropagation()}
+            onTouchMove={(e) => e.stopPropagation()}
+          >
+            <div className="sticky top-0 bg-slate-900 rounded-t-2xl border-b border-purple-500/30 p-6 flex items-center justify-between z-10">
               <h2 className="text-2xl font-bold text-purple-400 flex items-center gap-2">
                 <Users className="w-6 h-6" />
                 メンバー比較
@@ -827,9 +872,26 @@ export default function ActiveMonitorPage() {
 
       {/* 一斉通知モーダル */}
       {showBroadcast && (
-        <div className="fixed inset-0 bg-black/70 backdrop-blur-md z-[9999] flex items-center justify-center p-4">
-          <div className="bg-slate-900 rounded-2xl border-2 border-cyan-500/30 max-w-2xl w-full">
-            <div className="sticky top-0 bg-slate-900 border-b border-cyan-500/30 p-6 flex items-center justify-between">
+        <div
+          className="fixed inset-0 bg-black/70 backdrop-blur-md z-[9999] flex items-start md:items-center justify-center overflow-hidden"
+          style={{
+            paddingTop: 'max(env(safe-area-inset-top, 0px), 16px)',
+            paddingBottom: 'max(env(safe-area-inset-bottom, 0px), 16px)',
+            paddingLeft: 'env(safe-area-inset-left, 16px)',
+            paddingRight: 'env(safe-area-inset-right, 16px)',
+          }}
+          onClick={() => setShowBroadcast(false)}
+          onTouchMove={(e) => e.stopPropagation()}
+        >
+          <div
+            className="bg-slate-900 rounded-2xl border-2 border-cyan-500/30 max-w-2xl w-full max-h-[calc(100dvh-env(safe-area-inset-top,0px)-env(safe-area-inset-bottom,0px)-32px)] overflow-y-auto overscroll-contain"
+            style={{
+              WebkitOverflowScrolling: 'touch',
+            }}
+            onClick={(e) => e.stopPropagation()}
+            onTouchMove={(e) => e.stopPropagation()}
+          >
+            <div className="sticky top-0 bg-slate-900 rounded-t-2xl border-b border-cyan-500/30 p-6 flex items-center justify-between z-10">
               <h2 className="text-2xl font-bold text-cyan-400 flex items-center gap-2">
                 <MessageCircle className="w-6 h-6" />
                 一斉通知を送信
