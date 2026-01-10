@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   GUARDIANS,
@@ -15,7 +16,7 @@ import {
   getGuardianImagePath
 } from "@/lib/guardian-collection";
 import { investGuardianEnergy } from "@/lib/firestore";
-import { Zap, X, TrendingUp, Sparkles, Star, Heart } from "lucide-react";
+import { Zap, X, TrendingUp, Sparkles, Star, Heart, Eye } from "lucide-react";
 
 // 進化演出のフェーズ
 type EvolutionPhase =
@@ -185,6 +186,7 @@ export default function EnergyInvestmentModal({
   onClose,
   onSuccess
 }: EnergyInvestmentModalProps) {
+  const router = useRouter();
   const [investAmount, setInvestAmount] = useState(10);
   const [isInvesting, setIsInvesting] = useState(false);
   const [showEvolutionAnimation, setShowEvolutionAnimation] = useState(false);
@@ -232,20 +234,15 @@ export default function EnergyInvestmentModal({
       config.cardifyDuration + config.chargingDuration + config.flashDuration + config.revealDuration
     );
 
-    // 終了
-    const timer5 = setTimeout(() => {
-      setShowEvolutionAnimation(false);
-      onSuccess();
-    }, config.totalDuration);
+    // 終了はボタンクリックで行うため、タイマーでの自動終了を削除
 
     return () => {
       clearTimeout(timer1);
       clearTimeout(timer2);
       clearTimeout(timer3);
       clearTimeout(timer4);
-      clearTimeout(timer5);
     };
-  }, [showEvolutionAnimation, onSuccess, evolutionData]);
+  }, [showEvolutionAnimation, evolutionData]);
 
   const guardian = GUARDIANS[guardianId];
   const instance = profile.guardians[guardianId];
@@ -881,6 +878,46 @@ export default function EnergyInvestmentModal({
               </motion.div>
             ))}
           </>
+        )}
+
+        {/* 進化完了ボタン（finaleフェーズで表示） */}
+        {evolutionPhase === "finale" && (
+          <motion.div
+            initial={{ y: 50, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            transition={{ delay: 0.5, duration: 0.5 }}
+            className="absolute bottom-8 left-0 right-0 flex flex-col items-center gap-4 px-4"
+            style={{ paddingBottom: "env(safe-area-inset-bottom, 0px)" }}
+          >
+            {/* 詳細を見るボタン */}
+            <button
+              onClick={() => {
+                setShowEvolutionAnimation(false);
+                onSuccess();
+                router.push(`/guardian/${guardianId}`);
+              }}
+              className="w-full max-w-xs py-4 rounded-xl font-bold text-lg text-white transition-all flex items-center justify-center gap-2"
+              style={{
+                background: `linear-gradient(135deg, ${attr.color}, ${attr.color}cc)`,
+                boxShadow: `0 0 30px ${attr.color}80`,
+              }}
+            >
+              <Eye className="w-5 h-5" />
+              詳細を見る
+            </button>
+
+            {/* 閉じるボタン */}
+            <button
+              onClick={() => {
+                setShowEvolutionAnimation(false);
+                onSuccess();
+              }}
+              className="w-full max-w-xs py-3 rounded-xl font-bold text-white/80 bg-slate-800/80 hover:bg-slate-700/80 transition-all flex items-center justify-center gap-2"
+            >
+              <X className="w-5 h-5" />
+              閉じる
+            </button>
+          </motion.div>
         )}
       </div>
     );

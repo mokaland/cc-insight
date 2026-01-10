@@ -677,6 +677,7 @@ function calculateStreak(reports: Report[]): { currentStreak: number; longestStr
 
 /**
  * ユーザーの守護神プロファイルを取得（v2.0）
+ * 既存ユーザーの unlockedStages マイグレーションも自動実行
  */
 export async function getUserGuardianProfile(userId: string): Promise<UserGuardianProfile | null> {
   try {
@@ -687,7 +688,31 @@ export async function getUserGuardianProfile(userId: string): Promise<UserGuardi
 
     // v2.0プロファイルが存在すれば返す
     if (userData.guardianProfile) {
-      return userData.guardianProfile as UserGuardianProfile;
+      const profile = userData.guardianProfile as UserGuardianProfile;
+
+      // マイグレーション: unlockedStages がない守護神に追加
+      let needsMigration = false;
+      for (const guardianId of Object.keys(profile.guardians) as GuardianId[]) {
+        const guardian = profile.guardians[guardianId];
+        if (guardian && guardian.unlocked && !guardian.unlockedStages) {
+          // 現在のstageまでを全て解放済みとして設定
+          guardian.unlockedStages = Array.from(
+            { length: guardian.stage + 1 },
+            (_, i) => i as 0 | 1 | 2 | 3 | 4
+          );
+          needsMigration = true;
+        }
+      }
+
+      // マイグレーションが必要な場合は保存
+      if (needsMigration) {
+        await setDoc(doc(db, "users", userId), {
+          guardianProfile: profile
+        }, { merge: true });
+        console.log(`✅ ユーザー ${userId} の unlockedStages をマイグレーションしました`);
+      }
+
+      return profile;
     }
 
     // 存在しない場合は新規作成

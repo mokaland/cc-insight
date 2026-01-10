@@ -274,7 +274,7 @@ export function investEnergy(
       message: "エナジーが足りません"
     };
   }
-  
+
   if (amount <= 0) {
     return {
       success: false,
@@ -286,24 +286,38 @@ export function investEnergy(
       message: "投資額は1以上である必要があります"
     };
   }
-  
+
   const previousStage = guardian.stage;
   const newInvestedEnergy = guardian.investedEnergy + amount;
   const newStage = getCurrentStage(newInvestedEnergy);
   const evolved = newStage > previousStage;
-  
+
+  // 解放済みステージを更新（図鑑用）
+  // 既存のunlockedStagesがなければ現在のstageまでを全て解放済みとして初期化
+  let unlockedStages = guardian.unlockedStages
+    ? [...guardian.unlockedStages]
+    : Array.from({ length: previousStage + 1 }, (_, i) => i as 0 | 1 | 2 | 3 | 4);
+
+  // 進化した場合、新しいステージを解放済みに追加
+  if (evolved && !unlockedStages.includes(newStage)) {
+    unlockedStages.push(newStage);
+    // ソートして順序を保証
+    unlockedStages.sort((a, b) => a - b);
+  }
+
   const newGuardian: GuardianInstance = {
     ...guardian,
     investedEnergy: newInvestedEnergy,
     stage: newStage,
-    abilityActive: newStage >= 3
+    abilityActive: newStage >= 3,
+    unlockedStages
   };
-  
+
   let message = `${GUARDIANS[guardian.guardianId].name}に${amount}エナジーを投資しました`;
   if (evolved) {
     message = `🎉 ${GUARDIANS[guardian.guardianId].name}が「${EVOLUTION_STAGES[newStage].name}」に進化しました！`;
   }
-  
+
   return {
     success: true,
     newGuardian,

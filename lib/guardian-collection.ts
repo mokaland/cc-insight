@@ -297,6 +297,7 @@ export interface GuardianInstance {
   investedEnergy: number;
   abilityActive: boolean;    // stage >= 3 で true
   nickname?: string;         // ユーザーが付けた愛称
+  unlockedStages?: EvolutionStage[];  // 解放済みステージ履歴（図鑑用）
 }
 
 export interface UserEnergyData {
@@ -479,7 +480,8 @@ export function createGuardianInstance(guardianId: GuardianId): GuardianInstance
     unlockedAt: Timestamp.now(),
     stage: 0,
     investedEnergy: 0,
-    abilityActive: false
+    abilityActive: false,
+    unlockedStages: [0]  // 初期ステージを解放済みとして記録
   };
 }
 

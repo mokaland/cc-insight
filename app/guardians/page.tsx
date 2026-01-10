@@ -182,27 +182,156 @@ export default function GuardiansPage() {
         </div>
       </div>
 
-      {/* 守護神グリッド */}
-      <div className="grid grid-cols-3 gap-4">
-        {allGuardians.map(guardian => {
-          const instance = profile.guardians[guardian.id];
-          const isUnlocked = instance?.unlocked || false;
-          const isActive = profile.activeGuardianId === guardian.id;
-          
-          return (
-            <GuardianGridItem
-              key={guardian.id}
-              guardian={guardian}
-              instance={instance}
-              isUnlocked={isUnlocked}
-              isActive={isActive}
-              onClick={() => {
-                setSelectedGuardian(guardian.id);
-                setShowDetailModal(true);
-              }}
-            />
-          );
-        })}
+      {/* 守護神図鑑（スタンプカード風） */}
+      <div className="glass-premium p-4 rounded-2xl">
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-lg font-bold text-white">守護神コレクション</h2>
+          <p className="text-sm text-slate-400">タップで詳細を見る</p>
+        </div>
+
+        {/* ヘッダー行 */}
+        <div className="grid grid-cols-5 gap-2 mb-2">
+          <div className="text-center text-xs text-slate-500" />
+          {[0, 1, 2, 3, 4].map((stage) => (
+            <div key={stage} className="text-center text-xs text-slate-400">
+              Stage {stage}
+            </div>
+          ))}
+        </div>
+
+        {/* 守護神ごとの行（6行） */}
+        <div className="space-y-3">
+          {allGuardians.map((guardian) => {
+            const instance = profile.guardians[guardian.id];
+            const isUnlocked = instance?.unlocked || false;
+            const unlockedStages = instance?.unlockedStages || (isUnlocked ? [0] : []);
+            const currentStage = instance?.stage || 0;
+            const isActive = profile.activeGuardianId === guardian.id;
+            const attr = ATTRIBUTES[guardian.attribute];
+
+            return (
+              <div key={guardian.id} className="grid grid-cols-5 gap-2 items-center">
+                {/* 守護神名 */}
+                <div
+                  className="text-center cursor-pointer group"
+                  onClick={() => router.push(`/guardian/${guardian.id}`)}
+                >
+                  <span
+                    className={`text-xs font-bold ${isUnlocked ? "text-white" : "text-slate-500"} group-hover:text-purple-400 transition-colors`}
+                  >
+                    {isUnlocked ? guardian.name : "???"}
+                  </span>
+                  {isActive && (
+                    <Star className="w-3 h-3 text-purple-400 fill-purple-400 inline ml-1" />
+                  )}
+                </div>
+
+                {/* ステージ0〜4のスタンプ */}
+                {[0, 1, 2, 3, 4].map((stage) => {
+                  const isStageUnlocked = unlockedStages.includes(stage as 0 | 1 | 2 | 3 | 4);
+                  const isCurrentStage = currentStage === stage && isUnlocked;
+
+                  return (
+                    <button
+                      key={stage}
+                      onClick={() => {
+                        if (isStageUnlocked) {
+                          router.push(`/guardian/${guardian.id}`);
+                        } else if (isUnlocked) {
+                          setSelectedGuardian(guardian.id);
+                          setShowEnergyModal(true);
+                        } else {
+                          setSelectedGuardian(guardian.id);
+                          setShowDetailModal(true);
+                        }
+                      }}
+                      className={`
+                        aspect-square rounded-full flex items-center justify-center
+                        transition-all duration-200 border-2
+                        ${isStageUnlocked
+                          ? "hover:scale-110 cursor-pointer"
+                          : isUnlocked
+                            ? "hover:scale-105 cursor-pointer opacity-40"
+                            : "cursor-pointer opacity-20"
+                        }
+                        ${isCurrentStage ? "ring-2 ring-purple-400 ring-offset-1 ring-offset-slate-900" : ""}
+                      `}
+                      style={{
+                        borderColor: isStageUnlocked ? attr.color : "#475569",
+                        backgroundColor: isStageUnlocked ? `${attr.color}30` : "#1e293b",
+                        boxShadow: isStageUnlocked ? `0 0 10px ${attr.color}40` : "none",
+                      }}
+                    >
+                      {isStageUnlocked ? (
+                        <img
+                          src={getGuardianImagePath(guardian.id, stage as 0 | 1 | 2 | 3 | 4)}
+                          alt={`${guardian.name} Stage ${stage}`}
+                          className="w-full h-full object-contain rounded-full"
+                          onError={(e) => {
+                            e.currentTarget.style.display = "none";
+                            const parent = e.currentTarget.parentElement;
+                            if (parent) {
+                              const fallback = document.createElement("span");
+                              fallback.className = "text-lg";
+                              fallback.textContent = attr.emoji;
+                              parent.appendChild(fallback);
+                            }
+                          }}
+                        />
+                      ) : (
+                        <span className="text-slate-500 text-sm font-bold">?</span>
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+            );
+          })}
+        </div>
+
+        {/* 凡例 */}
+        <div className="mt-4 pt-4 border-t border-white/10 flex flex-wrap gap-4 text-xs text-slate-400">
+          <div className="flex items-center gap-1">
+            <div className="w-4 h-4 rounded-full bg-purple-500/50 border border-purple-500" />
+            <span>解放済み</span>
+          </div>
+          <div className="flex items-center gap-1">
+            <div className="w-4 h-4 rounded-full bg-slate-700 border border-slate-600 flex items-center justify-center">
+              <span className="text-[8px]">?</span>
+            </div>
+            <span>未解放</span>
+          </div>
+          <div className="flex items-center gap-1">
+            <div className="w-4 h-4 rounded-full bg-slate-700 border border-slate-600 ring-1 ring-purple-400" />
+            <span>現在のステージ</span>
+          </div>
+        </div>
+      </div>
+
+      {/* 旧スタイル守護神グリッド（エナジー投資用） */}
+      <div className="glass-premium p-4 rounded-2xl">
+        <h2 className="text-lg font-bold text-white mb-4">クイックアクセス</h2>
+        <div className="grid grid-cols-3 gap-4">
+          {allGuardians.map(guardian => {
+            const instance = profile.guardians[guardian.id];
+            const isUnlocked = instance?.unlocked || false;
+            const isActive = profile.activeGuardianId === guardian.id;
+
+            return (
+              <GuardianGridItem
+                key={guardian.id}
+                guardian={guardian}
+                instance={instance}
+                isUnlocked={isUnlocked}
+                isActive={isActive}
+                onClick={() => {
+                  setSelectedGuardian(guardian.id);
+                  setShowDetailModal(true);
+                }}
+              />
+            );
+          })}
+        </div>
       </div>
 
       {/* 詳細モーダル */}
