@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useRef } from "react";
 import { X, TrendingUp, Calendar, Zap, Flame } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { motion, AnimatePresence } from "framer-motion";
@@ -15,6 +15,7 @@ import {
 
 // ============================================
 // 共通モーダルラッパー
+// PWA/PC/スマホ全対応版
 // ============================================
 
 interface ModalWrapperProps {
@@ -24,14 +25,49 @@ interface ModalWrapperProps {
 }
 
 function ModalWrapper({ isOpen, onClose, children }: ModalWrapperProps) {
-  // 背景スクロールを防止
+  const scrollableRef = useRef<HTMLDivElement>(null);
+  const scrollYRef = useRef(0);
+
+  // 背景スクロールを完全に防止（PWA/iOS Safari対応）
   useEffect(() => {
     if (isOpen) {
+      // 現在のスクロール位置を保存（refを使用して再レンダリング防止）
+      scrollYRef.current = window.scrollY;
+
+      // body固定でスクロール防止（iOS Safari/PWA対応）
+      document.body.style.position = 'fixed';
+      document.body.style.top = `-${scrollYRef.current}px`;
+      document.body.style.left = '0';
+      document.body.style.right = '0';
+      document.body.style.width = '100%';
       document.body.style.overflow = 'hidden';
+      document.documentElement.style.overflow = 'hidden';
+
+      // タッチイベントを完全に制御
+      const preventTouchMove = (e: TouchEvent) => {
+        const target = e.target as HTMLElement;
+        // モーダルコンテンツ内のスクロール可能領域は許可
+        if (scrollableRef.current && scrollableRef.current.contains(target)) {
+          return;
+        }
+        e.preventDefault();
+      };
+
+      document.addEventListener('touchmove', preventTouchMove, { passive: false });
+
+      return () => {
+        document.removeEventListener('touchmove', preventTouchMove);
+        // スクロール位置を復元
+        document.body.style.position = '';
+        document.body.style.top = '';
+        document.body.style.left = '';
+        document.body.style.right = '';
+        document.body.style.width = '';
+        document.body.style.overflow = '';
+        document.documentElement.style.overflow = '';
+        window.scrollTo(0, scrollYRef.current);
+      };
     }
-    return () => {
-      document.body.style.overflow = 'unset';
-    };
   }, [isOpen]);
 
   // ESCキーで閉じる
@@ -47,50 +83,75 @@ function ModalWrapper({ isOpen, onClose, children }: ModalWrapperProps) {
     };
   }, [isOpen, onClose]);
 
-  // モーダル内スクロール時に背景へのスクロール伝播を防止
-  const handleTouchMove = useCallback((e: React.TouchEvent) => {
-    e.stopPropagation();
-  }, []);
+  if (!isOpen) return null;
 
   return (
     <AnimatePresence>
       {isOpen && (
-        <>
-          {/* 背景オーバーレイ - 完全に覆う */}
+        <div
+          className="fixed inset-0 z-[9998]"
+          style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            width: '100%',
+            height: '100%',
+          }}
+        >
+          {/* 背景オーバーレイ - 画面完全覆い */}
           <motion.div
             initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
+            animate={{ opacity: 0.95 }}
             exit={{ opacity: 0 }}
             onClick={onClose}
-            className="fixed inset-0 bg-black/90 backdrop-blur-md z-[9998]"
-            style={{ touchAction: 'none' }}
+            className="absolute inset-0 bg-black"
+            style={{
+              position: 'absolute',
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              touchAction: 'none',
+              WebkitTapHighlightColor: 'transparent'
+            }}
           />
 
-          {/* モーダルコンテンツ - セーフエリア対応 */}
+          {/* モーダルコンテナ - 全画面固定 */}
           <div
-            className="fixed inset-0 z-[9999] flex items-center justify-center p-4"
+            className="absolute inset-0 z-[9999] flex items-center justify-center p-4"
             style={{
-              paddingTop: 'calc(env(safe-area-inset-top, 0px) + 1rem)',
-              paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 6rem)'
+              position: 'absolute',
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              paddingTop: 'max(env(safe-area-inset-top, 16px), 1rem)',
+              paddingBottom: 'max(calc(env(safe-area-inset-bottom, 0px) + 80px), 6rem)',
+              pointerEvents: 'none'
             }}
           >
             <motion.div
+              ref={scrollableRef}
               initial={{ scale: 0.9, opacity: 0, y: 20 }}
               animate={{ scale: 1, opacity: 1, y: 0 }}
               exit={{ scale: 0.9, opacity: 0, y: 20 }}
               transition={{ type: "spring", damping: 25, stiffness: 300 }}
-              className="relative w-full max-w-lg max-h-full overflow-y-auto overscroll-contain"
+              className="relative w-full max-w-lg overflow-y-auto"
               onClick={(e) => e.stopPropagation()}
-              onTouchMove={handleTouchMove}
               style={{
+                maxHeight: '100%',
                 WebkitOverflowScrolling: 'touch',
-                overscrollBehavior: 'contain'
+                overscrollBehavior: 'contain',
+                touchAction: 'pan-y',
+                pointerEvents: 'auto'
               }}
             >
               {children}
             </motion.div>
           </div>
-        </>
+        </div>
       )}
     </AnimatePresence>
   );
