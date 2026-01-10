@@ -375,7 +375,10 @@ export default function AdminUsersPage() {
                           <>
                             <Button
                               size="sm"
-                              onClick={() => handleApprove(u.uid)}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleApprove(u.uid);
+                              }}
                               disabled={isActionLoading}
                               className="bg-gradient-to-r from-green-500 to-emerald-500 text-white"
                             >
@@ -390,7 +393,10 @@ export default function AdminUsersPage() {
                             </Button>
                             <Button
                               size="sm"
-                              onClick={() => handleReject(u.uid)}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleReject(u.uid);
+                              }}
                               disabled={isActionLoading}
                               variant="outline"
                               className="border-red-500/50 text-red-400 hover:bg-red-500/10"
@@ -403,7 +409,10 @@ export default function AdminUsersPage() {
                         {u.status === "approved" && u.role !== "admin" && (
                           <Button
                             size="sm"
-                            onClick={() => handleSuspend(u.uid)}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleSuspend(u.uid);
+                            }}
                             disabled={isActionLoading}
                             variant="outline"
                             className="border-red-500/50 text-red-400 hover:bg-red-500/10"
@@ -414,6 +423,26 @@ export default function AdminUsersPage() {
                               <>
                                 <Ban className="w-4 h-4 mr-1" />
                                 停止
+                              </>
+                            )}
+                          </Button>
+                        )}
+                        {u.status === "suspended" && (
+                          <Button
+                            size="sm"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleApprove(u.uid);
+                            }}
+                            disabled={isActionLoading}
+                            className="bg-gradient-to-r from-green-500 to-emerald-500 text-white"
+                          >
+                            {isActionLoading ? (
+                              <Loader2 className="w-4 h-4 animate-spin" />
+                            ) : (
+                              <>
+                                <Check className="w-4 h-4 mr-1" />
+                                再有効化
                               </>
                             )}
                           </Button>
