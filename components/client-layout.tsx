@@ -5,7 +5,7 @@ import { AuthProvider, AuthGuard } from "@/lib/auth-context";
 import { Sidebar } from "@/components/sidebar";
 import {
   LogOut, Home, ClipboardList, Trophy, LayoutDashboard, Users, Ticket,
-  Menu, X, Shield, Search, MessageSquare, Briefcase, Smartphone
+  Menu, X, Shield, Search, MessageSquare, Briefcase, Smartphone, CheckSquare
 } from "lucide-react";
 import { useAuth } from "@/lib/auth-context";
 import { Button } from "@/components/ui/button";
@@ -247,6 +247,12 @@ function BottomNavigation() {
       subtitle: "全メンバー比較",
       icon: Trophy,
       href: "/ranking",
+    },
+    {
+      label: "SNS承認",
+      subtitle: "アカウント確認",
+      icon: CheckSquare,
+      href: "/admin/sns-approvals",
     },
     {
       label: "ユーザー管理",

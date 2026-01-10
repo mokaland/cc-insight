@@ -18,6 +18,9 @@ import { Timestamp } from "firebase/firestore";
 // 📱 SNSアカウント設定
 // =====================================
 
+// SNS承認状態
+export type SnsApprovalStatus = 'none' | 'pending' | 'approved' | 'rejected';
+
 export interface SnsAccounts {
   instagram?: string;     // @username形式
   youtube?: string;       // チャンネル名/ID
@@ -26,6 +29,13 @@ export interface SnsAccounts {
   profileCompleted?: boolean;  // 全入力完了フラグ
   completedAt?: Timestamp;     // 完了日時
   completionBonusClaimed?: boolean; // 完了ボーナス受取済みフラグ
+
+  // 承認制フィールド
+  approvalStatus?: SnsApprovalStatus;  // 承認状態
+  submittedAt?: Timestamp;             // 申請日時
+  reviewedAt?: Timestamp;              // 審査日時
+  reviewedBy?: string;                 // 審査した管理者のUID
+  rejectionReason?: string;            // 却下理由（あれば）
 }
 
 // チーム別SNS入力順序

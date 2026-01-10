@@ -24,7 +24,7 @@ import {
   PROFILE_COMPLETION_BONUS
 } from "@/lib/guardian-collection";
 import { getUserSnsAccounts, saveSnsAccounts } from "@/lib/firestore";
-import { Sparkles, Crown, Settings, Check, Gift } from "lucide-react";
+import { Sparkles, Crown, Settings, Check, Gift, Clock, AlertCircle } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import Link from "next/link";
@@ -201,18 +201,13 @@ export default function MyPage() {
 
       if (result.success) {
         setSnsMessage({ type: 'success', text: result.message });
-        if (result.bonusAwarded) {
-          // ボーナス受取フラグを更新
+        if (result.submitted) {
+          // 承認待ち状態に更新
           setSnsAccounts(prev => ({
             ...prev,
             profileCompleted: true,
-            completionBonusClaimed: true,
+            approvalStatus: 'pending',
           }));
-          // プロフィールのエナジーを更新
-          const updatedProfile = await getUserGuardianProfile(user.uid);
-          if (updatedProfile) {
-            setProfile(updatedProfile);
-          }
         }
       } else {
         setSnsMessage({ type: 'error', text: result.message });
@@ -1011,20 +1006,47 @@ export default function MyPage() {
           <h2 className="text-2xl font-bold text-white">SNSアカウント設定</h2>
         </div>
 
-        {/* ボーナス案内 */}
-        {!snsAccounts.completionBonusClaimed && (
-          <div className="glass-bg p-3 rounded-xl border border-yellow-500/30 mb-4 flex items-center gap-3">
-            <Gift className="w-5 h-5 text-yellow-400 flex-shrink-0" />
-            <p className="text-sm text-yellow-300">
-              全て入力すると <span className="font-bold">{PROFILE_COMPLETION_BONUS}エナジー</span> 獲得！
-            </p>
+        {/* 承認状態に応じたステータス表示 */}
+        {snsAccounts.approvalStatus === 'approved' && (
+          <div className="glass-bg p-3 rounded-xl border border-green-500/30 mb-4 flex items-center gap-3">
+            <Check className="w-5 h-5 text-green-400 flex-shrink-0" />
+            <p className="text-sm text-green-300">承認済み・ボーナス受取済み</p>
           </div>
         )}
 
-        {snsAccounts.completionBonusClaimed && (
-          <div className="glass-bg p-3 rounded-xl border border-green-500/30 mb-4 flex items-center gap-3">
-            <Check className="w-5 h-5 text-green-400 flex-shrink-0" />
-            <p className="text-sm text-green-300">ボーナス受取済み</p>
+        {snsAccounts.approvalStatus === 'pending' && (
+          <div className="glass-bg p-3 rounded-xl border border-yellow-500/30 mb-4 flex items-center gap-3">
+            <Clock className="w-5 h-5 text-yellow-400 flex-shrink-0 animate-pulse" />
+            <div>
+              <p className="text-sm text-yellow-300 font-bold">審査中</p>
+              <p className="text-xs text-yellow-300/70">運営がアカウントを確認しています。承認後にボーナスが付与されます。</p>
+            </div>
+          </div>
+        )}
+
+        {snsAccounts.approvalStatus === 'rejected' && (
+          <div className="glass-bg p-3 rounded-xl border border-red-500/30 mb-4">
+            <div className="flex items-center gap-3 mb-2">
+              <AlertCircle className="w-5 h-5 text-red-400 flex-shrink-0" />
+              <p className="text-sm text-red-300 font-bold">却下されました</p>
+            </div>
+            {snsAccounts.rejectionReason && (
+              <p className="text-xs text-red-300/70 ml-8">理由: {snsAccounts.rejectionReason}</p>
+            )}
+            <p className="text-xs text-slate-400 ml-8 mt-1">正しいアカウント情報を入力して再申請してください。</p>
+          </div>
+        )}
+
+        {/* ボーナス案内（未申請 or 却下の場合のみ） */}
+        {(!snsAccounts.approvalStatus || snsAccounts.approvalStatus === 'none' || snsAccounts.approvalStatus === 'rejected') && (
+          <div className="glass-bg p-3 rounded-xl border border-yellow-500/30 mb-4 flex items-center gap-3">
+            <Gift className="w-5 h-5 text-yellow-400 flex-shrink-0" />
+            <div>
+              <p className="text-sm text-yellow-300">
+                全て入力して承認されると <span className="font-bold">{PROFILE_COMPLETION_BONUS}エナジー</span> 獲得！
+              </p>
+              <p className="text-xs text-yellow-300/70">※運営が実際のアカウントを確認します</p>
+            </div>
           </div>
         )}
 
@@ -1032,6 +1054,7 @@ export default function MyPage() {
         <div className="space-y-4">
           {snsOrder.map((snsKey) => {
             const snsInfo = SNS_LABELS[snsKey];
+            const isDisabled = snsAccounts.approvalStatus === 'approved' || snsAccounts.approvalStatus === 'pending';
             return (
               <div key={snsKey} className="space-y-2">
                 <Label className="flex items-center gap-2 text-white">
@@ -1045,7 +1068,8 @@ export default function MyPage() {
                     ...prev,
                     [snsKey]: e.target.value
                   }))}
-                  className="bg-white/5 border-slate-600"
+                  disabled={isDisabled}
+                  className={`bg-white/5 border-slate-600 ${isDisabled ? 'opacity-60 cursor-not-allowed' : ''}`}
                 />
               </div>
             );
@@ -1063,14 +1087,16 @@ export default function MyPage() {
           </div>
         )}
 
-        {/* 保存ボタン */}
-        <Button
-          onClick={handleSaveSns}
-          disabled={snsLoading}
-          className="w-full mt-4 bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600"
-        >
-          {snsLoading ? '保存中...' : '保存'}
-        </Button>
+        {/* 保存ボタン（承認済み or 審査中は非表示） */}
+        {snsAccounts.approvalStatus !== 'approved' && snsAccounts.approvalStatus !== 'pending' && (
+          <Button
+            onClick={handleSaveSns}
+            disabled={snsLoading}
+            className="w-full mt-4 bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600"
+          >
+            {snsLoading ? '送信中...' : snsAccounts.approvalStatus === 'rejected' ? '再申請する' : '申請する'}
+          </Button>
+        )}
       </GlassCard>
 
       {/* モーダル */}
