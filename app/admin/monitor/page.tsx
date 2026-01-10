@@ -758,18 +758,33 @@ export default function ActiveMonitorPage() {
       {/* 比較モーダル */}
       {showComparison && comparisonMembers.length === 2 && (
         <div
-          className="fixed inset-0 bg-black/70 backdrop-blur-md z-[9999] flex items-start md:items-center justify-center overflow-hidden"
-          style={{
-            paddingTop: 'max(env(safe-area-inset-top, 0px), 16px)',
-            paddingBottom: 'max(env(safe-area-inset-bottom, 0px), 16px)',
-            paddingLeft: 'env(safe-area-inset-left, 16px)',
-            paddingRight: 'env(safe-area-inset-right, 16px)',
-          }}
+          className="fixed inset-0 z-[9999] flex flex-col"
           onClick={() => setShowComparison(false)}
           onTouchMove={(e) => e.stopPropagation()}
         >
+          {/* 背景オーバーレイ - セーフエリア外まで完全にカバー */}
           <div
-            className="bg-slate-900 rounded-2xl border-2 border-purple-500/30 max-w-6xl w-full max-h-[calc(100dvh-env(safe-area-inset-top,0px)-env(safe-area-inset-bottom,0px)-32px)] overflow-y-auto overscroll-contain"
+            className="absolute inset-0 bg-black/90 backdrop-blur-md"
+            style={{
+              top: 'calc(-1 * env(safe-area-inset-top, 0px))',
+              bottom: 'calc(-1 * env(safe-area-inset-bottom, 0px))',
+              left: 'calc(-1 * env(safe-area-inset-left, 0px))',
+              right: 'calc(-1 * env(safe-area-inset-right, 0px))',
+            }}
+          />
+
+          {/* モーダルコンテナ - セーフエリア内に配置 */}
+          <div
+            className="relative flex-1 flex items-start md:items-center justify-center overflow-hidden"
+            style={{
+              paddingTop: 'max(env(safe-area-inset-top, 0px), 16px)',
+              paddingBottom: 'calc(max(env(safe-area-inset-bottom, 0px), 16px) + 5rem)',
+              paddingLeft: 'max(env(safe-area-inset-left, 0px), 16px)',
+              paddingRight: 'max(env(safe-area-inset-right, 0px), 16px)',
+            }}
+          >
+          <div
+            className="bg-slate-900 rounded-2xl border-2 border-purple-500/30 max-w-6xl w-full max-h-full overflow-y-auto overscroll-contain"
             style={{
               WebkitOverflowScrolling: 'touch',
             }}
@@ -867,24 +882,41 @@ export default function ActiveMonitorPage() {
               </div>
             </div>
           </div>
+          </div>
         </div>
       )}
 
       {/* 一斉通知モーダル */}
       {showBroadcast && (
         <div
-          className="fixed inset-0 bg-black/70 backdrop-blur-md z-[9999] flex items-start md:items-center justify-center overflow-hidden"
-          style={{
-            paddingTop: 'max(env(safe-area-inset-top, 0px), 16px)',
-            paddingBottom: 'max(env(safe-area-inset-bottom, 0px), 16px)',
-            paddingLeft: 'env(safe-area-inset-left, 16px)',
-            paddingRight: 'env(safe-area-inset-right, 16px)',
-          }}
+          className="fixed inset-0 z-[9999] flex flex-col"
           onClick={() => setShowBroadcast(false)}
           onTouchMove={(e) => e.stopPropagation()}
         >
+          {/* 背景オーバーレイ - セーフエリア外まで完全にカバー */}
           <div
-            className="bg-slate-900 rounded-2xl border-2 border-cyan-500/30 max-w-2xl w-full max-h-[calc(100dvh-env(safe-area-inset-top,0px)-env(safe-area-inset-bottom,0px)-32px)] overflow-y-auto overscroll-contain"
+            className="absolute inset-0 bg-black/90 backdrop-blur-md"
+            style={{
+              // ノッチ領域・ホームバー領域まで完全に覆う
+              top: 'calc(-1 * env(safe-area-inset-top, 0px))',
+              bottom: 'calc(-1 * env(safe-area-inset-bottom, 0px))',
+              left: 'calc(-1 * env(safe-area-inset-left, 0px))',
+              right: 'calc(-1 * env(safe-area-inset-right, 0px))',
+            }}
+          />
+
+          {/* モーダルコンテナ - セーフエリア内に配置 */}
+          <div
+            className="relative flex-1 flex items-start md:items-center justify-center overflow-hidden"
+            style={{
+              paddingTop: 'max(env(safe-area-inset-top, 0px), 16px)',
+              paddingBottom: 'calc(max(env(safe-area-inset-bottom, 0px), 16px) + 5rem)', // ボトムナビ分の余白
+              paddingLeft: 'max(env(safe-area-inset-left, 0px), 16px)',
+              paddingRight: 'max(env(safe-area-inset-right, 0px), 16px)',
+            }}
+          >
+          <div
+            className="bg-slate-900 rounded-2xl border-2 border-cyan-500/30 max-w-2xl w-full max-h-full overflow-y-auto overscroll-contain"
             style={{
               WebkitOverflowScrolling: 'touch',
             }}
@@ -1023,6 +1055,7 @@ export default function ActiveMonitorPage() {
                 </Button>
               </div>
             </div>
+          </div>
           </div>
         </div>
       )}
