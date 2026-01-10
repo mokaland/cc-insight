@@ -1808,10 +1808,10 @@ async function addProfileCompletionBonus(userId: string): Promise<void> {
         }
       }, { merge: true });
 
-      // エナジー履歴に記録（bonus_history コレクションに追加）
+      // エナジー履歴に記録（energy_history コレクションを使用 - 既存のFirestoreルールに準拠）
       const today = new Date().toISOString().split('T')[0];
       const bonusHistoryDocId = `${userId}_profile_bonus_${today}`;
-      await setDoc(doc(db, "bonus_history", bonusHistoryDocId), {
+      await setDoc(doc(db, "energy_history", bonusHistoryDocId), {
         userId,
         type: 'profile_completion',
         amount: PROFILE_COMPLETION_BONUS,
