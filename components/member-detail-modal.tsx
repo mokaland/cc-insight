@@ -1,7 +1,7 @@
 "use client";
 
 import { X, AlertTriangle, TrendingUp, Calendar, MessageCircle, Crown } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import Image from "next/image";
 import { getUserRecentReports, detectAnomalies, Report, AnomalyFlags } from "@/lib/firestore";
 import { calculateLevel, getLevelTitle } from "@/lib/guardian-collection";
@@ -54,6 +54,44 @@ export function MemberDetailModal({
     loadHistory();
   }, [isOpen, member?.userId, member?.energy, member?.guardianData?.stage]);
 
+  const scrollYRef = useRef(0);
+
+  // PWA/iOS Safari対応: 背景スクロールを完全に防止
+  useEffect(() => {
+    if (isOpen) {
+      scrollYRef.current = window.scrollY;
+      document.body.style.position = 'fixed';
+      document.body.style.top = `-${scrollYRef.current}px`;
+      document.body.style.left = '0';
+      document.body.style.right = '0';
+      document.body.style.width = '100%';
+      document.body.style.overflow = 'hidden';
+      document.documentElement.style.overflow = 'hidden';
+
+      const preventTouchMove = (e: TouchEvent) => {
+        const target = e.target as HTMLElement;
+        // モーダルコンテンツ内のスクロール可能領域は許可
+        if (target.closest('.modal-scrollable')) {
+          return;
+        }
+        e.preventDefault();
+      };
+      document.addEventListener('touchmove', preventTouchMove, { passive: false });
+
+      return () => {
+        document.removeEventListener('touchmove', preventTouchMove);
+        document.body.style.position = '';
+        document.body.style.top = '';
+        document.body.style.left = '';
+        document.body.style.right = '';
+        document.body.style.width = '';
+        document.body.style.overflow = '';
+        document.documentElement.style.overflow = '';
+        window.scrollTo(0, scrollYRef.current);
+      };
+    }
+  }, [isOpen]);
+
   // ESCキーで閉じる
   useEffect(() => {
     const handleEsc = (e: KeyboardEvent) => {
@@ -61,11 +99,9 @@ export function MemberDetailModal({
     };
     if (isOpen) {
       window.addEventListener('keydown', handleEsc);
-      document.body.style.overflow = 'hidden';
     }
     return () => {
       window.removeEventListener('keydown', handleEsc);
-      document.body.style.overflow = 'unset';
     };
   }, [isOpen, onClose]);
 
@@ -79,19 +115,42 @@ export function MemberDetailModal({
   const levelTitle = getLevelTitle(memberLevel);
 
   return (
-    <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 md:pb-4 pb-[calc(var(--bottom-nav-height)+3rem)]">
-      {/* 背景オーバーレイ */}
+    <>
+      {/* PWA対応: セーフエリアを含む画面全体を覆う背景 */}
       <div
-        className="absolute inset-0 bg-black/70 backdrop-blur-md"
+        className="fixed z-[9998]"
+        style={{
+          position: 'fixed',
+          top: 'calc(-1 * env(safe-area-inset-top, 0px) - 50px)',
+          left: 'calc(-1 * env(safe-area-inset-left, 0px) - 50px)',
+          right: 'calc(-1 * env(safe-area-inset-right, 0px) - 50px)',
+          bottom: 'calc(-1 * env(safe-area-inset-bottom, 0px) - 50px)',
+          minWidth: 'calc(100vw + 100px)',
+          minHeight: 'calc(100vh + 100px)',
+          backgroundColor: 'rgba(0, 0, 0, 0.7)',
+          backdropFilter: 'blur(8px)',
+          WebkitBackdropFilter: 'blur(8px)',
+          touchAction: 'none',
+        }}
         onClick={onClose}
       />
 
+      {/* モーダルコンテナ */}
+      <div
+        className="fixed inset-0 z-[9999] flex items-center justify-center p-4"
+        style={{
+          paddingTop: 'calc(env(safe-area-inset-top, 0px) + 1rem)',
+          paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 5rem)',
+        }}
+      >
       {/* モーダルカード */}
       <div
-        className="relative glass-premium rounded-2xl p-8 max-w-md w-full max-h-[calc(100vh-var(--bottom-nav-height)-6rem)] md:max-h-[90vh] overflow-y-auto border-2 animate-in fade-in zoom-in duration-200"
+        className="relative glass-premium rounded-2xl p-8 max-w-md w-full max-h-full overflow-y-auto border-2 animate-in fade-in zoom-in duration-200 modal-scrollable"
         style={{
           borderColor: `${teamColor}40`,
-          boxShadow: `0 0 60px ${teamColor}30`
+          boxShadow: `0 0 60px ${teamColor}30`,
+          WebkitOverflowScrolling: 'touch',
+          overscrollBehavior: 'contain',
         }}
       >
         {/* ヘッダーボタン */}
@@ -353,7 +412,8 @@ export function MemberDetailModal({
           閉じる
         </button>
       </div>
-    </div>
+      </div>
+    </>
   );
 }
 

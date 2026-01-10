@@ -126,7 +126,13 @@ function LayoutContent({ children }: { children: React.ReactNode }) {
         </div>
 
         {/* メインコンテンツ */}
-        <main className="flex-1 md:ml-64 pb-[var(--bottom-nav-height)] md:pb-8 p-4 md:p-8 pt-10 w-full z-10" style={{ paddingTop: 'env(safe-area-inset-top, 0px)', paddingBottom: 'calc(5.5rem + max(env(safe-area-inset-bottom, 0px), 20px))' }}>
+        <main
+          className="flex-1 md:ml-64 pb-[var(--bottom-nav-height)] md:pb-8 p-4 md:p-8 pt-10 w-full z-10"
+          style={{
+            paddingTop: 'calc(env(safe-area-inset-top, 0px) + 1rem)',
+            paddingBottom: 'calc(5.5rem + max(env(safe-area-inset-bottom, 0px), 20px))'
+          }}
+        >
           <LogoutButton />
           {children}
         </main>

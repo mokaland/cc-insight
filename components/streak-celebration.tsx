@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { X } from "lucide-react";
 
 /**
@@ -28,6 +28,38 @@ interface StreakCelebrationProps {
 
 export function StreakCelebration({ isOpen, onClose, streakData }: StreakCelebrationProps) {
   const [isAnimating, setIsAnimating] = useState(false);
+  const scrollYRef = useRef(0);
+
+  // PWA/iOS Safari対応: 背景スクロールを完全に防止
+  useEffect(() => {
+    if (isOpen) {
+      scrollYRef.current = window.scrollY;
+      document.body.style.position = 'fixed';
+      document.body.style.top = `-${scrollYRef.current}px`;
+      document.body.style.left = '0';
+      document.body.style.right = '0';
+      document.body.style.width = '100%';
+      document.body.style.overflow = 'hidden';
+      document.documentElement.style.overflow = 'hidden';
+
+      const preventTouchMove = (e: TouchEvent) => {
+        e.preventDefault();
+      };
+      document.addEventListener('touchmove', preventTouchMove, { passive: false });
+
+      return () => {
+        document.removeEventListener('touchmove', preventTouchMove);
+        document.body.style.position = '';
+        document.body.style.top = '';
+        document.body.style.left = '';
+        document.body.style.right = '';
+        document.body.style.width = '';
+        document.body.style.overflow = '';
+        document.documentElement.style.overflow = '';
+        window.scrollTo(0, scrollYRef.current);
+      };
+    }
+  }, [isOpen]);
 
   useEffect(() => {
     if (isOpen) {
@@ -52,14 +84,34 @@ export function StreakCelebration({ isOpen, onClose, streakData }: StreakCelebra
   const { newStreak, isNewRecord, xpBonus, celebrationMessage } = streakData;
 
   return (
-    <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 md:pb-4 pb-[calc(var(--bottom-nav-height)+3rem)]">
-      {/* 背景オーバーレイ */}
-      <div 
-        className={`absolute inset-0 bg-black transition-opacity duration-300 ${
-          isAnimating ? "opacity-60" : "opacity-0"
+    <>
+      {/* PWA対応: セーフエリアを含む画面全体を覆う背景 */}
+      <div
+        className={`fixed z-[9998] transition-opacity duration-300 ${
+          isAnimating ? "opacity-100" : "opacity-0"
         }`}
+        style={{
+          position: 'fixed',
+          top: 'calc(-1 * env(safe-area-inset-top, 0px) - 50px)',
+          left: 'calc(-1 * env(safe-area-inset-left, 0px) - 50px)',
+          right: 'calc(-1 * env(safe-area-inset-right, 0px) - 50px)',
+          bottom: 'calc(-1 * env(safe-area-inset-bottom, 0px) - 50px)',
+          minWidth: 'calc(100vw + 100px)',
+          minHeight: 'calc(100vh + 100px)',
+          backgroundColor: 'rgba(0, 0, 0, 0.8)',
+          touchAction: 'none',
+        }}
         onClick={handleClose}
       />
+
+      {/* モーダルコンテナ */}
+      <div
+        className="fixed inset-0 z-[9999] flex items-center justify-center p-4"
+        style={{
+          paddingTop: 'calc(env(safe-area-inset-top, 0px) + 1rem)',
+          paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 5rem)',
+        }}
+      >
       
       {/* メインコンテンツ */}
       <div 
@@ -187,7 +239,8 @@ export function StreakCelebration({ isOpen, onClose, streakData }: StreakCelebra
           </div>
         </div>
       </div>
-    </div>
+      </div>
+    </>
   );
 }
 

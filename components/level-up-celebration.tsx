@@ -2,7 +2,7 @@
 
 import { motion, AnimatePresence } from "framer-motion";
 import { Star, Sparkles, TrendingUp } from "lucide-react";
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { getLevelTitle } from "@/lib/guardian-collection";
 
 interface LevelUpCelebrationProps {
@@ -24,6 +24,38 @@ export function LevelUpCelebration({
   const beforeTitle = getLevelTitle(beforeLevel);
   const afterTitle = getLevelTitle(afterLevel);
   const titleChanged = beforeTitle !== afterTitle;
+  const scrollYRef = useRef(0);
+
+  // PWA/iOS Safari対応: 背景スクロールを完全に防止
+  useEffect(() => {
+    if (isOpen) {
+      scrollYRef.current = window.scrollY;
+      document.body.style.position = 'fixed';
+      document.body.style.top = `-${scrollYRef.current}px`;
+      document.body.style.left = '0';
+      document.body.style.right = '0';
+      document.body.style.width = '100%';
+      document.body.style.overflow = 'hidden';
+      document.documentElement.style.overflow = 'hidden';
+
+      const preventTouchMove = (e: TouchEvent) => {
+        e.preventDefault();
+      };
+      document.addEventListener('touchmove', preventTouchMove, { passive: false });
+
+      return () => {
+        document.removeEventListener('touchmove', preventTouchMove);
+        document.body.style.position = '';
+        document.body.style.top = '';
+        document.body.style.left = '';
+        document.body.style.right = '';
+        document.body.style.width = '';
+        document.body.style.overflow = '';
+        document.documentElement.style.overflow = '';
+        window.scrollTo(0, scrollYRef.current);
+      };
+    }
+  }, [isOpen]);
 
   // バイブレーション
   useEffect(() => {
@@ -47,21 +79,40 @@ export function LevelUpCelebration({
   return (
     <AnimatePresence>
       {isOpen && (
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-          className="fixed inset-0 z-[110] flex items-center justify-center p-4 overflow-hidden"
-          style={{ backdropFilter: 'blur(12px)' }}
-          onClick={onClose}
-        >
-          {/* 背景オーバーレイ */}
+        <>
+          {/* PWA対応: セーフエリアを含む画面全体を覆う背景 */}
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="absolute inset-0 bg-gradient-to-b from-purple-900/80 via-indigo-900/80 to-black/90"
+            onClick={onClose}
+            className="fixed z-[9998] bg-gradient-to-b from-purple-900/80 via-indigo-900/80 to-black/90"
+            style={{
+              position: 'fixed',
+              top: 'calc(-1 * env(safe-area-inset-top, 0px) - 50px)',
+              left: 'calc(-1 * env(safe-area-inset-left, 0px) - 50px)',
+              right: 'calc(-1 * env(safe-area-inset-right, 0px) - 50px)',
+              bottom: 'calc(-1 * env(safe-area-inset-bottom, 0px) - 50px)',
+              minWidth: 'calc(100vw + 100px)',
+              minHeight: 'calc(100vh + 100px)',
+              backdropFilter: 'blur(12px)',
+              WebkitBackdropFilter: 'blur(12px)',
+              touchAction: 'none',
+            }}
           />
+
+          {/* モーダルコンテナ */}
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[9999] flex items-center justify-center p-4 overflow-hidden"
+            style={{
+              paddingTop: 'calc(env(safe-area-inset-top, 0px) + 1rem)',
+              paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 5rem)',
+            }}
+            onClick={onClose}
+          >
 
           {/* キラキラパーティクル */}
           <div className="absolute inset-0 pointer-events-none overflow-hidden">
@@ -188,7 +239,8 @@ export function LevelUpCelebration({
               タップして閉じる
             </motion.p>
           </motion.div>
-        </motion.div>
+          </motion.div>
+        </>
       )}
     </AnimatePresence>
   );

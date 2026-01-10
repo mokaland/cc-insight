@@ -210,7 +210,13 @@ export default function GuardianSummoning({ userId, onComplete }: GuardianSummon
     ];
 
     return (
-      <div className="fixed inset-0 bg-black flex flex-col items-center justify-center z-[9999] overflow-hidden">
+      <div
+        className="fixed inset-0 bg-black flex flex-col items-center justify-center z-[9999] overflow-hidden"
+        style={{
+          paddingTop: 'env(safe-area-inset-top, 0px)',
+          paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 5rem)',
+        }}
+      >
         {/* 背景の星空エフェクト */}
         <div className="absolute inset-0">
           <div className="absolute inset-0 bg-gradient-to-b from-slate-950 via-purple-950/50 to-slate-950" />
@@ -295,7 +301,14 @@ export default function GuardianSummoning({ userId, onComplete }: GuardianSummon
   // =====================================
   if (step === 'demographics') {
     return (
-      <div className="fixed inset-0 bg-gradient-to-b from-slate-950 via-purple-950 to-slate-950 flex items-start justify-center p-4 pt-6 z-[9999] overflow-y-auto">
+      <div
+        className="fixed inset-0 bg-gradient-to-b from-slate-950 via-purple-950 to-slate-950 flex items-start justify-center p-4 z-[9999] overflow-y-auto"
+        style={{
+          paddingTop: 'calc(env(safe-area-inset-top, 0px) + 1rem)',
+          paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 6rem)',
+          WebkitOverflowScrolling: 'touch',
+        }}
+      >
         {/* 背景の魔法陣 */}
         <div className="absolute inset-0 flex items-center justify-center opacity-20">
           <MagicCircle size="lg" spinning={true} />
@@ -304,7 +317,7 @@ export default function GuardianSummoning({ userId, onComplete }: GuardianSummon
         <ParticleEffect count={15} color="purple" />
 
         <div className="relative bg-slate-900/80 backdrop-blur-xl rounded-2xl p-6 max-w-md w-full border-2 border-purple-500/30
-                        shadow-2xl shadow-purple-500/20 mb-[calc(var(--bottom-nav-height)+2rem)]">
+                        shadow-2xl shadow-purple-500/20">
           {/* タイトル - 魔法的なデザイン */}
           <div className="text-center mb-8">
             {/* 神秘的なシンボル */}
@@ -431,12 +444,19 @@ export default function GuardianSummoning({ userId, onComplete }: GuardianSummon
   // =====================================
   if (step === 'selection') {
     return (
-      <div className="fixed inset-0 bg-gradient-to-b from-slate-950 via-purple-950 to-slate-950 z-[9999] overflow-y-auto">
+      <div
+        className="fixed inset-0 bg-gradient-to-b from-slate-950 via-purple-950 to-slate-950 z-[9999] overflow-y-auto"
+        style={{
+          paddingTop: 'calc(env(safe-area-inset-top, 0px) + 1rem)',
+          paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 6rem)',
+          WebkitOverflowScrolling: 'touch',
+        }}
+      >
         <ParticleEffect count={25} color="gold" />
 
-        <div className="min-h-screen flex flex-col items-center justify-start p-4 pt-8 pb-[calc(var(--bottom-nav-height)+6rem)]">
+        <div className="min-h-full flex flex-col items-center justify-start p-4 pt-4">
           {/* タイトル - 上部見切れ防止 */}
-          <div className="text-center mb-6 mt-4">
+          <div className="text-center mb-6 mt-2">
             <div className="flex items-center justify-center gap-2 mb-2">
               <Flame className="w-5 h-5 text-orange-400" />
               <h2 className="text-xl md:text-2xl font-bold text-white">
@@ -582,7 +602,13 @@ export default function GuardianSummoning({ userId, onComplete }: GuardianSummon
     const placeholder = getPlaceholderStyle(selectedGuardian);
 
     return (
-      <div className="fixed inset-0 bg-black flex items-center justify-center z-[9999] overflow-hidden">
+      <div
+        className="fixed inset-0 bg-black flex items-center justify-center z-[9999] overflow-hidden"
+        style={{
+          paddingTop: 'env(safe-area-inset-top, 0px)',
+          paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 5rem)',
+        }}
+      >
         {/* 背景の放射状グラデーション */}
         <div
           className="absolute inset-0 animate-pulse"
@@ -685,7 +711,13 @@ export default function GuardianSummoning({ userId, onComplete }: GuardianSummon
     const placeholder = getPlaceholderStyle(selectedGuardian);
 
     return (
-      <div className="fixed inset-0 bg-gradient-to-b from-slate-950 via-purple-950 to-slate-950 flex items-center justify-center z-[9999] overflow-hidden">
+      <div
+        className="fixed inset-0 bg-gradient-to-b from-slate-950 via-purple-950 to-slate-950 flex items-center justify-center z-[9999] overflow-hidden"
+        style={{
+          paddingTop: 'env(safe-area-inset-top, 0px)',
+          paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 5rem)',
+        }}
+      >
         <ParticleEffect count={30} color="gold" />
 
         <div className="text-center px-4 max-w-lg">
