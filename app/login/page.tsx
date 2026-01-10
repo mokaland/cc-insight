@@ -190,10 +190,10 @@ export default function MemberLoginPage() {
             </div>
           </div>
 
-          <Link href="/register">
+          <Link href="/register" className="block w-full">
             <Button
               type="button"
-              className="w-full h-12 bg-gradient-to-r from-pink-500 via-rose-500 to-pink-600 text-white font-bold text-lg hover:opacity-90 shadow-[0_0_30px_rgba(236,72,153,0.5)] relative overflow-hidden group"
+              className="!flex w-full h-12 bg-gradient-to-r from-pink-500 via-rose-500 to-pink-600 text-white font-bold text-lg hover:opacity-90 shadow-[0_0_30px_rgba(236,72,153,0.5)] relative overflow-hidden group"
             >
               {/* ホバー時のアニメーション */}
               <span className="absolute inset-0 w-full h-full bg-gradient-to-r from-rose-500 via-pink-500 to-pink-600 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
