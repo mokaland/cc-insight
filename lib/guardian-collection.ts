@@ -573,9 +573,131 @@ export function getPlaceholderStyle(guardianId: GuardianId): {
 } {
   const guardian = GUARDIANS[guardianId];
   const attr = ATTRIBUTES[guardian.attribute];
-  
+
   return {
     background: `linear-gradient(135deg, ${attr.gradientFrom}, ${attr.gradientTo})`,
     emoji: attr.emoji
   };
+}
+
+// =====================================
+// 🎆 進化フィナーレ演出設定
+// =====================================
+
+export interface GuardianFinaleEffect {
+  // 背景パーティクルの種類
+  particleEmoji: string[];
+  // 背景のグラデーションカラー
+  bgGradient: string[];
+  // 背景のキーカラー
+  accentColor: string;
+  // パーティクルの動きタイプ
+  particleMotion: 'float' | 'spiral' | 'scatter' | 'fall' | 'orbit' | 'twinkle';
+}
+
+/**
+ * ガーディアンごとのフィナーレエフェクト設定
+ */
+export const GUARDIAN_FINALE_EFFECTS: Record<GuardianId, GuardianFinaleEffect> = {
+  // 火龍 - 燃え上がる炎と熱気
+  horyu: {
+    particleEmoji: ['🔥', '✨', '💥', '⚡'],
+    bgGradient: ['#dc2626', '#f97316', '#fbbf24'],
+    accentColor: '#ef4444',
+    particleMotion: 'float'
+  },
+  // 獅子丸 - 元気な光と星
+  shishimaru: {
+    particleEmoji: ['⭐', '🌟', '💫', '✨'],
+    bgGradient: ['#f97316', '#eab308', '#fbbf24'],
+    accentColor: '#f59e0b',
+    particleMotion: 'scatter'
+  },
+  // 花精 - 舞い散る花びら
+  hanase: {
+    particleEmoji: ['🌸', '🌺', '💮', '🏵️'],
+    bgGradient: ['#ec4899', '#f472b6', '#fbbf24'],
+    accentColor: '#ec4899',
+    particleMotion: 'fall'
+  },
+  // 白狐 - 神秘的な桜と狐火
+  shiroko: {
+    particleEmoji: ['🌸', '✨', '🦊', '💜'],
+    bgGradient: ['#a855f7', '#c084fc', '#f0abfc'],
+    accentColor: '#a855f7',
+    particleMotion: 'spiral'
+  },
+  // 機珠 - デジタルエフェクト
+  kitama: {
+    particleEmoji: ['⚡', '💠', '🔷', '✨'],
+    bgGradient: ['#06b6d4', '#0891b2', '#3b82f6'],
+    accentColor: '#06b6d4',
+    particleMotion: 'orbit'
+  },
+  // 星丸 - 宇宙と星々
+  hoshimaru: {
+    particleEmoji: ['⭐', '🌟', '💫', '🌠'],
+    bgGradient: ['#3b82f6', '#6366f1', '#8b5cf6'],
+    accentColor: '#6366f1',
+    particleMotion: 'twinkle'
+  }
+};
+
+/**
+ * ステージに応じたオーラ設定
+ */
+export interface StageAuraConfig {
+  glowIntensity: number;  // 0-100
+  glowColor: string;
+  glowLayers: number;     // 光の層の数
+  hasRainbow: boolean;    // 虹色エフェクト
+  hasGoldenRing: boolean; // 金の輪
+}
+
+export function getStageAuraConfig(stage: EvolutionStage, guardianId: GuardianId): StageAuraConfig {
+  const guardian = GUARDIANS[guardianId];
+  const attr = ATTRIBUTES[guardian.attribute];
+
+  switch (stage) {
+    case 1:
+      return {
+        glowIntensity: 30,
+        glowColor: attr.color,
+        glowLayers: 1,
+        hasRainbow: false,
+        hasGoldenRing: false
+      };
+    case 2:
+      return {
+        glowIntensity: 50,
+        glowColor: attr.color,
+        glowLayers: 2,
+        hasRainbow: false,
+        hasGoldenRing: false
+      };
+    case 3:
+      return {
+        glowIntensity: 70,
+        glowColor: attr.color,
+        glowLayers: 3,
+        hasRainbow: false,
+        hasGoldenRing: true
+      };
+    case 4:
+      return {
+        glowIntensity: 100,
+        glowColor: '#fbbf24', // ゴールド
+        glowLayers: 4,
+        hasRainbow: true,
+        hasGoldenRing: true
+      };
+    default:
+      return {
+        glowIntensity: 20,
+        glowColor: attr.color,
+        glowLayers: 1,
+        hasRainbow: false,
+        hasGoldenRing: false
+      };
+  }
 }

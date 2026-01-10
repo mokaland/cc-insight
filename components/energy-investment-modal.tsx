@@ -13,7 +13,9 @@ import {
   getAuraLevel,
   ATTRIBUTES,
   getPlaceholderStyle,
-  getGuardianImagePath
+  getGuardianImagePath,
+  GUARDIAN_FINALE_EFFECTS,
+  getStageAuraConfig
 } from "@/lib/guardian-collection";
 import { investGuardianEnergy } from "@/lib/firestore";
 import { Zap, X, TrendingUp, Sparkles, Star, Heart, Eye } from "lucide-react";
@@ -195,6 +197,23 @@ export default function EnergyInvestmentModal({
   const [evolutionPhase, setEvolutionPhase] = useState<EvolutionPhase>("idle");
   const [showSuccessAnimation, setShowSuccessAnimation] = useState(false);
   const [successData, setSuccessData] = useState<{ amount: number; remaining: number | null; newInvested: number } | null>(null);
+  const [fireworks, setFireworks] = useState<{ id: number; x: number; y: number }[]>([]);
+  const [fireworkId, setFireworkId] = useState(0);
+
+  // タップで花火を追加
+  const handleTapFirework = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (evolutionPhase !== "finale") return;
+    const rect = e.currentTarget.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+    const newId = fireworkId + 1;
+    setFireworkId(newId);
+    setFireworks(prev => [...prev, { id: newId, x, y }]);
+    // 2秒後に削除
+    setTimeout(() => {
+      setFireworks(prev => prev.filter(fw => fw.id !== newId));
+    }, 2000);
+  };
 
   // 現在の進化設定を取得
   const evolutionConfig = evolutionData ? getEvolutionConfig(evolutionData.to) : null;
@@ -452,6 +471,9 @@ export default function EnergyInvestmentModal({
     const oldStageImage = getGuardianImagePath(guardianId, evolutionData.from as EvolutionStage);
     const newStageImage = getGuardianImagePath(guardianId, evolutionData.to as EvolutionStage);
     const config = evolutionConfig;
+    const finaleEffect = GUARDIAN_FINALE_EFFECTS[guardianId];
+    const auraConfig = getStageAuraConfig(evolutionData.to as EvolutionStage, guardianId);
+    const newStageName = EVOLUTION_STAGES[evolutionData.to].name;
 
     return (
       <div
@@ -461,6 +483,7 @@ export default function EnergyInvestmentModal({
           paddingBottom: "calc(env(safe-area-inset-bottom, 0px) + 6rem)",
           justifyContent: "center"
         }}
+        onClick={handleTapFirework}
       >
         {/* 背景の暗転グラデーション */}
         <motion.div
@@ -468,6 +491,112 @@ export default function EnergyInvestmentModal({
           animate={{ opacity: evolutionPhase === "flash" ? 0 : 1 }}
           className="absolute inset-0 bg-gradient-to-b from-slate-950 via-purple-950/50 to-slate-950"
         />
+
+        {/* フィナーレ時：ガーディアン固有の背景エフェクト */}
+        {evolutionPhase === "finale" && (
+          <>
+            {/* 背景グラデーションオーバーレイ */}
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 0.3 }}
+              transition={{ duration: 1 }}
+              className="absolute inset-0"
+              style={{
+                background: `radial-gradient(ellipse at center, ${finaleEffect.bgGradient[0]}40 0%, ${finaleEffect.bgGradient[1]}20 50%, transparent 80%)`
+              }}
+            />
+
+            {/* ガーディアン固有のパーティクル */}
+            {[...Array(20)].map((_, i) => {
+              const emoji = finaleEffect.particleEmoji[i % finaleEffect.particleEmoji.length];
+              const motionType = finaleEffect.particleMotion;
+
+              // モーションタイプに応じたアニメーション
+              const getMotionProps = () => {
+                const baseDelay = i * 0.15;
+                switch (motionType) {
+                  case 'float': // 火龍：ゆらゆら上昇
+                    return {
+                      initial: { y: "100vh", x: `${(i * 5) % 100}vw`, opacity: 0 },
+                      animate: { y: "-20vh", x: `${(i * 5 + 10) % 100}vw`, opacity: [0, 1, 1, 0] },
+                      transition: { duration: 4, delay: baseDelay, repeat: Infinity }
+                    };
+                  case 'scatter': // 獅子丸：弾けるように散らばる
+                    return {
+                      initial: { scale: 0, x: "50vw", y: "50vh" },
+                      animate: {
+                        scale: [0, 1.5, 1],
+                        x: `${20 + (i * 3) % 60}vw`,
+                        y: `${20 + (i * 4) % 60}vh`,
+                        opacity: [0, 1, 0.8]
+                      },
+                      transition: { duration: 2, delay: baseDelay * 0.5, repeat: Infinity, repeatDelay: 1 }
+                    };
+                  case 'fall': // 花精：ひらひら落下
+                    return {
+                      initial: { y: "-10vh", x: `${(i * 5) % 100}vw`, rotate: 0 },
+                      animate: {
+                        y: "110vh",
+                        x: `${(i * 5 + 15) % 100}vw`,
+                        rotate: 360,
+                        opacity: [0, 1, 1, 0]
+                      },
+                      transition: { duration: 5 + i * 0.2, delay: baseDelay, repeat: Infinity }
+                    };
+                  case 'spiral': // 白狐：螺旋状に舞う
+                    return {
+                      initial: { x: "50vw", y: "50vh", scale: 0 },
+                      animate: {
+                        x: [`50vw`, `${30 + i * 2}vw`, `${70 - i * 2}vw`, `50vw`],
+                        y: [`50vh`, `${20 + i}vh`, `${80 - i}vh`, `50vh`],
+                        scale: [0, 1, 1, 0],
+                        rotate: [0, 180, 360, 540]
+                      },
+                      transition: { duration: 4, delay: baseDelay, repeat: Infinity }
+                    };
+                  case 'orbit': // 機珠：円軌道
+                    return {
+                      initial: { x: "50vw", y: "50vh" },
+                      animate: {
+                        x: `${50 + 30 * Math.cos((i / 20) * Math.PI * 2)}vw`,
+                        y: `${50 + 30 * Math.sin((i / 20) * Math.PI * 2)}vh`,
+                        rotate: [0, 360],
+                        opacity: [0.5, 1, 0.5]
+                      },
+                      transition: { duration: 3, delay: baseDelay * 0.3, repeat: Infinity }
+                    };
+                  case 'twinkle': // 星丸：点滅しながら浮遊
+                    return {
+                      initial: { x: `${(i * 5) % 100}vw`, y: `${(i * 4) % 100}vh`, scale: 0 },
+                      animate: {
+                        scale: [0, 1, 0.5, 1, 0],
+                        opacity: [0, 1, 0.3, 1, 0]
+                      },
+                      transition: { duration: 3, delay: baseDelay, repeat: Infinity }
+                    };
+                  default:
+                    return {
+                      initial: { opacity: 0 },
+                      animate: { opacity: 1 },
+                      transition: { duration: 1 }
+                    };
+                }
+              };
+
+              const motionProps = getMotionProps();
+              return (
+                <motion.div
+                  key={`bg-particle-${i}`}
+                  className="absolute text-2xl pointer-events-none"
+                  style={{ zIndex: 5 }}
+                  {...motionProps}
+                >
+                  {emoji}
+                </motion.div>
+              );
+            })}
+          </>
+        )}
 
         {/* 究極進化（Stage 4）専用：属性オーラエフェクト */}
         {evolutionData.to === 4 && evolutionPhase !== "flash" && (
@@ -665,34 +794,97 @@ export default function EnergyInvestmentModal({
               </div>
             </motion.div>
 
-            {/* カード裏面（新ステージ） */}
+            {/* カード裏面（新ステージ）+ オーラエフェクト */}
             <motion.div
               initial={{ opacity: 0 }}
               animate={{
                 opacity: evolutionPhase === "reveal" || evolutionPhase === "finale" ? 1 : 0,
+                y: evolutionPhase === "finale" ? [0, -8, 0] : 0,
               }}
               transition={{
                 opacity: { duration: 0.1 },
-                boxShadow: { duration: 2, repeat: Infinity, ease: "easeInOut" },
+                y: { duration: 2, repeat: Infinity, ease: "easeInOut" },
               }}
               className="absolute inset-0 w-48 h-64 md:w-56 md:h-72 rounded-2xl overflow-hidden border-4"
               style={{
-                borderColor: evolutionData.to === 4 ? attr.color : "#fbbf24",
+                borderColor: evolutionData.to === 4 ? "#fbbf24" : auraConfig.glowColor,
                 background: `linear-gradient(135deg, #fbbf2440, ${attr.color}60)`,
-                boxShadow: `0 0 80px #fbbf24, 0 0 120px ${attr.color}`,
+                boxShadow: evolutionPhase === "finale"
+                  ? `0 0 ${auraConfig.glowIntensity}px ${auraConfig.glowColor}, 0 0 ${auraConfig.glowIntensity * 1.5}px ${auraConfig.glowColor}80${auraConfig.hasRainbow ? ', 0 0 100px rgba(255, 215, 0, 0.5)' : ''}`
+                  : `0 0 80px #fbbf24, 0 0 120px ${attr.color}`,
                 transform: "rotateY(180deg)",
                 backfaceVisibility: "hidden"
               }}
             >
+              {/* オーラレイヤー（ステージに応じて増加） */}
+              {evolutionPhase === "finale" && [...Array(auraConfig.glowLayers)].map((_, i) => (
+                <motion.div
+                  key={`aura-layer-${i}`}
+                  className="absolute inset-0 rounded-2xl pointer-events-none"
+                  animate={{
+                    opacity: [0.3, 0.6, 0.3],
+                    scale: [1, 1.05 + i * 0.02, 1],
+                  }}
+                  transition={{
+                    duration: 1.5 + i * 0.3,
+                    repeat: Infinity,
+                    ease: "easeInOut",
+                    delay: i * 0.2,
+                  }}
+                  style={{
+                    boxShadow: `inset 0 0 ${20 + i * 10}px ${auraConfig.glowColor}60`,
+                  }}
+                />
+              ))}
+
+              {/* 虹色エフェクト（Stage 4のみ） */}
+              {evolutionPhase === "finale" && auraConfig.hasRainbow && (
+                <motion.div
+                  className="absolute inset-0 rounded-2xl pointer-events-none"
+                  animate={{
+                    background: [
+                      'linear-gradient(45deg, rgba(255,0,0,0.1), rgba(255,127,0,0.1), rgba(255,255,0,0.1), rgba(0,255,0,0.1), rgba(0,0,255,0.1), rgba(139,0,255,0.1))',
+                      'linear-gradient(135deg, rgba(139,0,255,0.1), rgba(255,0,0,0.1), rgba(255,127,0,0.1), rgba(255,255,0,0.1), rgba(0,255,0,0.1), rgba(0,0,255,0.1))',
+                      'linear-gradient(225deg, rgba(0,0,255,0.1), rgba(139,0,255,0.1), rgba(255,0,0,0.1), rgba(255,127,0,0.1), rgba(255,255,0,0.1), rgba(0,255,0,0.1))',
+                      'linear-gradient(315deg, rgba(0,255,0,0.1), rgba(0,0,255,0.1), rgba(139,0,255,0.1), rgba(255,0,0,0.1), rgba(255,127,0,0.1), rgba(255,255,0,0.1))',
+                    ],
+                  }}
+                  transition={{ duration: 4, repeat: Infinity }}
+                />
+              )}
+
+              {/* 金の輪（Stage 3以上） */}
+              {evolutionPhase === "finale" && auraConfig.hasGoldenRing && (
+                <motion.div
+                  className="absolute -inset-2 rounded-3xl pointer-events-none"
+                  animate={{
+                    opacity: [0.5, 1, 0.5],
+                    rotate: [0, 360],
+                  }}
+                  transition={{
+                    opacity: { duration: 2, repeat: Infinity },
+                    rotate: { duration: 10, repeat: Infinity, ease: "linear" },
+                  }}
+                  style={{
+                    border: '2px solid #fbbf24',
+                    boxShadow: '0 0 20px #fbbf24, inset 0 0 20px #fbbf2440',
+                  }}
+                />
+              )}
+
               {/* 新しい守護神画像 */}
               <div
                 className="absolute inset-0"
                 style={{ background: oldPlaceholder.background }}
               >
-                <img
+                <motion.img
                   src={newStageImage}
                   alt={guardian.name}
                   className="w-full h-full object-contain"
+                  animate={evolutionPhase === "finale" ? {
+                    filter: ['brightness(1)', 'brightness(1.1)', 'brightness(1)'],
+                  } : {}}
+                  transition={{ duration: 2, repeat: Infinity }}
                   onError={(e) => {
                     // 画像読み込み失敗時は卵画像を表示
                     e.currentTarget.src = "/images/ui/guardian-egg.png";
@@ -792,10 +984,157 @@ export default function EnergyInvestmentModal({
           </>
         )}
 
+        {/* タップで花火エフェクト */}
+        <AnimatePresence>
+          {fireworks.map((fw) => (
+            <motion.div
+              key={fw.id}
+              className="absolute pointer-events-none z-50"
+              style={{ left: fw.x, top: fw.y }}
+              initial={{ scale: 0, opacity: 1 }}
+              animate={{ scale: 1, opacity: 0 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 1.5, ease: "easeOut" }}
+            >
+              {/* 花火の粒子 */}
+              {[...Array(12)].map((_, i) => (
+                <motion.div
+                  key={i}
+                  className="absolute w-3 h-3 rounded-full"
+                  style={{
+                    background: ['#fbbf24', '#ef4444', '#ec4899', '#8b5cf6', '#06b6d4', '#22c55e'][i % 6],
+                    boxShadow: `0 0 10px ${['#fbbf24', '#ef4444', '#ec4899', '#8b5cf6', '#06b6d4', '#22c55e'][i % 6]}`
+                  }}
+                  initial={{ x: 0, y: 0, scale: 1 }}
+                  animate={{
+                    x: Math.cos((i / 12) * Math.PI * 2) * 80,
+                    y: Math.sin((i / 12) * Math.PI * 2) * 80,
+                    scale: 0,
+                    opacity: [1, 1, 0]
+                  }}
+                  transition={{ duration: 1, ease: "easeOut" }}
+                />
+              ))}
+              {/* 中心のフラッシュ */}
+              <motion.div
+                className="absolute w-8 h-8 -translate-x-4 -translate-y-4 rounded-full"
+                style={{ background: 'radial-gradient(circle, #fff, #fbbf24, transparent)' }}
+                initial={{ scale: 0, opacity: 1 }}
+                animate={{ scale: 2, opacity: 0 }}
+                transition={{ duration: 0.5 }}
+              />
+            </motion.div>
+          ))}
+        </AnimatePresence>
+
         {/* Phase 5: フィナーレ - メッセージ（カードの上）とボタン（下部） */}
         <AnimatePresence>
           {evolutionPhase === "finale" && (
             <>
+              {/* ステージ名の大きな表示（最初にドラマチックに） */}
+              <motion.div
+                initial={{ scale: 3, opacity: 0 }}
+                animate={{ scale: 1, opacity: [0, 1, 1, 0.8] }}
+                transition={{ duration: 1.5, times: [0, 0.2, 0.8, 1] }}
+                className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-30 pointer-events-none"
+              >
+                <div className="text-center">
+                  <motion.p
+                    className="text-6xl md:text-7xl font-bold mb-2"
+                    style={{
+                      background: evolutionData.to === 4
+                        ? 'linear-gradient(135deg, #fbbf24, #f59e0b, #fbbf24)'
+                        : `linear-gradient(135deg, ${attr.color}, #fbbf24)`,
+                      WebkitBackgroundClip: 'text',
+                      WebkitTextFillColor: 'transparent',
+                      textShadow: `0 0 60px ${attr.color}`,
+                      filter: 'drop-shadow(0 0 20px rgba(251, 191, 36, 0.5))'
+                    }}
+                  >
+                    {newStageName}
+                  </motion.p>
+                  <motion.p
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.5 }}
+                    className="text-xl text-white/80"
+                  >
+                    Stage {evolutionData.from} → Stage {evolutionData.to}
+                  </motion.p>
+                </div>
+              </motion.div>
+
+              {/* 特性発動通知（Stage 3の場合のみ） */}
+              {evolutionData.to === 3 && (
+                <motion.div
+                  initial={{ x: -100, opacity: 0 }}
+                  animate={{ x: 0, opacity: 1 }}
+                  transition={{ delay: 1.8, duration: 0.5 }}
+                  className="absolute left-4 right-4 z-40 pointer-events-none"
+                  style={{ top: "20%" }}
+                >
+                  <motion.div
+                    animate={{
+                      boxShadow: [`0 0 20px ${attr.color}60`, `0 0 40px ${attr.color}80`, `0 0 20px ${attr.color}60`]
+                    }}
+                    transition={{ duration: 1.5, repeat: 3 }}
+                    className="mx-auto max-w-xs px-6 py-3 rounded-xl text-center"
+                    style={{
+                      background: `linear-gradient(135deg, ${attr.color}40, ${attr.color}20)`,
+                      border: `2px solid ${attr.color}`
+                    }}
+                  >
+                    <p className="text-lg font-bold text-white flex items-center justify-center gap-2">
+                      <Sparkles className="w-5 h-5 text-yellow-400" />
+                      特性が発動しました！
+                      <Sparkles className="w-5 h-5 text-yellow-400" />
+                    </p>
+                    <p className="text-sm text-white/80 mt-1">
+                      「{guardian.ability.name}」
+                    </p>
+                  </motion.div>
+                </motion.div>
+              )}
+
+              {/* 称号・実績表示 */}
+              <motion.div
+                initial={{ y: 50, opacity: 0 }}
+                animate={{ y: 0, opacity: 1 }}
+                transition={{ delay: 2.2, duration: 0.5 }}
+                className="absolute z-40 pointer-events-none"
+                style={{ bottom: "42%", left: 0, right: 0 }}
+              >
+                <div className="flex justify-center gap-2 flex-wrap px-4">
+                  {evolutionData.to === 1 && (
+                    <motion.span
+                      animate={{ scale: [1, 1.1, 1] }}
+                      transition={{ duration: 0.5, repeat: 2 }}
+                      className="px-3 py-1 rounded-full text-sm font-bold bg-gradient-to-r from-green-500 to-emerald-500 text-white"
+                    >
+                      🎉 はじめての進化！
+                    </motion.span>
+                  )}
+                  {evolutionData.to === 4 && (
+                    <motion.span
+                      animate={{ scale: [1, 1.1, 1] }}
+                      transition={{ duration: 0.5, repeat: 2 }}
+                      className="px-3 py-1 rounded-full text-sm font-bold bg-gradient-to-r from-yellow-500 to-amber-500 text-white"
+                    >
+                      👑 究極体到達！
+                    </motion.span>
+                  )}
+                  {evolutionData.to === 3 && (
+                    <motion.span
+                      animate={{ scale: [1, 1.1, 1] }}
+                      transition={{ duration: 0.5, repeat: 2 }}
+                      className="px-3 py-1 rounded-full text-sm font-bold bg-gradient-to-r from-purple-500 to-pink-500 text-white"
+                    >
+                      ✨ 特性解放！
+                    </motion.span>
+                  )}
+                </div>
+              </motion.div>
+
               {/* ガーディアンからのメッセージ（カードの上） */}
               {(() => {
                 const evolutionMessage = getEvolutionMessage(guardianId, evolutionData.to as EvolutionStage);
@@ -893,6 +1232,16 @@ export default function EnergyInvestmentModal({
                     <X className="w-5 h-5" />
                     閉じる
                   </button>
+
+                  {/* タップで花火ヒント */}
+                  <motion.p
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: [0, 0.6, 0.6, 0] }}
+                    transition={{ duration: 4, delay: 2 }}
+                    className="text-xs text-white/50 text-center"
+                  >
+                    💫 画面タップで花火が上がるよ！
+                  </motion.p>
                 </motion.div>
               </motion.div>
             </>
