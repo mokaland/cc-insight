@@ -177,10 +177,6 @@ export function MemberDetailModal({
           </h2>
           <p className="text-slate-300 text-sm mb-1">
             {teamName}
-            {/* チームタイプ表示 */}
-            <span className={`ml-2 text-xs px-2 py-0.5 rounded-full ${isShorts ? 'bg-purple-500/20 text-purple-400' : 'bg-blue-500/20 text-blue-400'}`}>
-              {isShorts ? 'Shorts系' : 'X系'}
-            </span>
           </p>
           {member.guardianData && (
             <p 
