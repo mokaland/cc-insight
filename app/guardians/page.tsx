@@ -136,12 +136,12 @@ export default function GuardiansPage() {
 
   const allGuardians = Object.values(GUARDIANS);
   
-  // 進捗計算：各守護神のstage（0-4）を含めて計算
-  // 6体 × 5段階 = 30コレクション
+  // 進捗計算：各守護神のstage 1-4 を含めて計算（stage 0は卵なので除外）
+  // 6体 × 4段階 = 24コレクション
   const unlockedStagesCount = Object.values(profile.guardians)
     .filter(g => g?.unlocked)
-    .reduce((sum, g) => sum + (g.stage + 1), 0); // stage 0 = 1段階、stage 4 = 5段階
-  const totalStages = allGuardians.length * 5; // 6体 × 5段階 = 30
+    .reduce((sum, g) => sum + Math.max(0, g.stage), 0); // stage 1-4 のみカウント
+  const totalStages = allGuardians.length * 4; // 6体 × 4段階 = 24
   const completionPercentage = Math.round((unlockedStagesCount / totalStages) * 100);
 
   return (
@@ -189,17 +189,17 @@ export default function GuardiansPage() {
           <p className="text-sm text-slate-400">タップで詳細を見る</p>
         </div>
 
-        {/* ヘッダー行 */}
+        {/* ヘッダー行（Stage 1-4のみ） */}
         <div className="grid grid-cols-5 gap-2 mb-2">
           <div className="text-center text-xs text-slate-500" />
-          {[0, 1, 2, 3, 4].map((stage) => (
+          {[1, 2, 3, 4].map((stage) => (
             <div key={stage} className="text-center text-xs text-slate-400">
               Stage {stage}
             </div>
           ))}
         </div>
 
-        {/* 守護神ごとの行（6行） */}
+        {/* 守護神ごとの行（6行 × 4ステージ = 24個） */}
         <div className="space-y-3">
           {allGuardians.map((guardian) => {
             const instance = profile.guardians[guardian.id];
@@ -226,8 +226,8 @@ export default function GuardiansPage() {
                   )}
                 </div>
 
-                {/* ステージ0〜4のスタンプ */}
-                {[0, 1, 2, 3, 4].map((stage) => {
+                {/* ステージ1〜4のスタンプ（Stage 0は卵なので除外） */}
+                {[1, 2, 3, 4].map((stage) => {
                   const isStageUnlocked = unlockedStages.includes(stage as 0 | 1 | 2 | 3 | 4);
                   const isCurrentStage = currentStage === stage && isUnlocked;
 
@@ -246,7 +246,7 @@ export default function GuardiansPage() {
                         }
                       }}
                       className={`
-                        aspect-square rounded-full flex items-center justify-center
+                        aspect-square rounded-full flex items-center justify-center overflow-hidden
                         transition-all duration-200 border-2
                         ${isStageUnlocked
                           ? "hover:scale-110 cursor-pointer"
@@ -266,7 +266,7 @@ export default function GuardiansPage() {
                         <img
                           src={getGuardianImagePath(guardian.id, stage as 0 | 1 | 2 | 3 | 4)}
                           alt={`${guardian.name} Stage ${stage}`}
-                          className="w-full h-full object-contain rounded-full"
+                          className="w-full h-full object-cover scale-125"
                           onError={(e) => {
                             e.currentTarget.style.display = "none";
                             const parent = e.currentTarget.parentElement;
