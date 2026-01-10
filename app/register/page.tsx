@@ -304,22 +304,24 @@ export default function RegisterPage() {
             <Button
               type="submit"
               disabled={isLoading}
-              className="w-full h-12 bg-gradient-to-r from-indigo-500 via-sky-500 to-violet-500 hover:opacity-90 text-white font-bold py-3 rounded-xl transition-all duration-200 shadow-[0_0_30px_rgba(99,102,241,0.5)] relative overflow-hidden group"
+              className="w-full h-12 bg-gradient-to-r from-pink-500 via-rose-500 to-pink-600 hover:opacity-90 text-white font-bold text-lg rounded-xl transition-all duration-200 shadow-[0_0_30px_rgba(236,72,153,0.5)] relative overflow-hidden group"
             >
               {/* ホバー時のアニメーション */}
-              <span className="absolute inset-0 w-full h-full bg-gradient-to-r from-violet-500 via-sky-500 to-indigo-500 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+              <span className="absolute inset-0 w-full h-full bg-gradient-to-r from-rose-500 via-pink-500 to-pink-600 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
 
-              {isLoading ? (
-                <span className="relative z-10 flex items-center justify-center gap-2">
-                  <ButtonLoader />
-                  登録中...
-                </span>
-              ) : (
-                <span className="relative z-10 flex items-center justify-center gap-2">
-                  <Star className="w-5 h-5" fill="currentColor" />
-                  アカウントを作成
-                </span>
-              )}
+              <span className="relative z-10 flex items-center justify-center gap-2">
+                {isLoading ? (
+                  <>
+                    <ButtonLoader />
+                    登録中...
+                  </>
+                ) : (
+                  <>
+                    <Star className="w-5 h-5" fill="currentColor" />
+                    新規登録
+                  </>
+                )}
+              </span>
             </Button>
           </form>
 
