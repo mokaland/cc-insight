@@ -57,8 +57,8 @@
   --foreground: oklch(0.145 0 0);
 
   /* PWAモード用のセーフエリア定義 */
-  --safe-area-bottom: max(env(safe-area-inset-bottom, 0px), 24px);
-  --bottom-nav-height: calc(4rem + 0.5rem + var(--safe-area-bottom));
+  --safe-area-bottom: max(env(safe-area-inset-bottom, 0px), 16px);
+  --bottom-nav-height: calc(3.5rem + 0.25rem + var(--safe-area-bottom));
   --card: oklch(1 0 0);
   --card-foreground: oklch(0.145 0 0);
   --popover: oklch(1 0 0);
