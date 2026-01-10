@@ -64,6 +64,13 @@ function LayoutContent({ children }: { children: React.ReactNode }) {
           Object.values(guardianProfile.guardians).some(g => g?.unlocked);
         if (!hasAnyGuardian) return;
 
+        // 新規登録から24時間以内はログインボーナスをスキップ（オンボーディング中にボーナスが表示されるのを防ぐ）
+        if (guardianProfile.registeredAt) {
+          const registeredDate = guardianProfile.registeredAt.toDate();
+          const hoursElapsed = (Date.now() - registeredDate.getTime()) / (1000 * 60 * 60);
+          if (hoursElapsed < 24) return;
+        }
+
         const result = await checkDailyLoginBonus(user.uid);
 
         // 🔧 マウント解除後のState更新を防止
