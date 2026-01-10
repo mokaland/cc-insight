@@ -453,7 +453,13 @@ export default function EnergyInvestmentModal({
     const config = evolutionConfig;
 
     return (
-      <div className="fixed inset-0 bg-black flex items-center justify-center z-[9999] overflow-hidden">
+      <div
+        className="fixed inset-0 bg-black flex flex-col items-center justify-center z-[9999] overflow-hidden"
+        style={{
+          paddingTop: "env(safe-area-inset-top, 0px)",
+          paddingBottom: "env(safe-area-inset-bottom, 0px)"
+        }}
+      >
         {/* 背景の暗転グラデーション */}
         <motion.div
           initial={{ opacity: 0 }}
@@ -599,14 +605,12 @@ export default function EnergyInvestmentModal({
                 evolutionPhase === "cardify" ? 0 :
                 evolutionPhase === "charging" ? config.cardRotations :
                 evolutionPhase === "flash" ? config.cardRotations :
-                evolutionPhase === "reveal" ? config.cardRotations + 180 :
-                evolutionPhase === "finale" ? config.cardRotations + 180 : 0,
+                evolutionPhase === "reveal" ? config.cardRotations + 180 : 0,
               scale:
                 evolutionPhase === "cardify" ? [1, 0.95] :
                 evolutionPhase === "charging" ? 0.9 :
                 evolutionPhase === "flash" ? 0.9 :
-                evolutionPhase === "reveal" ? [0.9, 1.1, 1] :
-                evolutionPhase === "finale" ? 1 : 1,
+                evolutionPhase === "reveal" ? [0.9, 1.1, 1] : 1,
             }}
             transition={{
               rotateY: {
@@ -662,14 +666,6 @@ export default function EnergyInvestmentModal({
               initial={{ opacity: 0 }}
               animate={{
                 opacity: evolutionPhase === "reveal" || evolutionPhase === "finale" ? 1 : 0,
-                boxShadow:
-                  evolutionData.to === 4 && evolutionPhase === "finale"
-                    ? [
-                        `0 0 80px #fbbf24, 0 0 120px ${attr.color}`,
-                        `0 0 120px #fbbf24, 0 0 180px ${attr.color}, 0 0 250px ${attr.color}40`,
-                        `0 0 80px #fbbf24, 0 0 120px ${attr.color}`,
-                      ]
-                    : `0 0 80px #fbbf24, 0 0 120px ${attr.color}`,
               }}
               transition={{
                 opacity: { duration: 0.1 },
@@ -728,7 +724,7 @@ export default function EnergyInvestmentModal({
           )}
         </AnimatePresence>
 
-        {/* Phase 4 & 5: 金色の紙吹雪 */}
+        {/* Phase 4-5: 金色の紙吹雪（revealとfinaleフェーズ） */}
         {(evolutionPhase === "reveal" || evolutionPhase === "finale") && (
           <>
             {[...Array(config.confettiCount)].map((_, i) => (
@@ -763,95 +759,7 @@ export default function EnergyInvestmentModal({
           </>
         )}
 
-        {/* Phase 5: フィナーレ - テキスト表示 */}
-        <AnimatePresence>
-          {evolutionPhase === "finale" && (
-            <motion.div
-              initial={{ y: 50, opacity: 0 }}
-              animate={{ y: 0, opacity: 1 }}
-              className="absolute bottom-20 md:bottom-32 text-center px-4"
-            >
-              <motion.h2
-                initial={{ scale: 0.5 }}
-                animate={{ scale: [0.5, 1.2, 1] }}
-                transition={{ duration: 0.5 }}
-                className="text-4xl md:text-5xl font-bold text-white mb-4"
-              >
-                🎉 進化成功！
-              </motion.h2>
-              <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ delay: 0.3 }}
-              >
-                <p className="text-xl md:text-2xl text-gray-300 mb-2">
-                  {guardian.name}が
-                </p>
-                <p
-                  className="text-2xl md:text-3xl font-bold mb-2"
-                  style={{ color: attr.color }}
-                >
-                  「{EVOLUTION_STAGES[evolutionData.to].name}」
-                </p>
-                <p className="text-xl md:text-2xl text-gray-300">
-                  に進化しました！
-                </p>
-              </motion.div>
-
-              {evolutionData.to === 3 && (
-                <motion.div
-                  initial={{ scale: 0, opacity: 0 }}
-                  animate={{ scale: 1, opacity: 1 }}
-                  transition={{ delay: 0.6, type: "spring" }}
-                  className="mt-6 p-4 bg-gradient-to-r from-purple-900/80 to-pink-900/80 rounded-xl border border-yellow-400/50"
-                >
-                  <p className="text-yellow-400 font-bold text-lg">
-                    ✨ 特性「{guardian.ability.name}」が解放されました！
-                  </p>
-                </motion.div>
-              )}
-
-              {/* 究極進化（Stage 4）専用メッセージ */}
-              {evolutionData.to === 4 && (
-                <motion.div
-                  initial={{ scale: 0, opacity: 0 }}
-                  animate={{ scale: 1, opacity: 1 }}
-                  transition={{ delay: 0.8, type: "spring" }}
-                  className="mt-6"
-                >
-                  <motion.div
-                    animate={{
-                      boxShadow: [
-                        `0 0 20px ${attr.color}60`,
-                        `0 0 40px ${attr.color}80`,
-                        `0 0 20px ${attr.color}60`,
-                      ],
-                    }}
-                    transition={{ duration: 2, repeat: Infinity }}
-                    className="p-6 rounded-xl border-2"
-                    style={{
-                      background: `linear-gradient(135deg, ${attr.color}30, #fbbf2430)`,
-                      borderColor: attr.color,
-                    }}
-                  >
-                    <p className="text-4xl mb-2">👑</p>
-                    <p className="text-2xl font-bold text-white mb-2">
-                      究極覚醒！
-                    </p>
-                    <p className="text-lg" style={{ color: attr.color }}>
-                      {guardian.name}が最高形態に到達しました！
-                    </p>
-                    <p className="text-sm text-gray-400 mt-2">
-                      あなたの献身が{guardian.name}の究極の力を解放した
-                    </p>
-                  </motion.div>
-                </motion.div>
-              )}
-            </motion.div>
-          )}
-        </AnimatePresence>
-
-        {/* キラキラエフェクト（常時） */}
+        {/* キラキラエフェクト（フラッシュ以外） */}
         {evolutionPhase !== "flash" && (
           <>
             {[...Array(config.sparkleCount)].map((_, i) => (
@@ -880,45 +788,55 @@ export default function EnergyInvestmentModal({
           </>
         )}
 
-        {/* 進化完了ボタン（finaleフェーズで表示） */}
-        {evolutionPhase === "finale" && (
-          <motion.div
-            initial={{ y: 50, opacity: 0 }}
-            animate={{ y: 0, opacity: 1 }}
-            transition={{ delay: 0.5, duration: 0.5 }}
-            className="absolute bottom-8 left-0 right-0 flex flex-col items-center gap-4 px-4"
-            style={{ paddingBottom: "env(safe-area-inset-bottom, 0px)" }}
-          >
-            {/* 詳細を見るボタン */}
-            <button
-              onClick={() => {
-                setShowEvolutionAnimation(false);
-                onSuccess();
-                router.push(`/guardian/${guardianId}`);
-              }}
-              className="w-full max-w-xs py-4 rounded-xl font-bold text-lg text-white transition-all flex items-center justify-center gap-2"
+        {/* Phase 5: フィナーレ - ボタンのみ（下部に配置） */}
+        <AnimatePresence>
+          {evolutionPhase === "finale" && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              className="absolute bottom-0 left-0 right-0 px-4 pb-4"
               style={{
-                background: `linear-gradient(135deg, ${attr.color}, ${attr.color}cc)`,
-                boxShadow: `0 0 30px ${attr.color}80`,
+                paddingBottom: "calc(env(safe-area-inset-bottom, 0px) + 1rem)"
               }}
             >
-              <Eye className="w-5 h-5" />
-              詳細を見る
-            </button>
+              <motion.div
+                initial={{ y: 20, opacity: 0 }}
+                animate={{ y: 0, opacity: 1 }}
+                transition={{ delay: 0.3, duration: 0.5 }}
+                className="flex flex-col items-center gap-3 w-full max-w-sm mx-auto"
+              >
+                {/* 詳細を見るボタン */}
+                <button
+                  onClick={() => {
+                    setShowEvolutionAnimation(false);
+                    onSuccess();
+                    router.push(`/guardian/${guardianId}`);
+                  }}
+                  className="w-full py-4 rounded-xl font-bold text-lg text-white transition-all flex items-center justify-center gap-2"
+                  style={{
+                    background: `linear-gradient(135deg, ${attr.color}, ${attr.color}cc)`,
+                    boxShadow: `0 0 30px ${attr.color}80`,
+                  }}
+                >
+                  <Eye className="w-5 h-5" />
+                  詳細を見る
+                </button>
 
-            {/* 閉じるボタン */}
-            <button
-              onClick={() => {
-                setShowEvolutionAnimation(false);
-                onSuccess();
-              }}
-              className="w-full max-w-xs py-3 rounded-xl font-bold text-white/80 bg-slate-800/80 hover:bg-slate-700/80 transition-all flex items-center justify-center gap-2"
-            >
-              <X className="w-5 h-5" />
-              閉じる
-            </button>
-          </motion.div>
-        )}
+                {/* 閉じるボタン */}
+                <button
+                  onClick={() => {
+                    setShowEvolutionAnimation(false);
+                    onSuccess();
+                  }}
+                  className="w-full py-3 rounded-xl font-bold text-white/80 bg-slate-800/80 hover:bg-slate-700/80 transition-all flex items-center justify-center gap-2"
+                >
+                  <X className="w-5 h-5" />
+                  閉じる
+                </button>
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
     );
   }
