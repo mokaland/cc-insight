@@ -123,7 +123,7 @@ export default function RegisterPage() {
 
       <div className="w-full max-w-md relative z-10">
         {/* ロゴ/タイトル */}
-        <div className="text-center mb-8">
+        <div className="text-center mb-8 mt-10">
           <div className="inline-flex items-center justify-center w-20 h-20 rounded-2xl overflow-hidden mb-4 shadow-[0_0_40px_rgba(99,102,241,0.6)] ring-2 ring-sky-400/50">
             <Image
               src="/icon-192x192.png"
