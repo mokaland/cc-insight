@@ -88,48 +88,45 @@ function ModalWrapper({ isOpen, onClose, children }: ModalWrapperProps) {
   return (
     <AnimatePresence>
       {isOpen && (
-        <div
-          className="fixed inset-0 z-[9998]"
-          style={{
-            position: 'fixed',
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            width: '100%',
-            height: '100%',
-          }}
-        >
-          {/* 背景オーバーレイ - 画面完全覆い */}
+        <>
+          {/*
+            PWA/iOS Safari対応: セーフエリアを含む画面全体を覆う背景
+            - 負のマージンでステータスバー領域も確実にカバー
+            - 100lvh (large viewport height) で動的ビューポートに対応
+          */}
           <motion.div
             initial={{ opacity: 0 }}
-            animate={{ opacity: 0.95 }}
+            animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             onClick={onClose}
-            className="absolute inset-0 bg-black"
+            className="fixed z-[9998] bg-black/95"
             style={{
-              position: 'absolute',
-              top: 0,
-              left: 0,
-              right: 0,
-              bottom: 0,
+              position: 'fixed',
+              // 負のマージンでセーフエリア外までカバー
+              top: 'calc(-1 * env(safe-area-inset-top, 0px) - 50px)',
+              left: 'calc(-1 * env(safe-area-inset-left, 0px) - 50px)',
+              right: 'calc(-1 * env(safe-area-inset-right, 0px) - 50px)',
+              bottom: 'calc(-1 * env(safe-area-inset-bottom, 0px) - 50px)',
+              // 追加の余裕を持たせる
+              minWidth: 'calc(100vw + 100px)',
+              minHeight: 'calc(100vh + 100px)',
               touchAction: 'none',
-              WebkitTapHighlightColor: 'transparent'
+              WebkitTapHighlightColor: 'transparent',
             }}
           />
 
           {/* モーダルコンテナ - 全画面固定 */}
           <div
-            className="absolute inset-0 z-[9999] flex items-center justify-center p-4"
+            className="fixed inset-0 z-[9999] flex items-center justify-center p-4"
             style={{
-              position: 'absolute',
+              position: 'fixed',
               top: 0,
               left: 0,
               right: 0,
               bottom: 0,
-              paddingTop: '1rem',
+              paddingTop: 'calc(env(safe-area-inset-top, 0px) + 1rem)',
               paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 5rem)',
-              pointerEvents: 'none'
+              pointerEvents: 'none',
             }}
           >
             <motion.div
@@ -145,13 +142,13 @@ function ModalWrapper({ isOpen, onClose, children }: ModalWrapperProps) {
                 WebkitOverflowScrolling: 'touch',
                 overscrollBehavior: 'contain',
                 touchAction: 'pan-y',
-                pointerEvents: 'auto'
+                pointerEvents: 'auto',
               }}
             >
               {children}
             </motion.div>
           </div>
-        </div>
+        </>
       )}
     </AnimatePresence>
   );
