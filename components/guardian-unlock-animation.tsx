@@ -94,8 +94,12 @@ export default function GuardianUnlockAnimation({
 
   return (
     <div
-      className="fixed inset-0 bg-black flex items-center justify-center z-[9999] overflow-hidden"
-      style={{ paddingBottom: "30px" }}
+      className="fixed inset-0 bg-black flex flex-col items-center z-[9999] overflow-hidden"
+      style={{
+        paddingTop: "calc(env(safe-area-inset-top, 0px) + 1rem)",
+        paddingBottom: "calc(env(safe-area-inset-bottom, 0px) + 6rem)",
+        justifyContent: "center"
+      }}
     >
       {/* 背景グラデーション */}
       <motion.div
@@ -453,15 +457,15 @@ export default function GuardianUnlockAnimation({
               animate={{ y: 0, opacity: 1 }}
               transition={{ delay: 0.3, duration: 0.5 }}
               className="absolute left-0 right-0 z-30 pointer-events-none"
-              style={{ top: "calc(env(safe-area-inset-top, 0px) + 5%)" }}
+              style={{ top: "calc(env(safe-area-inset-top, 0px) + 2rem)" }}
             >
-              <div className="flex flex-col items-center gap-2 px-4 text-center">
+              <div className="flex flex-col items-center gap-1 px-4 text-center">
                 {/* 契約成立タイトル */}
                 <motion.h2
                   initial={{ scale: 0.5 }}
                   animate={{ scale: [0.5, 1.2, 1] }}
                   transition={{ duration: 0.5 }}
-                  className="text-2xl md:text-3xl font-bold text-white"
+                  className="text-xl md:text-2xl font-bold text-white"
                   style={{
                     textShadow: `0 0 40px ${attr.color}`,
                     filter: 'drop-shadow(0 0 15px rgba(251, 191, 36, 0.5))'
@@ -475,7 +479,7 @@ export default function GuardianUnlockAnimation({
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
                   transition={{ delay: 0.5, duration: 0.4 }}
-                  className="text-base md:text-lg text-white"
+                  className="text-sm md:text-base text-white"
                 >
                   <span style={{ color: attr.color }} className="font-bold">
                     {guardian.name}
@@ -488,9 +492,9 @@ export default function GuardianUnlockAnimation({
                   initial={{ scale: 0 }}
                   animate={{ scale: 1 }}
                   transition={{ delay: 0.8, type: "spring" }}
-                  className="inline-block p-2 px-4 bg-gradient-to-r from-purple-900/80 to-pink-900/80 rounded-xl border border-yellow-400/50"
+                  className="inline-block p-1.5 px-3 bg-gradient-to-r from-purple-900/80 to-pink-900/80 rounded-lg border border-yellow-400/50 mt-1"
                 >
-                  <p className="text-yellow-400 font-bold text-sm">
+                  <p className="text-yellow-400 font-bold text-xs">
                     🎯 エナジーを注入して育てよう！
                   </p>
                 </motion.div>
@@ -503,7 +507,7 @@ export default function GuardianUnlockAnimation({
               animate={{ opacity: 1 }}
               className="absolute bottom-0 left-0 right-0 px-4"
               style={{
-                paddingBottom: "calc(env(safe-area-inset-bottom, 0px) + 6rem)"
+                paddingBottom: "calc(env(safe-area-inset-bottom, 0px) + 5.5rem)"
               }}
             >
               <motion.div
