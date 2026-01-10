@@ -329,12 +329,12 @@ export default function GuardianUnlockAnimation({
             animate={{
               opacity: phase === "manifesting" || phase === "blessing" ? 0 : 1,
             }}
+            transition={{ opacity: { duration: 0.3 } }}
             className="w-56 h-72 md:w-64 md:h-80 rounded-2xl overflow-hidden border-4 relative"
             style={{
               borderColor: attr.color,
               background: `linear-gradient(135deg, ${attr.color}40, #1a0a2e)`,
               boxShadow: `0 0 50px ${attr.color}80`,
-              backfaceVisibility: "hidden",
             }}
           >
             {/* 神秘的なパターン */}
@@ -355,27 +355,34 @@ export default function GuardianUnlockAnimation({
             animate={{
               opacity: phase === "manifesting" || phase === "blessing" ? 1 : 0,
             }}
-            transition={{ opacity: { duration: 0.1 } }}
+            transition={{ opacity: { duration: 0.3 } }}
             className="absolute inset-0 w-56 h-72 md:w-64 md:h-80 rounded-2xl overflow-hidden border-4"
             style={{
               borderColor: "#fbbf24",
               background: placeholder.background,
               boxShadow: `0 0 80px #fbbf24, 0 0 120px ${attr.color}`,
-              transform: "rotateY(180deg)",
-              backfaceVisibility: "hidden",
             }}
           >
-            <img
-              src={getGuardianImagePath(guardianId, 0)}
-              alt={guardian.name}
-              className="w-full h-full object-contain"
-              onError={(e) => {
-                // 画像読み込み失敗時は卵画像を表示
-                e.currentTarget.src = "/images/ui/guardian-egg.png";
-              }}
-            />
-            {/* Stage 0 バッジ */}
-            <div className="absolute bottom-4 left-0 right-0 text-center">
+            {/* 親の回転で反転するためscaleX(-1)で補正 */}
+            <div
+              className="w-full h-full"
+              style={{ transform: "scaleX(-1)" }}
+            >
+              <img
+                src={getGuardianImagePath(guardianId, 0)}
+                alt={guardian.name}
+                className="w-full h-full object-contain"
+                onError={(e) => {
+                  // 画像読み込み失敗時は卵画像を表示
+                  e.currentTarget.src = "/images/ui/guardian-egg.png";
+                }}
+              />
+            </div>
+            {/* Stage 0 バッジ - 親の回転で反転するためscaleX(-1)で補正 */}
+            <div
+              className="absolute bottom-4 left-0 right-0 text-center"
+              style={{ transform: "scaleX(-1)" }}
+            >
               <span className="text-yellow-400 text-sm font-bold bg-black/70 px-3 py-1 rounded-full">
                 Stage 0
               </span>
