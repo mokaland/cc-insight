@@ -5,7 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { CircularProgress } from "@/components/circular-progress";
 import { GlassCard, TodayProgress, NeonGauge } from "@/components/glass-card";
-import { Eye, TrendingUp, Video, Users, Target, Calendar } from "lucide-react";
+import { Heart, MessageCircle, Zap, Video, Users, Target, Calendar, Twitter } from "lucide-react";
 import { getReportsByPeriod, calculateTeamStats, teams } from "@/lib/firestore";
 
 const team = teams.find((t) => t.id === "buppan")!;
@@ -202,56 +202,33 @@ export default function BuppanTeamPage() {
         teamName={team.name}
       />
 
-      {/* 全11項目完全実装 */}
-      {/* 項目1-4: 基本指標 */}
+      {/* X運用チーム専用KPI */}
+      {/* 項目1-4: X運用基本指標 */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        <GlassCard glowColor="#eab308" title="総再生数" icon={<Eye className="h-5 w-5" />} value={teamStats.totalViews.toLocaleString()} subtitle="今週の合計">
+        <GlassCard glowColor="#eab308" title="いいね回り" icon={<Heart className="h-5 w-5" />} value={teamStats.totalLikes.toLocaleString()} subtitle="今週の合計">
           <div></div>
         </GlassCard>
 
-        <GlassCard glowColor="#eab308" title="総インプレッション" icon={<TrendingUp className="h-5 w-5" />} value={teamStats.totalImpressions.toLocaleString()} subtitle="今週の合計">
+        <GlassCard glowColor="#eab308" title="リプライ回り" icon={<MessageCircle className="h-5 w-5" />} value={teamStats.totalReplies.toLocaleString()} subtitle="今週の合計">
+          <div></div>
+        </GlassCard>
+
+        <GlassCard glowColor="#eab308" title="総活動量" icon={<Zap className="h-5 w-5" />} value={(teamStats.totalLikes + teamStats.totalReplies).toLocaleString()} subtitle="いいね+リプライ">
           <div></div>
         </GlassCard>
 
         <GlassCard glowColor="#eab308" title="総投稿数" icon={<Video className="h-5 w-5" />} value={teamStats.totalPosts.toLocaleString()} subtitle="今週の合計">
           <div></div>
         </GlassCard>
+      </div>
+
+      {/* 項目5-6: チーム情報 */}
+      <div className="grid gap-4 md:grid-cols-2">
+        <GlassCard glowColor="#1da1f2" title="Xフォロワー" icon={<Twitter className="h-5 w-5" />} value={teamStats.totalXFollowers?.toLocaleString() || '0'} subtitle="総フォロワー数">
+          <div></div>
+        </GlassCard>
 
         <GlassCard glowColor="#eab308" title="アクティブメンバー" icon={<Users className="h-5 w-5" />} value={`${teamStats.memberCount}人`} subtitle="報告済み人数">
-          <div></div>
-        </GlassCard>
-      </div>
-
-      {/* 項目5-8: Instagram詳細KPI */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        <GlassCard glowColor="#22c55e" title="プロフアクセス数" icon={<Users className="h-5 w-5" />} value={teamStats.totalProfileAccess.toLocaleString()} subtitle="Instagram">
-          <div></div>
-        </GlassCard>
-
-        <GlassCard glowColor="#f59e0b" title="外部タップ数" icon={<TrendingUp className="h-5 w-5" />} value={teamStats.totalExternalTaps.toLocaleString()} subtitle="リンククリック">
-          <div></div>
-        </GlassCard>
-
-        <GlassCard glowColor="#8b5cf6" title="インタラクション" icon={<Eye className="h-5 w-5" />} value={teamStats.totalInteractions.toLocaleString()} subtitle="エンゲージメント">
-          <div></div>
-        </GlassCard>
-
-        <GlassCard glowColor="#eab308" title="ストーリー投稿" icon={<Video className="h-5 w-5" />} value={teamStats.totalStories.toString()} subtitle="週間合計">
-          <div></div>
-        </GlassCard>
-      </div>
-
-      {/* 項目9-11: SNSフォロワー統計 */}
-      <div className="grid gap-4 md:grid-cols-3">
-        <GlassCard glowColor="#e1306c" title="Instagram" icon={<Users className="h-5 w-5" />} value={teamStats.totalIgFollowers.toLocaleString()} subtitle="総フォロワー数">
-          <div></div>
-        </GlassCard>
-
-        <GlassCard glowColor="#ff0000" title="YouTube" icon={<Users className="h-5 w-5" />} value={teamStats.totalYtFollowers.toLocaleString()} subtitle="総フォロワー数">
-          <div></div>
-        </GlassCard>
-
-        <GlassCard glowColor="#000000" title="TikTok" icon={<Users className="h-5 w-5" />} value={teamStats.totalTiktokFollowers.toLocaleString()} subtitle="総フォロワー数">
           <div></div>
         </GlassCard>
       </div>
@@ -372,16 +349,16 @@ export default function BuppanTeamPage() {
                   </div>
                   <div className="flex gap-8 text-sm">
                     <div className="text-right">
-                      <p className="text-muted-foreground">再生数</p>
-                      <p className="font-bold">{member.views.toLocaleString()}</p>
+                      <p className="text-muted-foreground">いいね回り</p>
+                      <p className="font-bold">{(member.likes || 0).toLocaleString()}</p>
                     </div>
                     <div className="text-right">
-                      <p className="text-muted-foreground">投稿</p>
-                      <p className="font-bold">{member.posts}</p>
+                      <p className="text-muted-foreground">リプライ回り</p>
+                      <p className="font-bold">{(member.replies || 0).toLocaleString()}</p>
                     </div>
                     <div className="text-right">
-                      <p className="text-muted-foreground">インプレッション</p>
-                      <p className="font-bold">{member.impressions.toLocaleString()}</p>
+                      <p className="text-muted-foreground">総活動量</p>
+                      <p className="font-bold">{((member.likes || 0) + (member.replies || 0)).toLocaleString()}</p>
                     </div>
                   </div>
                 </div>

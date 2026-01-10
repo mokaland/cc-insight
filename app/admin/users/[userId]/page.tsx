@@ -19,7 +19,9 @@ import {
   Trophy,
   Shield,
   Mail,
-  Zap
+  Zap,
+  Heart,
+  MessageCircle
 } from "lucide-react";
 import { ContentLoader } from "@/components/ui/loading-spinner";
 import { GUARDIANS, ATTRIBUTES, getGuardianImagePath, GuardianId, EVOLUTION_STAGES } from "@/lib/guardian-collection";
@@ -30,6 +32,9 @@ interface PeriodStats {
   views: number;
   posts: number;
   date: string;
+  likes?: number;
+  replies?: number;
+  activity?: number;
 }
 
 export default function UserDetailPage() {
@@ -114,6 +119,10 @@ export default function UserDetailPage() {
   }, [userId, loadUserData]);
 
   const calculateStats = (reports: Report[]) => {
+    // チームタイプを判定
+    const userTeam = teams.find(t => t.id === user?.team);
+    const isX = userTeam?.type === "x";
+
     // 週別統計（過去8週）
     const weekly: PeriodStats[] = [];
     for (let i = 0; i < 8; i++) {
@@ -127,11 +136,17 @@ export default function UserDetailPage() {
         return date >= weekStart && date < weekEnd;
       });
 
+      const likes = weekReports.reduce((sum, r) => sum + (r.likeCount || 0), 0);
+      const replies = weekReports.reduce((sum, r) => sum + (r.replyCount || 0), 0);
+
       weekly.unshift({
         period: `${i + 1}週前`,
         views: weekReports.reduce((sum, r) => sum + (r.igViews || 0), 0),
         posts: weekReports.length,
         date: weekStart.toLocaleDateString("ja-JP", { month: "short", day: "numeric" }),
+        likes,
+        replies,
+        activity: likes + replies,
       });
     }
     setWeeklyStats(weekly);
@@ -150,11 +165,17 @@ export default function UserDetailPage() {
         return date >= monthStart && date < monthEnd;
       });
 
+      const likes = monthReports.reduce((sum, r) => sum + (r.likeCount || 0), 0);
+      const replies = monthReports.reduce((sum, r) => sum + (r.replyCount || 0), 0);
+
       monthly.unshift({
         period: `${i + 1}ヶ月前`,
         views: monthReports.reduce((sum, r) => sum + (r.igViews || 0), 0),
         posts: monthReports.length,
         date: monthStart.toLocaleDateString("ja-JP", { year: "numeric", month: "short" }),
+        likes,
+        replies,
+        activity: likes + replies,
       });
     }
     setMonthlyStats(monthly);
@@ -165,7 +186,7 @@ export default function UserDetailPage() {
       const quarterEnd = new Date();
       const currentQuarter = Math.floor(quarterEnd.getMonth() / 3);
       const targetQuarter = currentQuarter - i;
-      
+
       const qStart = new Date(quarterEnd.getFullYear(), targetQuarter * 3, 1);
       const qEnd = new Date(quarterEnd.getFullYear(), (targetQuarter + 1) * 3, 1);
 
@@ -174,11 +195,17 @@ export default function UserDetailPage() {
         return date >= qStart && date < qEnd;
       });
 
+      const likes = quarterReports.reduce((sum, r) => sum + (r.likeCount || 0), 0);
+      const replies = quarterReports.reduce((sum, r) => sum + (r.replyCount || 0), 0);
+
       quarterly.unshift({
         period: `Q${(targetQuarter % 4) + 1}`,
         views: quarterReports.reduce((sum, r) => sum + (r.igViews || 0), 0),
         posts: quarterReports.length,
         date: `${qStart.getFullYear()}`,
+        likes,
+        replies,
+        activity: likes + replies,
       });
     }
     setQuarterlyStats(quarterly);
@@ -201,7 +228,20 @@ export default function UserDetailPage() {
   }
 
   const team = teams.find(t => t.id === user.team);
-  const totalViews = reports.reduce((sum, r) => sum + (r.igViews || 0), 0);
+  const isXTeam = team?.type === "x";
+
+  // チームタイプに応じた合計値
+  const totalViews = isXTeam
+    ? 0
+    : reports.reduce((sum, r) => sum + (r.igViews || 0), 0);
+  const totalLikes = isXTeam
+    ? reports.reduce((sum, r) => sum + (r.likeCount || 0), 0)
+    : 0;
+  const totalReplies = isXTeam
+    ? reports.reduce((sum, r) => sum + (r.replyCount || 0), 0)
+    : 0;
+  const totalActivity = totalLikes + totalReplies;
+
   const totalReports = reports.length;
   const maxViews = Math.max(...weeklyStats.map(s => s.views), 1);
 
@@ -274,15 +314,27 @@ export default function UserDetailPage() {
         >
           <div></div>
         </GlassCard>
-        <GlassCard
-          glowColor="#ec4899"
-          title="累計再生数"
-          icon={<Eye className="h-5 w-5" />}
-          value={totalViews.toLocaleString()}
-          subtitle="総再生"
-        >
-          <div></div>
-        </GlassCard>
+        {isXTeam ? (
+          <GlassCard
+            glowColor="#eab308"
+            title="総活動量"
+            icon={<Zap className="h-5 w-5" />}
+            value={totalActivity.toLocaleString()}
+            subtitle={`いいね ${totalLikes} / リプライ ${totalReplies}`}
+          >
+            <div></div>
+          </GlassCard>
+        ) : (
+          <GlassCard
+            glowColor="#ec4899"
+            title="累計再生数"
+            icon={<Eye className="h-5 w-5" />}
+            value={totalViews.toLocaleString()}
+            subtitle="総再生"
+          >
+            <div></div>
+          </GlassCard>
+        )}
         <GlassCard
           glowColor="#06b6d4"
           title="総報告数"
@@ -307,33 +359,43 @@ export default function UserDetailPage() {
       <Card className="bg-white/5 backdrop-blur-xl border-white/10">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <TrendingUp className="h-5 w-5 text-pink-500" />
+            <TrendingUp className={`h-5 w-5 ${isXTeam ? 'text-yellow-500' : 'text-pink-500'}`} />
             週別推移（過去8週）
           </CardTitle>
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
-            {weeklyStats.map((stat, index) => (
-              <div key={index} className="space-y-2">
-                <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">{stat.date}</span>
-                  <span className="font-semibold text-pink-400">
-                    {stat.views.toLocaleString()} views / {stat.posts} posts
-                  </span>
-                </div>
-                <div className="h-8 bg-white/5 rounded-full overflow-hidden relative">
-                  <div
-                    className="h-full bg-gradient-to-r from-pink-500 to-purple-500 rounded-full transition-all duration-500 shadow-[0_0_20px_rgba(236,72,153,0.5)]"
-                    style={{
-                      width: `${Math.max((stat.views / maxViews) * 100, 2)}%`,
-                    }}
-                  />
-                  <div className="absolute inset-0 flex items-center justify-center text-xs font-semibold text-white">
-                    {stat.views > 0 && `${stat.views.toLocaleString()}`}
+            {weeklyStats.map((stat, index) => {
+              const maxValue = isXTeam
+                ? Math.max(...weeklyStats.map(s => s.activity || 0), 1)
+                : maxViews;
+              const value = isXTeam ? (stat.activity || 0) : stat.views;
+
+              return (
+                <div key={index} className="space-y-2">
+                  <div className="flex justify-between text-sm">
+                    <span className="text-muted-foreground">{stat.date}</span>
+                    <span className={`font-semibold ${isXTeam ? 'text-yellow-400' : 'text-pink-400'}`}>
+                      {isXTeam
+                        ? `活動 ${value.toLocaleString()} (いいね ${stat.likes || 0} / リプライ ${stat.replies || 0})`
+                        : `${stat.views.toLocaleString()} views / ${stat.posts} posts`
+                      }
+                    </span>
+                  </div>
+                  <div className="h-8 bg-white/5 rounded-full overflow-hidden relative">
+                    <div
+                      className={`h-full ${isXTeam ? 'bg-gradient-to-r from-yellow-500 to-orange-500' : 'bg-gradient-to-r from-pink-500 to-purple-500'} rounded-full transition-all duration-500 ${isXTeam ? 'shadow-[0_0_20px_rgba(234,179,8,0.5)]' : 'shadow-[0_0_20px_rgba(236,72,153,0.5)]'}`}
+                      style={{
+                        width: `${Math.max((value / maxValue) * 100, 2)}%`,
+                      }}
+                    />
+                    <div className="absolute inset-0 flex items-center justify-center text-xs font-semibold text-white">
+                      {value > 0 && value.toLocaleString()}
+                    </div>
                   </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </CardContent>
       </Card>
@@ -342,7 +404,7 @@ export default function UserDetailPage() {
       <Card className="bg-white/5 backdrop-blur-xl border-white/10">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <Calendar className="h-5 w-5 text-cyan-500" />
+            <Calendar className={`h-5 w-5 ${isXTeam ? 'text-yellow-500' : 'text-cyan-500'}`} />
             月別推移（過去6ヶ月）
           </CardTitle>
         </CardHeader>
@@ -351,13 +413,18 @@ export default function UserDetailPage() {
             {monthlyStats.map((stat, index) => (
               <div
                 key={index}
-                className="p-4 rounded-xl bg-gradient-to-br from-cyan-500/10 to-blue-500/10 border border-cyan-500/20 hover:border-cyan-500/40 transition-all"
+                className={`p-4 rounded-xl ${isXTeam ? 'bg-gradient-to-br from-yellow-500/10 to-orange-500/10 border border-yellow-500/20 hover:border-yellow-500/40' : 'bg-gradient-to-br from-cyan-500/10 to-blue-500/10 border border-cyan-500/20 hover:border-cyan-500/40'} transition-all`}
               >
                 <div className="text-xs text-muted-foreground mb-1">{stat.date}</div>
-                <div className="text-2xl font-bold text-cyan-400 mb-1">
-                  {stat.views.toLocaleString()}
+                <div className={`text-2xl font-bold ${isXTeam ? 'text-yellow-400' : 'text-cyan-400'} mb-1`}>
+                  {isXTeam ? (stat.activity || 0).toLocaleString() : stat.views.toLocaleString()}
                 </div>
-                <div className="text-xs text-muted-foreground">{stat.posts} posts</div>
+                <div className="text-xs text-muted-foreground">
+                  {isXTeam
+                    ? `いいね ${stat.likes || 0} / リプライ ${stat.replies || 0}`
+                    : `${stat.posts} posts`
+                  }
+                </div>
               </div>
             ))}
           </div>
@@ -368,7 +435,7 @@ export default function UserDetailPage() {
       <Card className="bg-white/5 backdrop-blur-xl border-white/10">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <Target className="h-5 w-5 text-purple-500" />
+            <Target className={`h-5 w-5 ${isXTeam ? 'text-yellow-500' : 'text-purple-500'}`} />
             四半期別推移
           </CardTitle>
         </CardHeader>
@@ -377,15 +444,20 @@ export default function UserDetailPage() {
             {quarterlyStats.map((stat, index) => (
               <div
                 key={index}
-                className="p-6 rounded-xl bg-gradient-to-br from-purple-500/10 to-pink-500/10 border-2 border-purple-500/20 hover:border-purple-500/40 transition-all"
+                className={`p-6 rounded-xl ${isXTeam ? 'bg-gradient-to-br from-yellow-500/10 to-orange-500/10 border-2 border-yellow-500/20 hover:border-yellow-500/40' : 'bg-gradient-to-br from-purple-500/10 to-pink-500/10 border-2 border-purple-500/20 hover:border-purple-500/40'} transition-all`}
               >
                 <div className="text-sm text-muted-foreground mb-2">
                   {stat.date} {stat.period}
                 </div>
-                <div className="text-3xl font-bold text-purple-400 mb-2">
-                  {stat.views.toLocaleString()}
+                <div className={`text-3xl font-bold ${isXTeam ? 'text-yellow-400' : 'text-purple-400'} mb-2`}>
+                  {isXTeam ? (stat.activity || 0).toLocaleString() : stat.views.toLocaleString()}
                 </div>
-                <div className="text-sm text-muted-foreground">{stat.posts} posts</div>
+                <div className="text-sm text-muted-foreground">
+                  {isXTeam
+                    ? `いいね ${stat.likes || 0} / リプライ ${stat.replies || 0}`
+                    : `${stat.posts} posts`
+                  }
+                </div>
               </div>
             ))}
           </div>
