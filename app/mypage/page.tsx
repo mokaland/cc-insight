@@ -25,7 +25,8 @@ import {
   PROFILE_COMPLETION_BONUS
 } from "@/lib/guardian-collection";
 import { getUserSnsAccounts, saveSnsAccount, saveSnsAccounts } from "@/lib/firestore";
-import { Sparkles, Crown, Settings, Check, Gift, Clock, AlertCircle } from "lucide-react";
+import { Sparkles, Crown, Settings, Check, Gift, Clock, AlertCircle, Zap, ArrowRight } from "lucide-react";
+import EnergyInvestmentModal from "@/components/energy-investment-modal";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import Link from "next/link";
@@ -99,6 +100,9 @@ export default function MyPage() {
   // 個別SNS保存処理用の状態（フックはトップレベルで宣言する必要がある）
   const [savingKey, setSavingKey] = useState<string | null>(null);
   const [inputUrls, setInputUrls] = useState<{[key: string]: string}>({});
+
+  // エナジー投資モーダル
+  const [showEnergyModal, setShowEnergyModal] = useState(false);
 
   useEffect(() => {
     const loadData = async () => {
@@ -662,9 +666,22 @@ export default function MyPage() {
                         </div>
                       </div>
 
-                      {/* 励ましメッセージ */}
+                      {/* 励ましメッセージ or 進化可能ボタン */}
                       <div className="text-center pt-2">
-                        {evolutionInfo.remaining <= 50 ? (
+                        {profile.energy.current >= evolutionInfo.remaining ? (
+                          /* 進化可能！ */
+                          <button
+                            onClick={() => setShowEnergyModal(true)}
+                            className="w-full py-3 rounded-xl font-bold text-lg bg-gradient-to-r from-yellow-500 via-orange-500 to-red-500 hover:from-yellow-400 hover:via-orange-400 hover:to-red-400 text-white transition-all flex items-center justify-center gap-2 animate-pulse shadow-lg"
+                            style={{
+                              boxShadow: `0 0 30px rgba(250, 204, 21, 0.6)`
+                            }}
+                          >
+                            <Zap className="w-6 h-6" />
+                            今すぐ進化可能！ タップして進化させよう
+                            <ArrowRight className="w-5 h-5" />
+                          </button>
+                        ) : evolutionInfo.remaining <= 50 ? (
                           <p className="text-sm font-medium" style={{ color: attr.color }}>
                             🔥 もう少しで進化！あと {evolutionInfo.remaining}E 稼ごう！
                           </p>
@@ -678,6 +695,22 @@ export default function MyPage() {
                           </p>
                         )}
                       </div>
+
+                      {/* エナジー投資ボタン（進化可能でない場合も表示） */}
+                      {profile.energy.current < evolutionInfo.remaining && profile.energy.current > 0 && (
+                        <button
+                          onClick={() => setShowEnergyModal(true)}
+                          className="w-full mt-3 py-2 rounded-lg font-medium text-sm border-2 transition-all flex items-center justify-center gap-2 hover:scale-[1.02]"
+                          style={{
+                            borderColor: attr.color,
+                            color: attr.color,
+                            backgroundColor: `${attr.color}10`
+                          }}
+                        >
+                          <Zap className="w-4 h-4" />
+                          エナジーを投資して進化を早める
+                        </button>
+                      )}
                     </div>
                   </div>
                 );
@@ -1174,6 +1207,24 @@ export default function MyPage() {
         currentStreak={profile.streak.current}
         maxStreak={profile.streak.max}
       />
+
+      {/* エナジー投資モーダル */}
+      {activeGuardianId && showEnergyModal && (
+        <EnergyInvestmentModal
+          guardianId={activeGuardianId}
+          profile={profile}
+          userId={user.uid}
+          onClose={() => setShowEnergyModal(false)}
+          onSuccess={async () => {
+            setShowEnergyModal(false);
+            // プロファイルを再読み込み
+            const data = await getUserGuardianProfile(user.uid);
+            if (data) {
+              setProfile(data);
+            }
+          }}
+        />
+      )}
     </div>
   );
 }
