@@ -14,8 +14,7 @@ import { useEffect, useState } from "react";
 import { checkDailyLoginBonus, addLoginBonusToProfile, type LoginBonusResult } from "@/lib/daily-login-bonus";
 import { DailyLoginModal } from "@/components/daily-login-modal";
 import { motion, AnimatePresence } from "framer-motion";
-import { collection, query, where, onSnapshot } from "firebase/firestore";
-import { db } from "@/lib/firebase";
+import { subscribeToUnreadCount } from "@/lib/services/dm";
 
 // 完全公開ページ（認証不要・サイドバー非表示・ボトムナビ非表示）
 const publicPages = ["/login", "/register", "/verify-email", "/pending-approval", "/admin/login"];
@@ -319,32 +318,17 @@ function BottomNavigation() {
 
     console.log('📊 [DM Badge] リアルタイムリスナー開始:', userProfile.uid);
 
-    // 🔧 一時的な修正: readフィールドを使わず、全メッセージを取得（権限エラー回避）
-    // where("read", "==", false) はFirestoreセキュリティルールで許可されていないため削除
-    const q = query(
-      collection(db, "dm_messages"),
-      where("toUserId", "==", userProfile.uid)
-    );
-
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-      // クライアント側で未読フィルタリング
-      const unreadMessages = snapshot.docs.filter(doc => {
-        const data = doc.data();
-        return data.read !== true;  // true以外（false, undefined, null）を未読とする
-      });
-      const count = unreadMessages.length;
-      console.log(`📊 [DM Badge] 未読メッセージ数: ${count} (全体: ${snapshot.size}件)`);
+    // サービス層を使用して未読数を監視
+    const unsubscribe = subscribeToUnreadCount(userProfile.uid, (count) => {
+      console.log(`📊 [DM Badge] 未読メッセージ数: ${count}`);
       setUnreadDmCount(count);
-    }, (error) => {
-      console.error('❌ [DM Badge] リスナーエラー:', error);
-      setUnreadDmCount(0);
     });
 
     return () => {
       console.log('📊 [DM Badge] リスナー停止');
       unsubscribe();
     };
-  }, [userProfile?.uid]);  // userProfile.uid のみに依存
+  }, [userProfile?.uid]);
 
   return (
     <>

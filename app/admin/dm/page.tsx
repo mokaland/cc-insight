@@ -8,16 +8,9 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { MessageSquare, Send, Clock, User, Users } from "lucide-react";
 import {
-  collection,
-  query,
-  where,
-  orderBy,
-  getDocs,
-  addDoc,
-  serverTimestamp,
-  onSnapshot
-} from "firebase/firestore";
-import { db } from "@/lib/firebase";
+  subscribeToAdminDMWithUser,
+  sendAdminDMToUser,
+} from "@/lib/services/dm";
 import { getAllUsers } from "@/lib/firestore";
 
 import { DMMessage } from "@/lib/types";
@@ -82,30 +75,17 @@ export default function AdminDMPage() {
   }, [user, userProfile, router, loadUsers]);
 
   useEffect(() => {
-    if (!selectedUser) return;
+    if (!selectedUser || !user) return;
 
-    // リアルタイムでメッセージを監視
-    const q = query(
-      collection(db, "dm_messages"),
-      where("participants", "array-contains", user!.uid),
-      orderBy("createdAt", "asc")
+    // サービス層を使用してメッセージを監視
+    const unsubscribe = subscribeToAdminDMWithUser(
+      user.uid,
+      selectedUser.uid,
+      (msgs) => {
+        setMessages(msgs);
+        scrollToBottom();
+      }
     );
-
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-      const msgs: DMMessage[] = [];
-      snapshot.forEach((doc) => {
-        const data = doc.data();
-        // 選択中のユーザーとのメッセージのみ表示
-        if (data.fromUserId === selectedUser.uid || data.toUserId === selectedUser.uid) {
-          msgs.push({
-            id: doc.id,
-            ...data,
-          } as DMMessage);
-        }
-      });
-      setMessages(msgs);
-      scrollToBottom();
-    });
 
     return () => unsubscribe();
   }, [selectedUser, user]);
@@ -115,17 +95,13 @@ export default function AdminDMPage() {
 
     try {
       setSending(true);
-      await addDoc(collection(db, "dm_messages"), {
-        fromUserId: user.uid,
-        fromUserName: userProfile.displayName,
-        toUserId: selectedUser.uid,
-        toUserName: selectedUser.displayName,
-        message: newMessage.trim(),
-        isAdmin: true,
-        read: false, // 🆕 未読フラグ
-        participants: [user.uid, selectedUser.uid], // 両方のUIDを配列に
-        createdAt: serverTimestamp(),
-      });
+      await sendAdminDMToUser(
+        user.uid,
+        userProfile.displayName,
+        selectedUser.uid,
+        selectedUser.displayName,
+        newMessage
+      );
       setNewMessage("");
     } catch (error) {
       console.error("メッセージ送信エラー:", error);
