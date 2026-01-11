@@ -280,45 +280,54 @@ export default function SmartphoneTeamPage() {
         </GlassCard>
       </div>
 
-      {/* 🆕 投稿URL一括確認セクション */}
-      {totalUrlCount > 0 && (
-        <GlassCard glowColor="#3b82f6" className="p-6">
-          <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center gap-2">
-              <ExternalLink className="h-5 w-5 text-blue-400" />
-              <h3 className="text-lg font-semibold">投稿URL一括確認</h3>
-              <span className="text-sm text-muted-foreground">（{totalUrlCount}件）</span>
-            </div>
+      {/* 🆕 投稿URL一括確認セクション（常に表示） */}
+      <GlassCard glowColor="#3b82f6" className="p-4 md:p-6">
+        {/* ヘッダー（モバイル対応：縦並び） */}
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 mb-4">
+          <div className="flex items-center gap-2">
+            <ExternalLink className="h-5 w-5 text-blue-400" />
+            <h3 className="text-lg font-semibold">投稿URL一括確認</h3>
+            <span className="text-sm text-muted-foreground">（{totalUrlCount}件）</span>
+          </div>
+          {totalUrlCount > 0 && (
             <Button
               onClick={openAllUrls}
-              className="bg-gradient-to-r from-blue-500 to-cyan-500 text-white hover:from-blue-600 hover:to-cyan-600"
+              className="w-full md:w-auto bg-gradient-to-r from-blue-500 to-cyan-500 text-white hover:from-blue-600 hover:to-cyan-600"
             >
               <ExternalLink className="h-4 w-4 mr-2" />
               全{totalUrlCount}件を一括で開く
             </Button>
-          </div>
+          )}
+        </div>
 
+        {totalUrlCount === 0 ? (
+          <div className="text-center py-8 text-muted-foreground">
+            <ExternalLink className="w-8 h-8 mx-auto mb-2 opacity-50" />
+            <p>この期間の投稿URLはありません</p>
+            <p className="text-xs mt-1">メンバーが日報で投稿URLを報告すると表示されます</p>
+          </div>
+        ) : (
           <div className="space-y-3">
             {memberPostUrls.map((member) => (
               <div
                 key={member.name}
                 className="border border-white/10 rounded-xl overflow-hidden bg-white/5"
               >
-                {/* メンバーヘッダー */}
+                {/* メンバーヘッダー（モバイル対応） */}
                 <div
-                  className="flex items-center justify-between p-4 cursor-pointer hover:bg-white/5 transition-colors"
+                  className="flex flex-col md:flex-row md:items-center justify-between p-3 md:p-4 cursor-pointer hover:bg-white/5 transition-colors gap-2"
                   onClick={() => setExpandedMember(expandedMember === member.name ? null : member.name)}
                 >
                   <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 rounded-full bg-blue-500/20 flex items-center justify-center text-blue-400 font-bold">
+                    <div className="w-8 h-8 rounded-full bg-blue-500/20 flex items-center justify-center text-blue-400 font-bold flex-shrink-0">
                       {member.name.charAt(0)}
                     </div>
-                    <div>
-                      <p className="font-medium">{member.name}</p>
+                    <div className="min-w-0">
+                      <p className="font-medium truncate">{member.name}</p>
                       <p className="text-xs text-muted-foreground">{member.urls.length}件の投稿URL</p>
                     </div>
                   </div>
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2 ml-11 md:ml-0">
                     <Button
                       size="sm"
                       variant="outline"
@@ -326,54 +335,46 @@ export default function SmartphoneTeamPage() {
                         e.stopPropagation();
                         openMemberUrls(member.name);
                       }}
-                      className="text-blue-400 border-blue-400/30 hover:bg-blue-400/10"
+                      className="text-blue-400 border-blue-400/30 hover:bg-blue-400/10 text-xs md:text-sm"
                     >
                       <ExternalLink className="h-3 w-3 mr-1" />
                       一括で開く
                     </Button>
                     {expandedMember === member.name ? (
-                      <ChevronUp className="h-5 w-5 text-muted-foreground" />
+                      <ChevronUp className="h-5 w-5 text-muted-foreground flex-shrink-0" />
                     ) : (
-                      <ChevronDown className="h-5 w-5 text-muted-foreground" />
+                      <ChevronDown className="h-5 w-5 text-muted-foreground flex-shrink-0" />
                     )}
                   </div>
                 </div>
 
-                {/* URL一覧（展開時） */}
+                {/* URL一覧（展開時・モバイル対応） */}
                 {expandedMember === member.name && (
-                  <div className="border-t border-white/10 p-4 space-y-2 bg-black/20">
+                  <div className="border-t border-white/10 p-3 md:p-4 space-y-2 bg-black/20">
                     {member.urls.map((item, idx) => (
-                      <div
+                      <a
                         key={idx}
-                        className="flex items-center gap-3 p-2 rounded-lg bg-white/5 hover:bg-white/10 transition-colors group"
+                        href={item.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-start md:items-center gap-2 p-2 rounded-lg bg-white/5 hover:bg-white/10 transition-colors"
                       >
-                        <span className="text-xs text-muted-foreground min-w-[80px]">
+                        <span className="text-xs text-muted-foreground min-w-[70px] flex-shrink-0">
                           {item.date}
                         </span>
-                        <a
-                          href={item.url}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="flex-1 text-sm text-blue-400 hover:text-blue-300 truncate"
-                        >
+                        <span className="flex-1 text-sm text-blue-400 hover:text-blue-300 break-all">
                           {item.url}
-                        </a>
-                        <ExternalLink className="h-4 w-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
-                      </div>
+                        </span>
+                        <ExternalLink className="h-4 w-4 text-blue-400 flex-shrink-0" />
+                      </a>
                     ))}
                   </div>
                 )}
               </div>
             ))}
           </div>
-
-          {memberPostUrls.length === 0 && (
-            <div className="text-center py-8 text-muted-foreground">
-              <p>この期間の投稿URLはありません</p>
-            </div>
-          )}
-        </GlassCard>
-      )}
+        )}
+      </GlassCard>
 
       {/* Achievement Section */}
       <div className="grid gap-6 md:grid-cols-2">
