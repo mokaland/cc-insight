@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { CircularProgress } from "@/components/circular-progress";
 import { GlassCard, TodayProgress, NeonGauge } from "@/components/glass-card";
-import { FileText, Heart, MessageCircle, Users, Target, Calendar, TrendingUp, Twitter, ExternalLink, ChevronDown, ChevronUp, Copy, CheckCircle, Play, RotateCcw } from "lucide-react";
+import { FileText, Heart, MessageCircle, Users, Target, Calendar, TrendingUp, Twitter, ExternalLink, ChevronDown, ChevronUp, Copy, CheckCircle, Play } from "lucide-react";
 import { getReportsByPeriod, calculateTeamStats, teams, Report } from "@/lib/firestore";
 
 const team = teams.find((t) => t.id === "buppan")!;
@@ -118,9 +118,6 @@ export default function SmartphoneTeamPage() {
   // コピー完了メッセージの状態
   const [copyMessage, setCopyMessage] = useState<string | null>(null);
 
-  // 順次オープン用の状態（PCで1クリック=1URL開く）
-  const [openIndex, setOpenIndex] = useState<{ member?: string; index: number } | null>(null);
-
   // メンバー個別のURLをクリップボードにコピー
   const copyMemberUrls = async (memberName: string) => {
     const member = memberPostUrls.find(m => m.name === memberName);
@@ -158,65 +155,66 @@ export default function SmartphoneTeamPage() {
     }
   };
 
-  // PC用：メンバーのURLを1つずつ順次開く（クリックするたびに次のURLが開く）
-  const openMemberUrlsSequentially = (memberName: string) => {
+  // 自動オープン中かどうかの状態
+  const [isAutoOpening, setIsAutoOpening] = useState(false);
+
+  // PC用：メンバーのURLを自動で順次開く（ボタン1回で全て開く）
+  const openMemberUrlsAuto = (memberName: string) => {
     const member = memberPostUrls.find(m => m.name === memberName);
     if (!member || member.urls.length === 0) return;
+    if (isAutoOpening) return; // 既に自動オープン中なら何もしない
 
-    // 現在のインデックスを取得（このメンバーで初めてなら0から）
-    const currentIndex = openIndex?.member === memberName ? openIndex.index : 0;
+    setIsAutoOpening(true);
+    setCopyMessage(`${member.name}さんの${member.urls.length}件を自動で開いています...`);
 
-    if (currentIndex < member.urls.length) {
-      // URLを開く
-      window.open(member.urls[currentIndex].url, "_blank");
-      // 次のインデックスへ
-      const nextIndex = currentIndex + 1;
-      if (nextIndex >= member.urls.length) {
-        // 全て開き終わったらリセット
-        setOpenIndex(null);
+    // 最初の1つは即座に開く（ユーザーアクションとして）
+    window.open(member.urls[0].url, "_blank");
+
+    // 残りを500msごとに順次開く
+    let index = 1;
+    const interval = setInterval(() => {
+      if (index < member.urls.length) {
+        window.open(member.urls[index].url, "_blank");
+        index++;
+      } else {
+        clearInterval(interval);
+        setIsAutoOpening(false);
         setCopyMessage(`${member.name}さんの全${member.urls.length}件を開きました`);
         setTimeout(() => setCopyMessage(null), 3000);
-      } else {
-        setOpenIndex({ member: memberName, index: nextIndex });
-        setCopyMessage(`${member.name}さん: ${nextIndex}/${member.urls.length}件目を開きました（続けてクリック）`);
       }
-    }
+    }, 500);
   };
 
-  // PC用：全URLを1つずつ順次開く
-  const openAllUrlsSequentially = () => {
-    const allUrls: { name: string; url: string }[] = [];
+  // PC用：全URLを自動で順次開く（ボタン1回で全て開く）
+  const openAllUrlsAuto = () => {
+    const allUrls: string[] = [];
     memberPostUrls.forEach(member => {
       member.urls.forEach(({ url }) => {
-        allUrls.push({ name: member.name, url });
+        allUrls.push(url);
       });
     });
     if (allUrls.length === 0) return;
+    if (isAutoOpening) return; // 既に自動オープン中なら何もしない
 
-    // 現在のインデックスを取得（初めてなら0から）
-    const currentIndex = openIndex?.member === 'all' ? openIndex.index : 0;
+    setIsAutoOpening(true);
+    setCopyMessage(`全${allUrls.length}件を自動で開いています...`);
 
-    if (currentIndex < allUrls.length) {
-      // URLを開く
-      window.open(allUrls[currentIndex].url, "_blank");
-      // 次のインデックスへ
-      const nextIndex = currentIndex + 1;
-      if (nextIndex >= allUrls.length) {
-        // 全て開き終わったらリセット
-        setOpenIndex(null);
+    // 最初の1つは即座に開く（ユーザーアクションとして）
+    window.open(allUrls[0], "_blank");
+
+    // 残りを500msごとに順次開く
+    let index = 1;
+    const interval = setInterval(() => {
+      if (index < allUrls.length) {
+        window.open(allUrls[index], "_blank");
+        index++;
+      } else {
+        clearInterval(interval);
+        setIsAutoOpening(false);
         setCopyMessage(`全${allUrls.length}件を開きました`);
         setTimeout(() => setCopyMessage(null), 3000);
-      } else {
-        setOpenIndex({ member: 'all', index: nextIndex });
-        setCopyMessage(`${nextIndex}/${allUrls.length}件目を開きました（続けてクリック）`);
       }
-    }
-  };
-
-  // インデックスをリセット
-  const resetOpenIndex = () => {
-    setOpenIndex(null);
-    setCopyMessage(null);
+    }, 500);
   };
 
   // 全投稿URL数を計算
@@ -374,30 +372,15 @@ export default function SmartphoneTeamPage() {
           </div>
           {totalUrlCount > 0 && (
             <div className="flex flex-col md:flex-row gap-2 w-full md:w-auto">
-              {/* PC用：順次開くボタン（1クリック=1URL）*/}
-              <div className="hidden md:flex items-center gap-2">
-                {openIndex?.member === 'all' && (
-                  <Button
-                    onClick={resetOpenIndex}
-                    variant="outline"
-                    size="sm"
-                    className="border-red-400/30 text-red-400 hover:bg-red-400/10"
-                  >
-                    <RotateCcw className="h-4 w-4 mr-1" />
-                    リセット
-                  </Button>
-                )}
-                <Button
-                  onClick={openAllUrlsSequentially}
-                  className="bg-gradient-to-r from-green-500 to-emerald-500 text-white hover:from-green-600 hover:to-emerald-600"
-                >
-                  <Play className="h-4 w-4 mr-2" />
-                  {openIndex?.member === 'all'
-                    ? `次を開く (${openIndex.index + 1}/${totalUrlCount})`
-                    : `順次開く (${totalUrlCount}件)`
-                  }
-                </Button>
-              </div>
+              {/* PC用：自動で全て開くボタン */}
+              <Button
+                onClick={openAllUrlsAuto}
+                disabled={isAutoOpening}
+                className="hidden md:flex bg-gradient-to-r from-green-500 to-emerald-500 text-white hover:from-green-600 hover:to-emerald-600"
+              >
+                <Play className="h-4 w-4 mr-2" />
+                {isAutoOpening ? '開いています...' : `全${totalUrlCount}件を開く`}
+              </Button>
               {/* コピーボタン（モバイル・PC共通） */}
               <Button
                 onClick={copyAllUrls}
@@ -438,21 +421,19 @@ export default function SmartphoneTeamPage() {
                     </div>
                   </div>
                   <div className="flex items-center gap-2 ml-11 md:ml-0">
-                    {/* PC用：個別メンバーの順次開くボタン */}
+                    {/* PC用：個別メンバーの自動で開くボタン */}
                     <Button
                       size="sm"
                       variant="outline"
                       onClick={(e) => {
                         e.stopPropagation();
-                        openMemberUrlsSequentially(member.name);
+                        openMemberUrlsAuto(member.name);
                       }}
+                      disabled={isAutoOpening}
                       className="hidden md:flex text-green-400 border-green-400/30 hover:bg-green-400/10 text-xs md:text-sm"
                     >
                       <Play className="h-3 w-3 mr-1" />
-                      {openIndex?.member === member.name
-                        ? `次へ (${openIndex.index + 1}/${member.urls.length})`
-                        : `順次開く`
-                      }
+                      {member.urls.length}件を開く
                     </Button>
                     <Button
                       size="sm"
