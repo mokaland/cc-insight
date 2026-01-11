@@ -314,16 +314,22 @@ function BottomNavigation() {
   useEffect(() => {
     if (!userProfile?.uid) return;
 
-    // dm_messagesから未読メッセージをリアルタイム取得
-    // 自分宛て かつ 未読 のメッセージ
+    // dm_messagesから自分宛てのメッセージをリアルタイム取得
+    // read フィールドが存在しない古いメッセージにも対応するため、
+    // クライアント側でフィルタリング
     const q = query(
       collection(db, "dm_messages"),
-      where("toUserId", "==", userProfile.uid),
-      where("read", "==", false)
+      where("toUserId", "==", userProfile.uid)
     );
 
     const unsubscribe = onSnapshot(q, (snapshot) => {
-      setUnreadDmCount(snapshot.size);
+      // read が false または存在しないメッセージをカウント
+      const unreadCount = snapshot.docs.filter(doc => {
+        const data = doc.data();
+        return data.read !== true; // true 以外（false, undefined, null）を未読とする
+      }).length;
+
+      setUnreadDmCount(unreadCount);
     });
 
     return () => unsubscribe();
