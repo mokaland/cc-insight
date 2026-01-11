@@ -1,8 +1,8 @@
-import { 
-  collection, 
-  query, 
-  where, 
-  orderBy, 
+import {
+  collection,
+  query,
+  where,
+  orderBy,
   limit,
   onSnapshot,
   getDocs,
@@ -10,6 +10,7 @@ import {
   deleteDoc,
   doc,
   setDoc,
+  updateDoc,
   serverTimestamp,
   Timestamp,
   DocumentData
@@ -1764,12 +1765,12 @@ export async function saveSnsAccount(
       submittedAt: trimmedUrl ? serverTimestamp() as unknown as Timestamp : undefined,
     };
 
-    // Firestoreに保存
-    await setDoc(doc(db, "users", userId), {
-      snsAccounts: {
-        [snsKey]: newSnsData
-      }
-    }, { merge: true });
+    // Firestoreに保存（ドット表記でネストフィールドを個別に更新）
+    // merge: trueだけではネストオブジェクトは完全に置き換えられるため、
+    // 明示的にネストされたキーを指定する
+    await updateDoc(doc(db, "users", userId), {
+      [`snsAccounts.${snsKey}`]: newSnsData
+    });
 
     return {
       success: true,

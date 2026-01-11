@@ -116,16 +116,20 @@ export default function SmartphoneTeamPage() {
   };
 
   // メンバー個別のURL一括オープン
+  // ブラウザのポップアップブロッカー対策: 遅延を入れて順次開く
   const openMemberUrls = (memberName: string) => {
     const member = memberPostUrls.find(m => m.name === memberName);
     if (member) {
-      member.urls.forEach(({ url }) => {
-        window.open(url, "_blank");
+      member.urls.forEach(({ url }, index) => {
+        setTimeout(() => {
+          window.open(url, "_blank");
+        }, index * 300); // 300ms間隔で順次開く
       });
     }
   };
 
   // 期間全体のURL一括オープン
+  // ブラウザのポップアップブロッカー対策: 遅延を入れて順次開く
   const openAllUrls = () => {
     const allUrls: string[] = [];
     memberPostUrls.forEach(member => {
@@ -133,8 +137,10 @@ export default function SmartphoneTeamPage() {
         allUrls.push(url);
       });
     });
-    allUrls.forEach(url => {
-      window.open(url, "_blank");
+    allUrls.forEach((url, index) => {
+      setTimeout(() => {
+        window.open(url, "_blank");
+      }, index * 300); // 300ms間隔で順次開く
     });
   };
 
