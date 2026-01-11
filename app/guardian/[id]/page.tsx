@@ -34,7 +34,7 @@ import {
   Save,
   X,
 } from "lucide-react";
-import { Timestamp } from "firebase/firestore";
+import { Timestamp } from "@/lib/types";
 
 export default function GuardianDetailPage() {
   const { user } = useAuth();
@@ -292,13 +292,12 @@ export default function GuardianDetailPage() {
                       }
                     }}
                     disabled={!isThisUnlocked}
-                    className={`w-10 h-10 rounded-full font-bold transition-all ${
-                      selectedStage === stage
+                    className={`w-10 h-10 rounded-full font-bold transition-all ${selectedStage === stage
                         ? "text-white scale-110"
                         : isThisUnlocked
-                        ? "bg-slate-700 text-slate-300 hover:bg-slate-600"
-                        : "bg-slate-800 text-slate-600 cursor-not-allowed"
-                    }`}
+                          ? "bg-slate-700 text-slate-300 hover:bg-slate-600"
+                          : "bg-slate-800 text-slate-600 cursor-not-allowed"
+                      }`}
                     style={{
                       backgroundColor:
                         selectedStage === stage ? attr.color : undefined,
@@ -491,11 +490,10 @@ export default function GuardianDetailPage() {
             {unlockedStories.map((storyData) => (
               <div
                 key={storyData.stage}
-                className={`p-4 rounded-lg border-l-4 ${
-                  selectedStage === storyData.stage
+                className={`p-4 rounded-lg border-l-4 ${selectedStage === storyData.stage
                     ? "bg-white/10"
                     : "bg-slate-800/30"
-                }`}
+                  }`}
                 style={{
                   borderColor:
                     selectedStage === storyData.stage

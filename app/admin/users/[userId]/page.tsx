@@ -2,10 +2,9 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { User, teams, Report, getUserStats, getUserGuardianProfile, getUserSnsAccounts } from "@/lib/firestore";
+import { getUserById, getUserReports, getUserGuardianProfile, getUserSnsAccounts, teams, User } from "@/lib/services/user";
+import { Report } from "@/lib/types";
 import { SnsAccounts, SnsAccountApproval } from "@/lib/guardian-collection";
-import { getDoc, doc, collection, query, where, orderBy, getDocs } from "firebase/firestore";
-import { db } from "@/lib/firebase";
 import { GlassCard } from "@/components/glass-card";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -60,11 +59,11 @@ export default function UserDetailPage() {
     try {
       setLoading(true);
 
-      // ユーザー情報を取得
-      const userDoc = await getDoc(doc(db, "users", userId));
-      if (userDoc.exists()) {
-        setUser({ uid: userDoc.id, ...userDoc.data() } as User);
-        setBadges(userDoc.data().badges || []);
+      // ユーザー情報を取得 (Service層を使用)
+      const userData = await getUserById(userId);
+      if (userData) {
+        setUser(userData as User);
+        setBadges((userData as any).badges || []);
       }
 
       // 🔧 守護神データを取得
@@ -73,12 +72,12 @@ export default function UserDetailPage() {
         if (guardianProfile && guardianProfile.activeGuardianId) {
           const activeId = guardianProfile.activeGuardianId as GuardianId;
           const instance = guardianProfile.guardians[activeId];
-          
+
           if (instance) {
             const guardian = GUARDIANS[activeId];
             const attr = ATTRIBUTES[guardian.attribute];
             const stage = EVOLUTION_STAGES[instance.stage];
-            
+
             setGuardianData({
               name: guardian.name,
               stageName: stage.name,
@@ -94,7 +93,7 @@ export default function UserDetailPage() {
         console.error("守護神データ取得エラー:", error);
       }
 
-      // SNSアカウント情報を取得
+      // SNSアカウント情報を取得 (Service層を使用)
       try {
         const snsData = await getUserSnsAccounts(userId);
         setSnsAccounts(snsData);
@@ -102,18 +101,8 @@ export default function UserDetailPage() {
         console.error("SNSアカウント取得エラー:", error);
       }
 
-      // レポートを取得
-      const q = query(
-        collection(db, "reports"),
-        where("userId", "==", userId),
-        orderBy("createdAt", "desc")
-      );
-      
-      const snapshot = await getDocs(q);
-      const reportsData: Report[] = [];
-      snapshot.forEach((doc) => {
-        reportsData.push({ id: doc.id, ...doc.data() } as Report);
-      });
+      // レポートを取得 (Service層を使用)
+      const reportsData = await getUserReports(userId);
       setReports(reportsData);
 
       // 統計を計算
