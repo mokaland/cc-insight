@@ -76,14 +76,18 @@ export default function MemberDMPage() {
   }, [user, userProfile, router]);
 
   // 🆕 ページを開いたときに未読メッセージを既読にする
+  // ⚠️ 一時的に無効化: Firestoreセキュリティルールが受信者による更新を許可していないため
+  // Phase 2でセキュリティルール修正後に再有効化予定
   useEffect(() => {
     if (!user?.uid) return;
 
     const markMessagesAsRead = async () => {
       try {
         console.log('📖 [DM Read] 既読処理開始:', user.uid);
+        console.warn('⚠️ [DM Read] 既読処理は一時的に無効化されています（Firestore権限エラーのため）');
 
-        // 自分宛ての未読メッセージを取得
+        // 🔧 一時的にコメントアウト: Firestore権限エラーを回避
+        /*
         const q = query(
           collection(db, "dm_messages"),
           where("toUserId", "==", user.uid),
@@ -110,6 +114,7 @@ export default function MemberDMPage() {
 
         await batch.commit();
         console.log(`✅ [DM Read] ${snapshot.size}件のメッセージを既読にしました`);
+        */
       } catch (error) {
         console.error("❌ [DM Read] 既読処理エラー:", error);
       }

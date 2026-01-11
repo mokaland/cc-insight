@@ -319,16 +319,21 @@ function BottomNavigation() {
 
     console.log('📊 [DM Badge] リアルタイムリスナー開始:', userProfile.uid);
 
-    // 🔧 修正: Firestoreクエリで未読のみを取得（サーバー側フィルタリング）
+    // 🔧 一時的な修正: readフィールドを使わず、全メッセージを取得（権限エラー回避）
+    // where("read", "==", false) はFirestoreセキュリティルールで許可されていないため削除
     const q = query(
       collection(db, "dm_messages"),
-      where("toUserId", "==", userProfile.uid),
-      where("read", "==", false)  // 未読のみを取得
+      where("toUserId", "==", userProfile.uid)
     );
 
     const unsubscribe = onSnapshot(q, (snapshot) => {
-      const count = snapshot.size;
-      console.log(`📊 [DM Badge] 未読メッセージ数: ${count}`);
+      // クライアント側で未読フィルタリング
+      const unreadMessages = snapshot.docs.filter(doc => {
+        const data = doc.data();
+        return data.read !== true;  // true以外（false, undefined, null）を未読とする
+      });
+      const count = unreadMessages.length;
+      console.log(`📊 [DM Badge] 未読メッセージ数: ${count} (全体: ${snapshot.size}件)`);
       setUnreadDmCount(count);
     }, (error) => {
       console.error('❌ [DM Badge] リスナーエラー:', error);
