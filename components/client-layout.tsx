@@ -312,28 +312,34 @@ function BottomNavigation() {
   const [unreadDmCount, setUnreadDmCount] = useState(0);
 
   useEffect(() => {
-    if (!userProfile?.uid) return;
+    if (!userProfile?.uid) {
+      setUnreadDmCount(0);
+      return;
+    }
 
-    // dm_messagesから自分宛てのメッセージをリアルタイム取得
-    // read フィールドが存在しない古いメッセージにも対応するため、
-    // クライアント側でフィルタリング
+    console.log('📊 [DM Badge] リアルタイムリスナー開始:', userProfile.uid);
+
+    // 🔧 修正: Firestoreクエリで未読のみを取得（サーバー側フィルタリング）
     const q = query(
       collection(db, "dm_messages"),
-      where("toUserId", "==", userProfile.uid)
+      where("toUserId", "==", userProfile.uid),
+      where("read", "==", false)  // 未読のみを取得
     );
 
     const unsubscribe = onSnapshot(q, (snapshot) => {
-      // read が false または存在しないメッセージをカウント
-      const unreadCount = snapshot.docs.filter(doc => {
-        const data = doc.data();
-        return data.read !== true; // true 以外（false, undefined, null）を未読とする
-      }).length;
-
-      setUnreadDmCount(unreadCount);
+      const count = snapshot.size;
+      console.log(`📊 [DM Badge] 未読メッセージ数: ${count}`);
+      setUnreadDmCount(count);
+    }, (error) => {
+      console.error('❌ [DM Badge] リスナーエラー:', error);
+      setUnreadDmCount(0);
     });
 
-    return () => unsubscribe();
-  }, [userProfile]);
+    return () => {
+      console.log('📊 [DM Badge] リスナー停止');
+      unsubscribe();
+    };
+  }, [userProfile?.uid]);  // userProfile.uid のみに依存
 
   return (
     <>

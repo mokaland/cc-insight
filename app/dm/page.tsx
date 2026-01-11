@@ -77,10 +77,12 @@ export default function MemberDMPage() {
 
   // 🆕 ページを開いたときに未読メッセージを既読にする
   useEffect(() => {
-    if (!user) return;
+    if (!user?.uid) return;
 
     const markMessagesAsRead = async () => {
       try {
+        console.log('📖 [DM Read] 既読処理開始:', user.uid);
+
         // 自分宛ての未読メッセージを取得
         const q = query(
           collection(db, "dm_messages"),
@@ -91,11 +93,11 @@ export default function MemberDMPage() {
         const snapshot = await getDocs(q);
 
         if (snapshot.empty) {
-          console.log('✅ 未読メッセージはありません');
+          console.log('✅ [DM Read] 未読メッセージなし');
           return;
         }
 
-        console.log(`📝 ${snapshot.size}件の未読メッセージを既読処理中...`);
+        console.log(`📝 [DM Read] ${snapshot.size}件の未読メッセージを既読処理中...`);
 
         // バッチ処理で一括更新
         const batch = writeBatch(db);
@@ -107,19 +109,19 @@ export default function MemberDMPage() {
         });
 
         await batch.commit();
-        console.log(`✅ ${snapshot.size}件のメッセージを既読にしました`);
+        console.log(`✅ [DM Read] ${snapshot.size}件のメッセージを既読にしました`);
       } catch (error) {
-        console.error("既読処理エラー:", error);
+        console.error("❌ [DM Read] 既読処理エラー:", error);
       }
     };
 
     // 少し遅延させて実行（メッセージ読み込み完了後）
     const timer = setTimeout(() => {
       markMessagesAsRead();
-    }, 1500); // 1.5秒に延長（確実にメッセージが読み込まれてから）
+    }, 1000); // 1秒に短縮
 
     return () => clearTimeout(timer);
-  }, [user, messages]); // messagesが変更されたときも再実行
+  }, [user?.uid]);  // 🔧 修正: user?.uid のみに依存（messagesを削除）
 
   async function sendMessage() {
     if (!newMessage.trim() || !user || !userProfile) return;

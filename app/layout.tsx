@@ -32,6 +32,12 @@ export const metadata: Metadata = {
       { url: "/apple-touch-icon.png", sizes: "180x180", type: "image/png" },
     ],
   },
+  // 🔧 PWA対応: キャッシュを無効化し、常に最新コードを取得
+  other: {
+    "Cache-Control": "no-cache, no-store, must-revalidate",
+    "Pragma": "no-cache",
+    "Expires": "0",
+  },
 };
 
 // 🆕 viewport設定を専用エクスポートに移行
