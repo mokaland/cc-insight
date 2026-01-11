@@ -38,6 +38,8 @@ export interface CreateReportParams {
     date: string;
     userId?: string;
     userEmail?: string;
+    realName?: string;
+    modifyCount?: number;
     // Shorts系
     accountId?: string;
     igViews?: number;
