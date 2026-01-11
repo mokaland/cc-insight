@@ -136,9 +136,14 @@ service cloud.firestore {
 
     // dm_messages collection (管理者とメンバー間のDM)
     match /dm_messages/{messageId} {
-      // 読み取り: 参加者または管理者
+      // 読み取り: 受信者、送信者、参加者、または管理者
+      // 🔧 修正: participants フィールドがない古いメッセージにも対応
       allow read: if isAuthenticated() &&
-                     (request.auth.uid in resource.data.participants || isAdmin());
+                     (request.auth.uid == resource.data.toUserId ||      // 受信者
+                      request.auth.uid == resource.data.fromUserId ||    // 送信者
+                      (resource.data.keys().hasAll(['participants']) &&  // participants存在チェック
+                       request.auth.uid in resource.data.participants) ||
+                      isAdmin());
 
       // 作成: 承認済みユーザーまたは管理者のみ、参加者に自分が含まれる
       allow create: if isAuthenticated() &&
