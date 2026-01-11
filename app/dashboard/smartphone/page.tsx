@@ -4,8 +4,8 @@ import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { CircularProgress } from "@/components/circular-progress";
 import { GlassCard, TodayProgress, NeonGauge } from "@/components/glass-card";
-import { FileText, Heart, MessageCircle, Users, Target, Calendar, TrendingUp, Twitter } from "lucide-react";
-import { getReportsByPeriod, calculateTeamStats, teams } from "@/lib/firestore";
+import { FileText, Heart, MessageCircle, Users, Target, Calendar, TrendingUp, Twitter, ExternalLink, ChevronDown, ChevronUp } from "lucide-react";
+import { getReportsByPeriod, calculateTeamStats, teams, Report } from "@/lib/firestore";
 
 const team = teams.find((t) => t.id === "buppan")!;
 
@@ -20,6 +20,12 @@ const periodOptions = [
   { id: "custom", label: "期間指定" },
 ];
 
+// メンバーごとの投稿URL情報
+interface MemberPostUrls {
+  name: string;
+  urls: { date: string; url: string }[];
+}
+
 export default function SmartphoneTeamPage() {
   const [period, setPeriod] = useState("week");
   const [teamStats, setTeamStats] = useState<any>(null);
@@ -28,11 +34,16 @@ export default function SmartphoneTeamPage() {
   const [customEndDate, setCustomEndDate] = useState("");
   const [showCustomDatePicker, setShowCustomDatePicker] = useState(false);
 
+  // 投稿URL関連の状態
+  const [reports, setReports] = useState<Report[]>([]);
+  const [memberPostUrls, setMemberPostUrls] = useState<MemberPostUrls[]>([]);
+  const [expandedMember, setExpandedMember] = useState<string | null>(null);
+
   useEffect(() => {
     const loadData = async () => {
       setLoading(true);
       try {
-        let reports;
+        let fetchedReports: Report[];
 
         if (period === "custom" && customStartDate && customEndDate) {
           const { collection: dbCollection, query, where, orderBy, getDocs } = await import("firebase/firestore");
@@ -47,15 +58,37 @@ export default function SmartphoneTeamPage() {
           );
 
           const snapshot = await getDocs(q);
-          reports = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as any));
+          fetchedReports = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Report));
         } else if (period === "custom") {
-          reports = await getReportsByPeriod("week", "buppan");
+          fetchedReports = await getReportsByPeriod("week", "buppan");
         } else {
-          reports = await getReportsByPeriod(period, "buppan");
+          fetchedReports = await getReportsByPeriod(period, "buppan");
         }
 
-        const stats = calculateTeamStats(reports, "buppan");
+        setReports(fetchedReports);
+        const stats = calculateTeamStats(fetchedReports, "buppan");
         setTeamStats(stats);
+
+        // メンバーごとの投稿URLを抽出
+        const urlsByMember: { [name: string]: { date: string; url: string }[] } = {};
+        fetchedReports.forEach(report => {
+          if (report.postUrls && report.postUrls.length > 0) {
+            if (!urlsByMember[report.name]) {
+              urlsByMember[report.name] = [];
+            }
+            report.postUrls.forEach(url => {
+              if (url.trim()) {
+                urlsByMember[report.name].push({ date: report.date, url });
+              }
+            });
+          }
+        });
+
+        const memberUrlsList: MemberPostUrls[] = Object.entries(urlsByMember)
+          .map(([name, urls]) => ({ name, urls }))
+          .sort((a, b) => b.urls.length - a.urls.length);
+
+        setMemberPostUrls(memberUrlsList);
       } catch (error) {
         console.error("データ取得エラー:", error);
       } finally {
@@ -82,6 +115,32 @@ export default function SmartphoneTeamPage() {
     }
   };
 
+  // メンバー個別のURL一括オープン
+  const openMemberUrls = (memberName: string) => {
+    const member = memberPostUrls.find(m => m.name === memberName);
+    if (member) {
+      member.urls.forEach(({ url }) => {
+        window.open(url, "_blank");
+      });
+    }
+  };
+
+  // 期間全体のURL一括オープン
+  const openAllUrls = () => {
+    const allUrls: string[] = [];
+    memberPostUrls.forEach(member => {
+      member.urls.forEach(({ url }) => {
+        allUrls.push(url);
+      });
+    });
+    allUrls.forEach(url => {
+      window.open(url, "_blank");
+    });
+  };
+
+  // 全投稿URL数を計算
+  const totalUrlCount = memberPostUrls.reduce((sum, m) => sum + m.urls.length, 0);
+
   if (loading || !teamStats) {
     return (
       <div className="flex items-center justify-center h-screen">
@@ -102,7 +161,7 @@ export default function SmartphoneTeamPage() {
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div>
           <h1 className="text-3xl font-bold flex items-center gap-3">
-            <span 
+            <span
               className="w-4 h-4 rounded-full animate-pulse"
               style={{ backgroundColor: team.color, boxShadow: `0 0 20px ${team.color}` }}
             />
@@ -215,6 +274,101 @@ export default function SmartphoneTeamPage() {
         </GlassCard>
       </div>
 
+      {/* 🆕 投稿URL一括確認セクション */}
+      {totalUrlCount > 0 && (
+        <GlassCard glowColor="#3b82f6" className="p-6">
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-2">
+              <ExternalLink className="h-5 w-5 text-blue-400" />
+              <h3 className="text-lg font-semibold">投稿URL一括確認</h3>
+              <span className="text-sm text-muted-foreground">（{totalUrlCount}件）</span>
+            </div>
+            <Button
+              onClick={openAllUrls}
+              className="bg-gradient-to-r from-blue-500 to-cyan-500 text-white hover:from-blue-600 hover:to-cyan-600"
+            >
+              <ExternalLink className="h-4 w-4 mr-2" />
+              全{totalUrlCount}件を一括で開く
+            </Button>
+          </div>
+
+          <div className="space-y-3">
+            {memberPostUrls.map((member) => (
+              <div
+                key={member.name}
+                className="border border-white/10 rounded-xl overflow-hidden bg-white/5"
+              >
+                {/* メンバーヘッダー */}
+                <div
+                  className="flex items-center justify-between p-4 cursor-pointer hover:bg-white/5 transition-colors"
+                  onClick={() => setExpandedMember(expandedMember === member.name ? null : member.name)}
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 rounded-full bg-blue-500/20 flex items-center justify-center text-blue-400 font-bold">
+                      {member.name.charAt(0)}
+                    </div>
+                    <div>
+                      <p className="font-medium">{member.name}</p>
+                      <p className="text-xs text-muted-foreground">{member.urls.length}件の投稿URL</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        openMemberUrls(member.name);
+                      }}
+                      className="text-blue-400 border-blue-400/30 hover:bg-blue-400/10"
+                    >
+                      <ExternalLink className="h-3 w-3 mr-1" />
+                      一括で開く
+                    </Button>
+                    {expandedMember === member.name ? (
+                      <ChevronUp className="h-5 w-5 text-muted-foreground" />
+                    ) : (
+                      <ChevronDown className="h-5 w-5 text-muted-foreground" />
+                    )}
+                  </div>
+                </div>
+
+                {/* URL一覧（展開時） */}
+                {expandedMember === member.name && (
+                  <div className="border-t border-white/10 p-4 space-y-2 bg-black/20">
+                    {member.urls.map((item, idx) => (
+                      <div
+                        key={idx}
+                        className="flex items-center gap-3 p-2 rounded-lg bg-white/5 hover:bg-white/10 transition-colors group"
+                      >
+                        <span className="text-xs text-muted-foreground min-w-[80px]">
+                          {item.date}
+                        </span>
+                        <a
+                          href={item.url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="flex-1 text-sm text-blue-400 hover:text-blue-300 truncate"
+                        >
+                          {item.url}
+                        </a>
+                        <ExternalLink className="h-4 w-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+
+          {memberPostUrls.length === 0 && (
+            <div className="text-center py-8 text-muted-foreground">
+              <p>この期間の投稿URLはありません</p>
+            </div>
+          )}
+        </GlassCard>
+      )}
+
       {/* Achievement Section */}
       <div className="grid gap-6 md:grid-cols-2">
         <GlassCard glowColor="#eab308" className="p-8">
@@ -225,11 +379,11 @@ export default function SmartphoneTeamPage() {
           <p className="text-sm text-muted-foreground mb-6">
             目標: 1日{team.dailyPostGoal}投稿 × 7日 = 週{team.dailyPostGoal * 7}投稿/人
           </p>
-          
+
           <div className="flex flex-col items-center">
-            <CircularProgress 
-              value={Math.min(teamStats.achievementRate, 100)} 
-              color="#eab308" 
+            <CircularProgress
+              value={Math.min(teamStats.achievementRate, 100)}
+              color="#eab308"
               size={180}
               strokeWidth={15}
             />
@@ -284,26 +438,42 @@ export default function SmartphoneTeamPage() {
           </div>
         ) : (
           <div className="space-y-3">
-            {teamStats.members.map((member: any, index: number) => (
-              <div key={member.name} className={`flex items-center justify-between p-4 rounded-xl border transition-all hover:scale-[1.01] ${member.achievementRate >= 100 ? "border-yellow-500 bg-yellow-500/10 shadow-[0_0_20px_rgba(234,179,8,0.3)]" : "border-white/10 bg-white/5"}`}>
-                <div className="flex items-center gap-4">
-                  <span className={`w-10 h-10 rounded-full flex items-center justify-center text-lg font-bold ${index === 0 ? "bg-gradient-to-r from-yellow-500 to-orange-500 text-white shadow-[0_0_20px_rgba(234,179,8,0.6)]" : index < 3 ? "bg-yellow-400/50 text-white" : "bg-white/10"}`}>{index + 1}</span>
-                  <div>
-                    <p className="font-semibold flex items-center gap-2">
-                      {member.name}
-                      {member.achievementRate >= 100 && <span className="text-xs px-2 py-0.5 rounded-full bg-gradient-to-r from-yellow-500 to-orange-500 text-white">🔥 MVP</span>}
-                    </p>
-                    <p className="text-sm text-muted-foreground">達成率: {member.achievementRate}% ({member.reports}回報告)</p>
+            {teamStats.members.map((member: any, index: number) => {
+              const memberUrls = memberPostUrls.find(m => m.name === member.name);
+              return (
+                <div key={member.name} className={`flex items-center justify-between p-4 rounded-xl border transition-all hover:scale-[1.01] ${member.achievementRate >= 100 ? "border-yellow-500 bg-yellow-500/10 shadow-[0_0_20px_rgba(234,179,8,0.3)]" : "border-white/10 bg-white/5"}`}>
+                  <div className="flex items-center gap-4">
+                    <span className={`w-10 h-10 rounded-full flex items-center justify-center text-lg font-bold ${index === 0 ? "bg-gradient-to-r from-yellow-500 to-orange-500 text-white shadow-[0_0_20px_rgba(234,179,8,0.6)]" : index < 3 ? "bg-yellow-400/50 text-white" : "bg-white/10"}`}>{index + 1}</span>
+                    <div>
+                      <p className="font-semibold flex items-center gap-2">
+                        {member.name}
+                        {member.achievementRate >= 100 && <span className="text-xs px-2 py-0.5 rounded-full bg-gradient-to-r from-yellow-500 to-orange-500 text-white">MVP</span>}
+                      </p>
+                      <p className="text-sm text-muted-foreground">達成率: {member.achievementRate}% ({member.reports}回報告)</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-6 text-sm">
+                    {/* 投稿URL一括オープンボタン */}
+                    {memberUrls && memberUrls.urls.length > 0 && (
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => openMemberUrls(member.name)}
+                        className="text-blue-400 hover:text-blue-300 hover:bg-blue-400/10"
+                        title={`${memberUrls.urls.length}件の投稿を確認`}
+                      >
+                        <ExternalLink className="h-4 w-4 mr-1" />
+                        {memberUrls.urls.length}件
+                      </Button>
+                    )}
+                    <div className="text-right"><p className="text-muted-foreground">Xフォロワー</p><p className="font-bold">{(member.xFollowers || 0).toLocaleString()}</p></div>
+                    <div className="text-right"><p className="text-muted-foreground">投稿数</p><p className="font-bold">{(member.posts || 0).toLocaleString()}</p></div>
+                    <div className="text-right"><p className="text-muted-foreground">いいね</p><p className="font-bold">{(member.likes || 0).toLocaleString()}</p></div>
+                    <div className="text-right"><p className="text-muted-foreground">リプライ</p><p className="font-bold">{(member.replies || 0).toLocaleString()}</p></div>
                   </div>
                 </div>
-                <div className="flex gap-6 text-sm">
-                  <div className="text-right"><p className="text-muted-foreground">Xフォロワー</p><p className="font-bold">{(member.xFollowers || 0).toLocaleString()}</p></div>
-                  <div className="text-right"><p className="text-muted-foreground">投稿数</p><p className="font-bold">{(member.posts || 0).toLocaleString()}</p></div>
-                  <div className="text-right"><p className="text-muted-foreground">いいね</p><p className="font-bold">{(member.likes || 0).toLocaleString()}</p></div>
-                  <div className="text-right"><p className="text-muted-foreground">リプライ</p><p className="font-bold">{(member.replies || 0).toLocaleString()}</p></div>
-                </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
       </GlassCard>
