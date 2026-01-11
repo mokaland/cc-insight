@@ -20,6 +20,7 @@ import {
   MessageSquare,
   Ticket,
   CheckSquare,
+  Sparkles,
 } from "lucide-react";
 import { getUserGuardianProfile } from "@/lib/firestore";
 import { GUARDIANS, ATTRIBUTES, EVOLUTION_STAGES, getGuardianImagePath, GuardianId } from "@/lib/guardian-collection";
@@ -117,6 +118,12 @@ const adminNavItems = [
     href: "/admin/sns-approvals",
     icon: CheckSquare,
   },
+  {
+    title: "AIフィードバック設定",
+    subtitle: "プロンプト編集",
+    href: "/admin/prompts",
+    icon: Sparkles,
+  },
 ];
 
 export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
@@ -140,7 +147,7 @@ export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
         const guardianId = profile.activeGuardianId as GuardianId;
         const guardian = GUARDIANS[guardianId];
         const instance = profile.guardians[guardianId];
-        
+
         if (!guardian || !instance) return;
 
         const attr = ATTRIBUTES[guardian.attribute];
@@ -178,11 +185,11 @@ export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
         {userProfile && (
           <div className="border-b border-white/10 p-4">
             <div className="flex items-center gap-3">
-              <div 
+              <div
                 className="w-10 h-10 rounded-full flex items-center justify-center text-lg font-bold"
                 style={{
                   backgroundColor: userProfile.role === "admin" ? "#a855f7" : "#ec4899",
-                  boxShadow: userProfile.role === "admin" 
+                  boxShadow: userProfile.role === "admin"
                     ? "0 0 15px rgba(168, 85, 247, 0.5)"
                     : "0 0 15px rgba(236, 72, 153, 0.5)",
                 }}
@@ -204,16 +211,16 @@ export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
               {/* ポータル型守護神表示 */}
               <div className="relative w-16 h-16 flex-shrink-0">
                 {/* 外側のオーラリング */}
-                <div 
+                <div
                   className="portal-ring absolute inset-0 rounded-full"
                   style={{
                     border: `3px solid ${guardianInfo.color}`,
                     boxShadow: `0 0 20px ${guardianInfo.color}80`,
                   }}
                 />
-                
+
                 {/* 内側のグロー */}
-                <div 
+                <div
                   className="absolute inset-1 rounded-full opacity-30"
                   style={{
                     background: `radial-gradient(circle, ${guardianInfo.color} 0%, transparent 70%)`
@@ -240,9 +247,9 @@ export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
                 {/* 王冠バッジ（最高Stageのみ） */}
                 {guardianInfo.stage === 4 && (
                   <div className="absolute -top-2 -right-2 w-6 h-6 bg-gradient-to-br from-yellow-300 to-yellow-600 rounded-full flex items-center justify-center shadow-lg animate-pulse"
-                       style={{
-                         boxShadow: '0 0 20px rgba(250, 204, 21, 0.8)'
-                       }}>
+                    style={{
+                      boxShadow: '0 0 20px rgba(250, 204, 21, 0.8)'
+                    }}>
                     <span className="text-sm">👑</span>
                   </div>
                 )}
@@ -280,7 +287,7 @@ export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
                 </p>
               </div>
             </div>
-            
+
             {/* エナジーバー */}
             <div className="space-y-1">
               <div className="flex items-center justify-between text-xs">
@@ -304,7 +311,7 @@ export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
         {/* Navigation */}
         <nav className="flex-1 space-y-1 p-4 overflow-y-auto">
           {navItems.map((item) => {
-            const isActive = pathname === item.href || 
+            const isActive = pathname === item.href ||
               (item.href !== "/dashboard" && pathname.startsWith(item.href));
             return (
               <Link
