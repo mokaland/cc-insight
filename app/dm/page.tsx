@@ -53,26 +53,73 @@ export default function MemberDMPage() {
       return;
     }
 
-    // リアルタイムでメッセージを監視
-    const q = query(
+    console.log('💬 [DM Page] メッセージリスナー開始:', user.uid);
+
+    // 🔧 修正: toUserId と fromUserId の両方でクエリを実行
+    // participants array-contains はセキュリティルールと不一致のため使用しない
+
+    // 自分宛てのメッセージ
+    const q1 = query(
       collection(db, "dm_messages"),
-      where("participants", "array-contains", user.uid),
+      where("toUserId", "==", user.uid),
       orderBy("createdAt", "asc")
     );
 
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-      const msgs: DMMessage[] = [];
-      snapshot.forEach((doc) => {
-        msgs.push({
-          id: doc.id,
-          ...doc.data(),
-        } as DMMessage);
+    // 自分からのメッセージ
+    const q2 = query(
+      collection(db, "dm_messages"),
+      where("fromUserId", "==", user.uid),
+      orderBy("createdAt", "asc")
+    );
+
+    let messages1: DMMessage[] = [];
+    let messages2: DMMessage[] = [];
+
+    const updateMessages = () => {
+      // 両方の結果を統合して重複を除去
+      const allMessagesMap = new Map<string, DMMessage>();
+      [...messages1, ...messages2].forEach(msg => {
+        allMessagesMap.set(msg.id, msg);
       });
-      setMessages(msgs);
+
+      // createdAtでソート
+      const sortedMessages = Array.from(allMessagesMap.values()).sort((a, b) => {
+        const timeA = a.createdAt?.toMillis?.() || 0;
+        const timeB = b.createdAt?.toMillis?.() || 0;
+        return timeA - timeB;
+      });
+
+      setMessages(sortedMessages);
       scrollToBottom();
+    };
+
+    const unsubscribe1 = onSnapshot(q1, (snapshot) => {
+      messages1 = snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data(),
+      } as DMMessage));
+      console.log(`💬 [DM Page] 受信メッセージ: ${messages1.length}件`);
+      updateMessages();
+    }, (error) => {
+      console.error('❌ [DM Page] 受信メッセージリスナーエラー:', error);
     });
 
-    return () => unsubscribe();
+    const unsubscribe2 = onSnapshot(q2, (snapshot) => {
+      messages2 = snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data(),
+      } as DMMessage));
+      console.log(`💬 [DM Page] 送信メッセージ: ${messages2.length}件`);
+      updateMessages();
+    }, (error) => {
+      console.error('❌ [DM Page] 送信メッセージリスナーエラー:', error);
+    });
+
+    return () => {
+      console.log('💬 [DM Page] メッセージリスナー停止');
+      unsubscribe1();
+      unsubscribe2();
+    };
   }, [user, userProfile, router]);
 
   // 🆕 ページを開いたときに未読メッセージを既読にする
