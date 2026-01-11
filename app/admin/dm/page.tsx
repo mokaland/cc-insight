@@ -15,22 +15,12 @@ import {
   getDocs,
   addDoc,
   serverTimestamp,
-  onSnapshot,
-  Timestamp
+  onSnapshot
 } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { getAllUsers } from "@/lib/firestore";
 
-interface DMMessage {
-  id: string;
-  fromUserId: string;
-  fromUserName: string;
-  toUserId: string;
-  toUserName: string;
-  message: string;
-  createdAt: Timestamp;
-  isAdmin: boolean;
-}
+import { DMMessage } from "@/lib/types";
 
 interface UserInfo {
   uid: string;
@@ -199,8 +189,8 @@ export default function AdminDMPage() {
                       key={u.uid}
                       onClick={() => setSelectedUser(u)}
                       className={`w-full text-left px-4 py-3 hover:bg-muted/50 transition-colors border-l-4 ${selectedUser?.uid === u.uid
-                          ? 'bg-muted border-l-purple-500'
-                          : 'border-l-transparent'
+                        ? 'bg-muted border-l-purple-500'
+                        : 'border-l-transparent'
                         }`}
                     >
                       <div className="flex items-center justify-between mb-1">
@@ -267,8 +257,8 @@ export default function AdminDMPage() {
                       >
                         <div
                           className={`max-w-[70%] rounded-lg p-3 ${msg.isAdmin
-                              ? 'bg-purple-500 text-white'
-                              : 'bg-card border border-border'
+                            ? 'bg-purple-500 text-white'
+                            : 'bg-card border border-border'
                             }`}
                         >
                           <p className="text-sm whitespace-pre-wrap">{msg.message}</p>

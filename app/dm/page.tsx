@@ -16,23 +16,13 @@ import {
   getDocs,
   serverTimestamp,
   onSnapshot,
-  Timestamp,
   updateDoc,
   doc,
   writeBatch
 } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 
-interface DMMessage {
-  id: string;
-  fromUserId: string;
-  fromUserName: string;
-  toUserId: string;
-  toUserName: string;
-  message: string;
-  createdAt: Timestamp;
-  isAdmin: boolean;
-}
+import { DMMessage } from "@/lib/types";
 
 export default function MemberDMPage() {
   const { user, userProfile } = useAuth();
