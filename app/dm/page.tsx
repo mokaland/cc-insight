@@ -90,7 +90,12 @@ export default function MemberDMPage() {
 
         const snapshot = await getDocs(q);
 
-        if (snapshot.empty) return;
+        if (snapshot.empty) {
+          console.log('✅ 未読メッセージはありません');
+          return;
+        }
+
+        console.log(`📝 ${snapshot.size}件の未読メッセージを既読処理中...`);
 
         // バッチ処理で一括更新
         const batch = writeBatch(db);
@@ -111,10 +116,10 @@ export default function MemberDMPage() {
     // 少し遅延させて実行（メッセージ読み込み完了後）
     const timer = setTimeout(() => {
       markMessagesAsRead();
-    }, 1000);
+    }, 1500); // 1.5秒に延長（確実にメッセージが読み込まれてから）
 
     return () => clearTimeout(timer);
-  }, [user]);
+  }, [user, messages]); // messagesが変更されたときも再実行
 
   async function sendMessage() {
     if (!newMessage.trim() || !user || !userProfile) return;
