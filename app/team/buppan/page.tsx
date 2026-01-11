@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { CircularProgress } from "@/components/circular-progress";
 import { GlassCard, TodayProgress, NeonGauge } from "@/components/glass-card";
 import { Heart, MessageCircle, Zap, Video, Users, Target, Calendar, Twitter } from "lucide-react";
-import { getReportsByPeriod, calculateTeamStats, teams } from "@/lib/firestore";
+import { getReportsByPeriod, calculateTeamStats, getReportsByCustomPeriod, teams } from "@/lib/services/report";
 
 const team = teams.find((t) => t.id === "buppan")!;
 
@@ -35,30 +35,17 @@ export default function BuppanTeamPage() {
       setLoading(true);
       try {
         let reports;
-        
-        // カスタム期間の場合は特別処理
+
+        // カスタム期間の場合はサービス層を使用
         if (period === "custom" && customStartDate && customEndDate) {
-          // カスタム期間でデータ取得
-          const { collection: dbCollection, query, where, orderBy, getDocs } = await import("firebase/firestore");
-          const { db } = await import("@/lib/firebase");
-          
-          const q = query(
-            dbCollection(db, "reports"),
-            where("date", ">=", customStartDate),
-            where("date", "<=", customEndDate),
-            where("team", "==", "buppan"),
-            orderBy("date", "desc")
-          );
-          
-          const snapshot = await getDocs(q);
-          reports = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as any));
+          reports = await getReportsByCustomPeriod(customStartDate, customEndDate, "buppan");
         } else if (period === "custom") {
           // カスタム期間が未設定の場合は週間データを表示
           reports = await getReportsByPeriod("week", "buppan");
         } else {
           reports = await getReportsByPeriod(period, "buppan");
         }
-        
+
         const stats = calculateTeamStats(reports, "buppan");
         setTeamStats(stats);
       } catch (error) {
@@ -108,7 +95,7 @@ export default function BuppanTeamPage() {
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div>
           <h1 className="text-3xl font-bold flex items-center gap-3">
-            <span 
+            <span
               className="w-4 h-4 rounded-full animate-pulse"
               style={{ backgroundColor: team.color, boxShadow: `0 0 15px ${team.color}` }}
             />
@@ -244,18 +231,18 @@ export default function BuppanTeamPage() {
           <p className="text-sm text-muted-foreground mb-6">
             目標: 1日{team.dailyPostGoal}投稿 × 7日 = 週{team.dailyPostGoal * 7}投稿/人
           </p>
-          
+
           <div className="flex flex-col items-center justify-center">
-            <CircularProgress 
-              value={Math.min(teamStats.achievementRate, 100)} 
-              color="#eab308" 
+            <CircularProgress
+              value={Math.min(teamStats.achievementRate, 100)}
+              color="#eab308"
               size={180}
               strokeWidth={15}
             />
             <p className="mt-4 text-muted-foreground">
               {teamStats.totalPosts} / {teamStats.totalTargetPosts} 件達成
             </p>
-            
+
             {/* Neon Progress Bar */}
             <div className="w-full mt-6">
               <NeonGauge
@@ -274,7 +261,7 @@ export default function BuppanTeamPage() {
             <Calendar className="h-5 w-5 text-yellow-500" />
             <h3 className="text-lg font-semibold">チーム概要</h3>
           </div>
-          
+
           <div className="space-y-4">
             <div className="p-4 rounded-lg bg-white/5 border border-yellow-500/20">
               <p className="text-sm text-muted-foreground">アクティブメンバー</p>
@@ -313,23 +300,21 @@ export default function BuppanTeamPage() {
               {teamStats.members.map((member: any, index: number) => (
                 <div
                   key={member.name}
-                  className={`flex items-center justify-between p-4 rounded-xl border-2 transition-all hover:scale-[1.01] ${
-                    member.achievementRate >= 100
+                  className={`flex items-center justify-between p-4 rounded-xl border-2 transition-all hover:scale-[1.01] ${member.achievementRate >= 100
                       ? "border-yellow-500 shadow-[0_0_20px_rgba(236,72,153,0.4)] bg-yellow-500/5"
                       : "border-transparent bg-muted/30"
-                  }`}
+                    }`}
                 >
                   <div className="flex items-center gap-4">
                     <span
-                      className={`w-10 h-10 rounded-full flex items-center justify-center text-lg font-bold ${
-                        index === 0
+                      className={`w-10 h-10 rounded-full flex items-center justify-center text-lg font-bold ${index === 0
                           ? "bg-gradient-to-r from-yellow-500 to-orange-500 text-white shadow-[0_0_20px_rgba(236,72,153,0.6)]"
                           : index === 1
-                          ? "bg-pink-400 text-white shadow-[0_0_15px_rgba(236,72,153,0.4)]"
-                          : index === 2
-                          ? "bg-pink-300 text-white shadow-[0_0_10px_rgba(236,72,153,0.3)]"
-                          : "bg-muted text-muted-foreground"
-                      }`}
+                            ? "bg-pink-400 text-white shadow-[0_0_15px_rgba(236,72,153,0.4)]"
+                            : index === 2
+                              ? "bg-pink-300 text-white shadow-[0_0_10px_rgba(236,72,153,0.3)]"
+                              : "bg-muted text-muted-foreground"
+                        }`}
                     >
                       {index + 1}
                     </span>

@@ -73,3 +73,35 @@ export async function createReport(params: CreateReportParams): Promise<string> 
     });
     return docRef.id;
 }
+
+// =====================================
+// カスタム期間でのレポート取得
+// =====================================
+
+import { query, where, orderBy, getDocs } from "firebase/firestore";
+
+/**
+ * カスタム期間でレポートを取得
+ */
+export async function getReportsByCustomPeriod(
+    startDate: string,
+    endDate: string,
+    teamId: string
+): Promise<Report[]> {
+    const q = query(
+        collection(db, "reports"),
+        where("date", ">=", startDate),
+        where("date", "<=", endDate),
+        where("team", "==", teamId),
+        orderBy("date", "desc")
+    );
+
+    const snapshot = await getDocs(q);
+    return snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+    } as Report));
+}
+
+// teams定数もre-export
+export { teams } from "@/lib/firestore";
