@@ -7,16 +7,19 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { MessageSquare, Send, Shield } from "lucide-react";
-import { 
-  collection, 
-  query, 
-  where, 
-  orderBy, 
-  addDoc, 
+import {
+  collection,
+  query,
+  where,
+  orderBy,
+  addDoc,
   getDocs,
   serverTimestamp,
   onSnapshot,
-  Timestamp
+  Timestamp,
+  updateDoc,
+  doc,
+  writeBatch
 } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 
@@ -72,27 +75,68 @@ export default function MemberDMPage() {
     return () => unsubscribe();
   }, [user, userProfile, router]);
 
+  // 🆕 ページを開いたときに未読メッセージを既読にする
+  useEffect(() => {
+    if (!user) return;
+
+    const markMessagesAsRead = async () => {
+      try {
+        // 自分宛ての未読メッセージを取得
+        const q = query(
+          collection(db, "dm_messages"),
+          where("toUserId", "==", user.uid),
+          where("read", "==", false)
+        );
+
+        const snapshot = await getDocs(q);
+
+        if (snapshot.empty) return;
+
+        // バッチ処理で一括更新
+        const batch = writeBatch(db);
+        snapshot.docs.forEach((document) => {
+          batch.update(doc(db, "dm_messages", document.id), {
+            read: true,
+            readAt: serverTimestamp()
+          });
+        });
+
+        await batch.commit();
+        console.log(`✅ ${snapshot.size}件のメッセージを既読にしました`);
+      } catch (error) {
+        console.error("既読処理エラー:", error);
+      }
+    };
+
+    // 少し遅延させて実行（メッセージ読み込み完了後）
+    const timer = setTimeout(() => {
+      markMessagesAsRead();
+    }, 1000);
+
+    return () => clearTimeout(timer);
+  }, [user]);
+
   async function sendMessage() {
     if (!newMessage.trim() || !user || !userProfile) return;
 
     try {
       setSending(true);
-      
+
       // 🔧 全管理者のUIDを取得
       const usersSnapshot = await getDocs(collection(db, "users"));
       const adminUsers = usersSnapshot.docs
         .filter(doc => doc.data().role === "admin")
         .map(doc => doc.id);
-      
+
       if (adminUsers.length === 0) {
         alert("管理者が見つかりません");
         return;
       }
-      
+
       // 最初の管理者をメイン送信先とし、全管理者をparticipantsに含める
       const mainAdminId = adminUsers[0];
       const allParticipants = [user.uid, ...adminUsers];
-      
+
       await addDoc(collection(db, "dm_messages"), {
         fromUserId: user.uid,
         fromUserName: userProfile.displayName,
@@ -100,6 +144,7 @@ export default function MemberDMPage() {
         toUserName: "運営",
         message: newMessage.trim(),
         isAdmin: false,
+        read: false, // 🆕 未読フラグ
         participants: allParticipants, // 全管理者が見えるように
         createdAt: serverTimestamp(),
       });
@@ -159,19 +204,17 @@ export default function MemberDMPage() {
                     className={`flex ${msg.fromUserId === user?.uid ? 'justify-end' : 'justify-start'}`}
                   >
                     <div
-                      className={`max-w-[70%] rounded-lg p-3 ${
-                        msg.fromUserId === user?.uid
-                          ? 'bg-blue-500 text-white'
-                          : 'bg-purple-500 text-white'
-                      }`}
+                      className={`max-w-[70%] rounded-lg p-3 ${msg.fromUserId === user?.uid
+                        ? 'bg-blue-500 text-white'
+                        : 'bg-purple-500 text-white'
+                        }`}
                     >
                       {msg.fromUserId !== user?.uid && (
                         <p className="text-xs mb-1 opacity-80">運営</p>
                       )}
                       <p className="text-sm whitespace-pre-wrap">{msg.message}</p>
-                      <p className={`text-xs mt-1 ${
-                        msg.fromUserId === user?.uid ? 'text-blue-100' : 'text-purple-100'
-                      }`}>
+                      <p className={`text-xs mt-1 ${msg.fromUserId === user?.uid ? 'text-blue-100' : 'text-purple-100'
+                        }`}>
                         {msg.createdAt?.toDate?.()?.toLocaleTimeString('ja-JP', {
                           hour: '2-digit',
                           minute: '2-digit'

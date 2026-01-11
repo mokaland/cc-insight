@@ -7,13 +7,13 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { MessageSquare, Send, Clock, User, Users } from "lucide-react";
-import { 
-  collection, 
-  query, 
-  where, 
-  orderBy, 
-  getDocs, 
-  addDoc, 
+import {
+  collection,
+  query,
+  where,
+  orderBy,
+  getDocs,
+  addDoc,
   serverTimestamp,
   onSnapshot,
   Timestamp
@@ -132,6 +132,7 @@ export default function AdminDMPage() {
         toUserName: selectedUser.displayName,
         message: newMessage.trim(),
         isAdmin: true,
+        read: false, // 🆕 未読フラグ
         participants: [user.uid, selectedUser.uid], // 両方のUIDを配列に
         createdAt: serverTimestamp(),
       });
@@ -197,19 +198,18 @@ export default function AdminDMPage() {
                     <button
                       key={u.uid}
                       onClick={() => setSelectedUser(u)}
-                      className={`w-full text-left px-4 py-3 hover:bg-muted/50 transition-colors border-l-4 ${
-                        selectedUser?.uid === u.uid
+                      className={`w-full text-left px-4 py-3 hover:bg-muted/50 transition-colors border-l-4 ${selectedUser?.uid === u.uid
                           ? 'bg-muted border-l-purple-500'
                           : 'border-l-transparent'
-                      }`}
+                        }`}
                     >
                       <div className="flex items-center justify-between mb-1">
                         <p className="font-semibold">{u.realName}（{u.displayName}）</p>
-                        <span 
+                        <span
                           className="text-xs px-2 py-0.5 rounded-full"
-                          style={{ 
+                          style={{
                             backgroundColor: `${u.teamColor}20`,
-                            color: u.teamColor 
+                            color: u.teamColor
                           }}
                         >
                           {u.teamName}
@@ -232,11 +232,11 @@ export default function AdminDMPage() {
             </CardTitle>
             {selectedUser && (
               <CardDescription>
-                <span 
+                <span
                   className="inline-block px-2 py-0.5 rounded-full text-xs"
-                  style={{ 
+                  style={{
                     backgroundColor: `${selectedUser.teamColor}20`,
-                    color: selectedUser.teamColor 
+                    color: selectedUser.teamColor
                   }}
                 >
                   {selectedUser.teamName}
@@ -266,16 +266,14 @@ export default function AdminDMPage() {
                         className={`flex ${msg.isAdmin ? 'justify-end' : 'justify-start'}`}
                       >
                         <div
-                          className={`max-w-[70%] rounded-lg p-3 ${
-                            msg.isAdmin
+                          className={`max-w-[70%] rounded-lg p-3 ${msg.isAdmin
                               ? 'bg-purple-500 text-white'
                               : 'bg-card border border-border'
-                          }`}
+                            }`}
                         >
                           <p className="text-sm whitespace-pre-wrap">{msg.message}</p>
-                          <p className={`text-xs mt-1 ${
-                            msg.isAdmin ? 'text-purple-100' : 'text-muted-foreground'
-                          }`}>
+                          <p className={`text-xs mt-1 ${msg.isAdmin ? 'text-purple-100' : 'text-muted-foreground'
+                            }`}>
                             {msg.createdAt?.toDate?.()?.toLocaleTimeString('ja-JP', {
                               hour: '2-digit',
                               minute: '2-digit'
