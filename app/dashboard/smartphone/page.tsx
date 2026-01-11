@@ -155,66 +155,213 @@ export default function SmartphoneTeamPage() {
     }
   };
 
-  // 自動オープン中かどうかの状態
-  const [isAutoOpening, setIsAutoOpening] = useState(false);
-
-  // PC用：メンバーのURLを自動で順次開く（ボタン1回で全て開く）
-  const openMemberUrlsAuto = (memberName: string) => {
+  // PC用：メンバーのURLを新しいウィンドウでリスト表示（ユーザーがCtrl+クリックで開く）
+  const openMemberUrlsInPopup = (memberName: string) => {
     const member = memberPostUrls.find(m => m.name === memberName);
     if (!member || member.urls.length === 0) return;
-    if (isAutoOpening) return; // 既に自動オープン中なら何もしない
 
-    setIsAutoOpening(true);
-    setCopyMessage(`${member.name}さんの${member.urls.length}件を自動で開いています...`);
+    // HTMLコンテンツを生成
+    const htmlContent = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <title>${member.name}さんの投稿URL一覧</title>
+        <meta charset="UTF-8">
+        <style>
+          body { 
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #0f172a; 
+            color: #e2e8f0; 
+            padding: 20px; 
+            margin: 0;
+          }
+          h1 { color: #60a5fa; font-size: 18px; margin-bottom: 20px; }
+          .count { color: #94a3b8; font-size: 14px; margin-bottom: 20px; }
+          .url-list { list-style: none; padding: 0; margin: 0; }
+          .url-item { 
+            margin-bottom: 12px; 
+            padding: 12px; 
+            background: rgba(255,255,255,0.05); 
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+          }
+          .url-item:hover { background: rgba(255,255,255,0.1); }
+          .date { color: #94a3b8; font-size: 12px; min-width: 80px; }
+          a { 
+            color: #60a5fa; 
+            text-decoration: none; 
+            word-break: break-all;
+            flex: 1;
+          }
+          a:hover { text-decoration: underline; }
+          .tip { 
+            margin-top: 20px; 
+            padding: 12px; 
+            background: rgba(59, 130, 246, 0.2); 
+            border-radius: 8px;
+            font-size: 13px;
+            color: #93c5fd;
+          }
+          .open-all {
+            display: inline-block;
+            margin-bottom: 20px;
+            padding: 12px 24px;
+            background: linear-gradient(to right, #22c55e, #10b981);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: bold;
+          }
+          .open-all:hover { opacity: 0.9; }
+        </style>
+      </head>
+      <body>
+        <h1>🔗 ${member.name}さんの投稿URL一覧</h1>
+        <p class="count">${member.urls.length}件のURL</p>
+        <button class="open-all" onclick="openAllLinks()">⚡ 全て一括で開く（許可が必要な場合あり）</button>
+        <ul class="url-list">
+          ${member.urls.map((item, i) => `
+            <li class="url-item">
+              <span class="date">${item.date}</span>
+              <a href="${item.url}" target="_blank" rel="noopener">${item.url}</a>
+            </li>
+          `).join('')}
+        </ul>
+        <div class="tip">
+          💡 ヒント: 各リンクをクリックするか、Ctrl+クリック（Mac: Cmd+クリック）で新しいタブで開けます。<br>
+          「全て一括で開く」ボタンはポップアップブロッカーの設定によっては一部しか開かない場合があります。
+        </div>
+        <script>
+          function openAllLinks() {
+            const links = document.querySelectorAll('a');
+            links.forEach((link, i) => {
+              setTimeout(() => {
+                window.open(link.href, '_blank');
+              }, i * 200);
+            });
+          }
+        </script>
+      </body>
+      </html>
+    `;
 
-    // 最初の1つは即座に開く（ユーザーアクションとして）
-    window.open(member.urls[0].url, "_blank");
-
-    // 残りを500msごとに順次開く
-    let index = 1;
-    const interval = setInterval(() => {
-      if (index < member.urls.length) {
-        window.open(member.urls[index].url, "_blank");
-        index++;
-      } else {
-        clearInterval(interval);
-        setIsAutoOpening(false);
-        setCopyMessage(`${member.name}さんの全${member.urls.length}件を開きました`);
-        setTimeout(() => setCopyMessage(null), 3000);
-      }
-    }, 500);
+    const newWindow = window.open('about:blank', '_blank');
+    if (newWindow) {
+      newWindow.document.write(htmlContent);
+      newWindow.document.close();
+    }
   };
 
-  // PC用：全URLを自動で順次開く（ボタン1回で全て開く）
-  const openAllUrlsAuto = () => {
-    const allUrls: string[] = [];
+  // PC用：全URLを新しいウィンドウでリスト表示
+  const openAllUrlsInPopup = () => {
+    const allUrlsWithInfo: { name: string; date: string; url: string }[] = [];
     memberPostUrls.forEach(member => {
-      member.urls.forEach(({ url }) => {
-        allUrls.push(url);
+      member.urls.forEach(({ date, url }) => {
+        allUrlsWithInfo.push({ name: member.name, date, url });
       });
     });
-    if (allUrls.length === 0) return;
-    if (isAutoOpening) return; // 既に自動オープン中なら何もしない
+    if (allUrlsWithInfo.length === 0) return;
 
-    setIsAutoOpening(true);
-    setCopyMessage(`全${allUrls.length}件を自動で開いています...`);
+    // HTMLコンテンツを生成
+    const htmlContent = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <title>投稿URL一覧（全${allUrlsWithInfo.length}件）</title>
+        <meta charset="UTF-8">
+        <style>
+          body { 
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #0f172a; 
+            color: #e2e8f0; 
+            padding: 20px; 
+            margin: 0;
+          }
+          h1 { color: #60a5fa; font-size: 18px; margin-bottom: 20px; }
+          .count { color: #94a3b8; font-size: 14px; margin-bottom: 20px; }
+          .url-list { list-style: none; padding: 0; margin: 0; }
+          .url-item { 
+            margin-bottom: 12px; 
+            padding: 12px; 
+            background: rgba(255,255,255,0.05); 
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+          }
+          .url-item:hover { background: rgba(255,255,255,0.1); }
+          .name { color: #fbbf24; font-size: 12px; min-width: 80px; font-weight: bold; }
+          .date { color: #94a3b8; font-size: 12px; min-width: 80px; }
+          a { 
+            color: #60a5fa; 
+            text-decoration: none; 
+            word-break: break-all;
+            flex: 1;
+          }
+          a:hover { text-decoration: underline; }
+          .tip { 
+            margin-top: 20px; 
+            padding: 12px; 
+            background: rgba(59, 130, 246, 0.2); 
+            border-radius: 8px;
+            font-size: 13px;
+            color: #93c5fd;
+          }
+          .open-all {
+            display: inline-block;
+            margin-bottom: 20px;
+            padding: 12px 24px;
+            background: linear-gradient(to right, #22c55e, #10b981);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: bold;
+          }
+          .open-all:hover { opacity: 0.9; }
+        </style>
+      </head>
+      <body>
+        <h1>🔗 投稿URL一覧</h1>
+        <p class="count">全${allUrlsWithInfo.length}件のURL</p>
+        <button class="open-all" onclick="openAllLinks()">⚡ 全て一括で開く（許可が必要な場合あり）</button>
+        <ul class="url-list">
+          ${allUrlsWithInfo.map((item, i) => `
+            <li class="url-item">
+              <span class="name">${item.name}</span>
+              <span class="date">${item.date}</span>
+              <a href="${item.url}" target="_blank" rel="noopener">${item.url}</a>
+            </li>
+          `).join('')}
+        </ul>
+        <div class="tip">
+          💡 ヒント: 各リンクをクリックするか、Ctrl+クリック（Mac: Cmd+クリック）で新しいタブで開けます。<br>
+          「全て一括で開く」ボタンはポップアップブロッカーの設定によっては一部しか開かない場合があります。
+        </div>
+        <script>
+          function openAllLinks() {
+            const links = document.querySelectorAll('a');
+            links.forEach((link, i) => {
+              setTimeout(() => {
+                window.open(link.href, '_blank');
+              }, i * 200);
+            });
+          }
+        </script>
+      </body>
+      </html>
+    `;
 
-    // 最初の1つは即座に開く（ユーザーアクションとして）
-    window.open(allUrls[0], "_blank");
-
-    // 残りを500msごとに順次開く
-    let index = 1;
-    const interval = setInterval(() => {
-      if (index < allUrls.length) {
-        window.open(allUrls[index], "_blank");
-        index++;
-      } else {
-        clearInterval(interval);
-        setIsAutoOpening(false);
-        setCopyMessage(`全${allUrls.length}件を開きました`);
-        setTimeout(() => setCopyMessage(null), 3000);
-      }
-    }, 500);
+    const newWindow = window.open('about:blank', '_blank');
+    if (newWindow) {
+      newWindow.document.write(htmlContent);
+      newWindow.document.close();
+    }
   };
 
   // 全投稿URL数を計算
@@ -372,14 +519,13 @@ export default function SmartphoneTeamPage() {
           </div>
           {totalUrlCount > 0 && (
             <div className="flex flex-col md:flex-row gap-2 w-full md:w-auto">
-              {/* PC用：自動で全て開くボタン */}
+              {/* PC用：URL一覧を新しいウィンドウで開く */}
               <Button
-                onClick={openAllUrlsAuto}
-                disabled={isAutoOpening}
+                onClick={openAllUrlsInPopup}
                 className="hidden md:flex bg-gradient-to-r from-green-500 to-emerald-500 text-white hover:from-green-600 hover:to-emerald-600"
               >
                 <Play className="h-4 w-4 mr-2" />
-                {isAutoOpening ? '開いています...' : `全${totalUrlCount}件を開く`}
+                全{totalUrlCount}件を開く
               </Button>
               {/* コピーボタン（モバイル・PC共通） */}
               <Button
@@ -421,15 +567,14 @@ export default function SmartphoneTeamPage() {
                     </div>
                   </div>
                   <div className="flex items-center gap-2 ml-11 md:ml-0">
-                    {/* PC用：個別メンバーの自動で開くボタン */}
+                    {/* PC用：個別メンバーのURL一覧を開くボタン */}
                     <Button
                       size="sm"
                       variant="outline"
                       onClick={(e) => {
                         e.stopPropagation();
-                        openMemberUrlsAuto(member.name);
+                        openMemberUrlsInPopup(member.name);
                       }}
-                      disabled={isAutoOpening}
                       className="hidden md:flex text-green-400 border-green-400/30 hover:bg-green-400/10 text-xs md:text-sm"
                     >
                       <Play className="h-3 w-3 mr-1" />
