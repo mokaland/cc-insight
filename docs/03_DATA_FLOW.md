@@ -1,8 +1,9 @@
 # CC Insight データフロー仕様書
 
-> **ドキュメント生成日**: 2026-01-12  
+> **ドキュメント更新日**: 2026-01-12  
 > **生成方法**: ソースコードからの逆生成（リバースエンジニアリング）  
-> **対象機能**: DM機能、認証（Auth）
+> **対象機能**: DM機能、認証（Auth）  
+> **最終更新**: Phase 2 Service Layer リファクタリング完了後
 
 ---
 
@@ -47,174 +48,234 @@ ClientLayout
 
 ---
 
-## 2. Realtime Listeners（リアルタイム監視）
+## 2. アーキテクチャパターン
 
-### 2.1 onSnapshot 使用箇所一覧
+### 2.1 UI → Service → Firestore パターン
 
-| ファイル | 行 | コレクション | 目的 |
-|---------|-----|-------------|------|
-| `lib/firestore.ts` | 166 | `reports` | 日報リアルタイム取得 |
-| `app/dm/page.tsx` | 96 | `dm_messages` | 受信メッセージ監視 |
-| `app/dm/page.tsx` | 107 | `dm_messages` | 送信メッセージ監視 |
-| `app/admin/dm/page.tsx` | 104 | `dm_messages` | 管理者DM監視 |
-| `components/client-layout.tsx` | 329 | `dm_messages` | 未読バッジ監視 |
+Phase 2 リファクタリング後、UIコンポーネントはFirestoreに直接アクセスせず、**Service Layer**を経由してデータを取得・更新します。
 
-### 2.2 DM未読バッジのリスナー詳細
+```mermaid
+flowchart LR
+    subgraph UI["UI Layer"]
+        A["app/dm/page.tsx"]
+        B["components/client-layout.tsx"]
+    end
 
-**定義場所**: `components/client-layout.tsx` (314-347行目)
+    subgraph Service["Service Layer"]
+        C["lib/services/dm.ts"]
+    end
 
-```typescript
-// クエリ: toUserId == userProfile.uid のメッセージを監視
-const q = query(
-  collection(db, "dm_messages"),
-  where("toUserId", "==", userProfile.uid)
-);
+    subgraph Firebase["Firebase"]
+        D[("dm_messages")]
+    end
 
-const unsubscribe = onSnapshot(q, (snapshot) => {
-  // クライアント側フィルタリング（read !== true を未読とする）
-  const unreadMessages = snapshot.docs.filter(doc => {
-    const data = doc.data();
-    return data.read !== true;
-  });
-  const count = unreadMessages.length;
-  setUnreadDmCount(count);
-});
+    A -->|"subscribeToDMMessages()"| C
+    B -->|"subscribeToUnreadCount()"| C
+    C -->|"onSnapshot()"| D
+    D -->|"リアルタイム更新"| C
+    C -->|"callback(messages)"| A
+    C -->|"callback(count)"| B
+
+    style C fill:#f59e0b,color:#000
 ```
 
-> **⚠️ 技術的注意**: `where("read", "==", false)` はセキュリティルール違反のため、クライアント側フィルタリングを使用。
+### 2.2 旧アーキテクチャとの比較
+
+| 項目 | Before (Phase 1以前) | After (Phase 2以降) |
+|------|---------------------|---------------------|
+| DMメッセージ取得 | `app/dm/page.tsx` で直接 `onSnapshot()` | `lib/services/dm.ts` の `subscribeToDMMessages()` |
+| 未読バッジ監視 | `client-layout.tsx` で直接 `onSnapshot()` | `lib/services/dm.ts` の `subscribeToUnreadCount()` |
+| メッセージ送信 | `addDoc()` を直接コール | `sendDMToAdmins()` / `sendAdminDMToUser()` |
+| 既読処理 | `writeBatch()` を直接コール | `markMessagesAsRead()` |
 
 ---
 
-## 3. Logic Flow Diagrams
+## 3. Realtime Listeners（リアルタイム監視）
 
-### 3.1 DM受信 → 未読バッジ点灯フロー
+### 3.1 onSnapshot 使用箇所一覧（Phase 2以降）
+
+| サービス関数 | コレクション | 呼び出し元 | 目的 |
+|-------------|-------------|-----------|------|
+| `subscribeToDMMessages()` | `dm_messages` | `app/dm/page.tsx` | 送受信メッセージ監視 |
+| `subscribeToAdminDMWithUser()` | `dm_messages` | `app/admin/dm/page.tsx` | 管理者DM監視 |
+| `subscribeToUnreadCount()` | `dm_messages` | `components/client-layout.tsx` | 未読バッジ監視 |
+| `subscribeToReports()` | `reports` | ダッシュボード各ページ | 日報リアルタイム取得 |
+
+### 3.2 DM未読バッジのリスナー詳細
+
+**呼び出しコード** (`components/client-layout.tsx`):
+```typescript
+import { subscribeToUnreadCount } from "@/lib/services/dm";
+
+useEffect(() => {
+  const unsubscribe = subscribeToUnreadCount(userProfile.uid, (count) => {
+    setUnreadDmCount(count);
+  });
+  return () => unsubscribe();
+}, [userProfile?.uid]);
+```
+
+**サービス内部実装** (`lib/services/dm.ts`):
+```typescript
+export function subscribeToUnreadCount(
+  userId: string,
+  callback: (count: number) => void
+): Unsubscribe {
+  const q = query(
+    collection(db, "dm_messages"),
+    where("toUserId", "==", userId)
+  );
+  return onSnapshot(q, (snapshot) => {
+    const unreadMessages = snapshot.docs.filter((doc) => {
+      return doc.data().read !== true;
+    });
+    callback(unreadMessages.length);
+  });
+}
+```
+
+---
+
+## 4. Logic Flow Diagrams
+
+### 4.1 DM受信 → 未読バッジ点灯フロー（Service Layer版）
 
 ```mermaid
 flowchart TD
+    subgraph Sender["送信者（管理者 or メンバー）"]
+        A["sendDMMessage() 実行"]
+    end
+
+    subgraph ServiceLayer["Service Layer"]
+        B["lib/services/dm.ts"]
+        C["addDoc() 実行"]
+    end
+
     subgraph Firestore
-        A[("dm_messages コレクション")]
+        D[("dm_messages コレクション")]
     end
 
-    subgraph "送信者（管理者 or メンバー）"
-        B["addDoc() でメッセージ送信"]
-    end
-
-    subgraph "受信者のブラウザ"
-        C["onSnapshot リスナー起動"]
-        D{"snapshot 受信"}
-        E["クライアント側フィルタ
+    subgraph ReceiverService["受信者側 Service Layer"]
+        E["subscribeToUnreadCount()"]
+        F["onSnapshot callback"]
+        G["クライアント側フィルタ
         read !== true"]
-        F["unreadMessages.length 計算"]
-        G["setUnreadDmCount(count)"]
-        H{"count > 0 ?"}
-        I["🔴 バッジ表示"]
-        J["バッジ非表示"]
+        H["callback(count)"]
     end
 
-    B --> A
-    A -->|リアルタイム通知| C
+    subgraph ReceiverUI["受信者側 UI"]
+        I["setUnreadDmCount(count)"]
+        J{"count > 0 ?"}
+        K["🔴 バッジ表示"]
+        L["バッジ非表示"]
+    end
+
+    A --> B
+    B --> C
     C --> D
-    D --> E
+    D -->|リアルタイム通知| E
     E --> F
     F --> G
     G --> H
-    H -->|Yes| I
-    H -->|No| J
+    H --> I
+    I --> J
+    J -->|Yes| K
+    J -->|No| L
 
-    style I fill:#ef4444,color:#fff
-    style A fill:#4f46e5,color:#fff
+    style B fill:#f59e0b,color:#000
+    style E fill:#f59e0b,color:#000
+    style K fill:#ef4444,color:#fff
 ```
 
-### 3.2 DM既読 → バッジクリアフロー
+### 4.2 DM既読 → バッジクリアフロー（Service Layer版）
 
 ```mermaid
 flowchart TD
-    subgraph "DMページ表示時"
+    subgraph UI["app/dm/page.tsx"]
         A["user がDMページに遷移"]
-        B["useEffect 発火
-        (1秒後)"]
-        C["markMessagesAsRead() 実行"]
+        B["useEffect 発火（1秒後）"]
+        C["markMessagesAsRead(userId)"]
+    end
+
+    subgraph Service["lib/services/dm.ts"]
+        D["query: toUserId == userId
+        AND read == false"]
+        E["writeBatch.update()
+        read: true, readAt: now"]
+        F["batch.commit()"]
     end
 
     subgraph Firestore
-        D[("dm_messages")]
-        E["query: toUserId == user.uid
-        AND read == false"]
-        F["取得した各ドキュメント"]
+        G[("dm_messages")]
     end
 
-    subgraph "バッチ更新"
-        G["writeBatch.update()
-        read: true, readAt: now"]
-        H["batch.commit()"]
+    subgraph ListenerService["subscribeToUnreadCount"]
+        H["onSnapshot 再トリガー"]
+        I["callback(0)"]
     end
 
-    subgraph "リスナー側（client-layout）"
-        I["onSnapshot 再トリガー"]
-        J["未読数 = 0"]
+    subgraph BadgeUI["client-layout.tsx"]
+        J["setUnreadDmCount(0)"]
         K["バッジ消滅"]
     end
 
     A --> B
     B --> C
-    C --> E
-    E --> D
-    D --> F
-    F --> G
-    G --> H
-    H -->|Firestore 更新| D
-    D -->|変更通知| I
+    C --> D
+    D --> E
+    E --> F
+    F -->|Firestore 更新| G
+    G -->|変更通知| H
+    H --> I
     I --> J
     J --> K
 
+    style C fill:#f59e0b,color:#000
+    style H fill:#f59e0b,color:#000
     style K fill:#22c55e,color:#fff
 ```
 
-### 3.3 ログイン → 画面表示フロー
+### 4.3 ログイン → 画面表示フロー
 
 ```mermaid
 flowchart TD
-    subgraph "ログインページ"
+    subgraph Login["ログインページ"]
         A["ユーザーがemail/password入力"]
         B["login() 関数実行"]
     end
 
-    subgraph "Firebase Auth"
+    subgraph Auth["Firebase Auth"]
         C["signInWithEmailAndPassword()"]
         D{"認証成功?"}
         E["エラー表示"]
     end
 
-    subgraph "Firestore"
+    subgraph Profile["Firestore"]
         F["getDoc(users/{uid})"]
         G{"プロファイル存在?"}
         H["エラー: ユーザー情報なし"]
     end
 
-    subgraph "状態チェック"
+    subgraph Check["状態チェック"]
         I{"emailVerified?"}
         J["→ /verify-email"]
         K{"status == pending?"}
         L["→ /pending-approval"]
         M{"status == suspended?"}
-        N["強制ログアウト
-        → /login?error=suspended"]
+        N["強制ログアウト"]
         O{"status == approved?"}
     end
 
-    subgraph "役割別リダイレクト"
+    subgraph Redirect["役割別リダイレクト"]
         P{"role == admin?"}
         Q["→ /dashboard"]
         R["→ /mypage"]
     end
 
-    subgraph "画面表示"
-        S["lastLoginAt 更新"]
-        T["AuthContext 更新
-        user, userProfile"]
-        U["LayoutContent レンダリング"]
-        V["BottomNavigation 表示"]
-        W["DM未読リスナー開始"]
+    subgraph Display["画面表示"]
+        S["AuthContext 更新"]
+        T["LayoutContent レンダリング"]
+        U["subscribeToUnreadCount() 開始"]
     end
 
     A --> B
@@ -238,70 +299,17 @@ flowchart TD
     R --> S
     S --> T
     T --> U
-    U --> V
-    V --> W
 
     style Q fill:#8b5cf6,color:#fff
     style R fill:#ec4899,color:#fff
-```
-
-### 3.4 認証状態監視フロー（onAuthStateChanged）
-
-```mermaid
-flowchart TD
-    subgraph "AuthProvider 初期化"
-        A["useEffect 実行"]
-        B["onAuthStateChanged
-        リスナー登録"]
-    end
-
-    subgraph "Firebase Auth 状態変更"
-        C{"firebaseUser
-        存在?"}
-    end
-
-    subgraph "認証済みフロー"
-        D["setUser(firebaseUser)"]
-        E["fetchUserProfile(uid)"]
-        F["setUserProfile(profile)"]
-        G["状態に応じたルーティング"]
-    end
-
-    subgraph "未認証フロー"
-        H["setUser(null)"]
-        I["setUserProfile(null)"]
-        J{"保護ルート?"}
-        K["→ /login"]
-        L["そのまま表示"]
-    end
-
-    subgraph "完了"
-        M["setLoading(false)"]
-    end
-
-    A --> B
-    B --> C
-    C -->|Yes| D
-    D --> E
-    E --> F
-    F --> G
-    G --> M
-    C -->|No| H
-    H --> I
-    I --> J
-    J -->|Yes| K
-    J -->|No| L
-    K --> M
-    L --> M
-
-    style B fill:#f59e0b,color:#000
+    style U fill:#f59e0b,color:#000
 ```
 
 ---
 
-## 4. 状態更新のタイミング
+## 5. 状態更新のタイミング
 
-### 4.1 AuthContext の更新トリガー
+### 5.1 AuthContext の更新トリガー
 
 | トリガー | 更新される状態 | 発火タイミング |
 |---------|--------------|--------------|
@@ -310,32 +318,40 @@ flowchart TD
 | `logout()` | `user`, `userProfile` を null化 | ログアウト時 |
 | `refreshUserProfile()` | `userProfile` | 手動更新時 |
 
-### 4.2 DM未読カウントの更新トリガー
+### 5.2 DM未読カウントの更新トリガー
 
-| トリガー | 更新される状態 | 発火タイミング |
-|---------|--------------|--------------|
-| `onSnapshot` コールバック | `unreadDmCount` | dm_messages 変更時 |
-| DMページで既読処理 | 間接的に `unreadDmCount` | batch.commit() 完了後 |
+| トリガー | 経由サービス関数 | 更新される状態 |
+|---------|----------------|--------------|
+| 新規メッセージ受信 | `subscribeToUnreadCount()` | `unreadDmCount` |
+| `markMessagesAsRead()` 実行 | `subscribeToUnreadCount()` | `unreadDmCount` → 0 |
 
 ---
 
-## 5. データフロー図（全体像）
+## 6. データフロー図（全体像）
 
 ```mermaid
 flowchart LR
     subgraph Browser["ブラウザ"]
+        subgraph UI["UI Components"]
+            dmPage["app/dm/page.tsx"]
+            clientLayout["client-layout.tsx"]
+            badge["🔴 未読バッジ"]
+            chat["💬 チャット画面"]
+        end
+
         subgraph Context["AuthContext"]
             user["user"]
             profile["userProfile"]
         end
+
         subgraph Local["ローカル State"]
             dmCount["unreadDmCount"]
             messages["messages[]"]
         end
-        subgraph UI["UI コンポーネント"]
-            badge["🔴 未読バッジ"]
-            chat["💬 チャット画面"]
-        end
+    end
+
+    subgraph ServiceLayer["Service Layer"]
+        dmService["lib/services/dm.ts"]
     end
 
     subgraph Firebase["Firebase"]
@@ -345,19 +361,42 @@ flowchart LR
     end
 
     auth -->|onAuthStateChanged| user
-    user -->|getDoc| fs_users
+    user --->|getDoc| fs_users
     fs_users -->|プロファイル| profile
 
-    fs_dm -->|onSnapshot| dmCount
-    fs_dm -->|onSnapshot| messages
+    clientLayout -->|subscribeToUnreadCount| dmService
+    dmPage -->|subscribeToDMMessages| dmService
+
+    dmService <-->|onSnapshot| fs_dm
+
+    dmService -->|callback(count)| dmCount
+    dmService -->|callback(messages)| messages
 
     dmCount -->|count > 0| badge
     messages --> chat
 
+    style dmService fill:#f59e0b,color:#000
     style badge fill:#ef4444,color:#fff
     style fs_dm fill:#4f46e5,color:#fff
 ```
 
 ---
 
-*このドキュメントはソースコードから自動生成されました。*
+## 7. Service Layer 関数一覧
+
+### lib/services/dm.ts
+
+| 関数 | 引数 | 戻り値 | 説明 |
+|------|------|--------|------|
+| `sendDMMessage` | `SendDMMessageParams` | `Promise<void>` | メッセージ送信 |
+| `sendDMToAdmins` | `userId, userName, message` | `Promise<void>` | メンバー→運営DM |
+| `sendAdminDMToUser` | `adminUid, adminName, targetId, targetName, message` | `Promise<void>` | 運営→メンバーDM |
+| `subscribeToDMMessages` | `userId, callback` | `Unsubscribe` | DM監視（送受信両方） |
+| `subscribeToUnreadCount` | `userId, callback` | `Unsubscribe` | 未読数監視 |
+| `subscribeToAdminDMWithUser` | `adminUid, targetUserId, callback` | `Unsubscribe` | 管理者向けDM監視 |
+| `markMessagesAsRead` | `userId` | `Promise<number>` | 既読処理 |
+| `getAdminUIDs` | - | `Promise<string[]>` | 管理者UID取得 |
+
+---
+
+*このドキュメントは2026-01-12にPhase 2リファクタリング完了後に更新されました。*
