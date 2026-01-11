@@ -21,6 +21,7 @@ import {
   Ticket,
   CheckSquare,
   Sparkles,
+  ClipboardList,
 } from "lucide-react";
 import { getUserGuardianProfile } from "@/lib/firestore";
 import { GUARDIANS, ATTRIBUTES, EVOLUTION_STAGES, getGuardianImagePath, GuardianId } from "@/lib/guardian-collection";
@@ -32,6 +33,12 @@ const memberNavItems = [
     subtitle: "あなたの冒険",
     href: "/mypage",
     icon: User,
+  },
+  {
+    title: "日報報告",
+    subtitle: "今日の活動報告",
+    href: "/report",
+    icon: ClipboardList,
   },
   {
     title: "運営とのDM",
