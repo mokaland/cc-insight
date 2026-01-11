@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Settings, Save, RotateCcw, CheckCircle, AlertCircle, Sparkles, Eye } from "lucide-react";
 import { getFeedbackPrompt, saveFeedbackPrompt } from "@/lib/post-feedback";
-import { generatePostFeedback, DEFAULT_FEEDBACK_PROMPT } from "@/lib/ai-service";
+import { DEFAULT_FEEDBACK_PROMPT } from "@/lib/ai-service";
 import { useAuth } from "@/lib/auth-context";
 
 export default function PromptsPage() {
@@ -72,11 +72,28 @@ export default function PromptsPage() {
         setPreviewResult("");
 
         try {
-            const result = await generatePostFeedback(testContent, prompt);
-            setPreviewResult(result);
+            // APIルート経由でフィードバック生成（サーバー側でAPIキーを使用）
+            const response = await fetch("/api/ai-feedback", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify({
+                    content: testContent,
+                    prompt: prompt,
+                }),
+            });
+
+            const data = await response.json();
+
+            if (!response.ok) {
+                throw new Error(data.error || "フィードバック生成に失敗しました");
+            }
+
+            setPreviewResult(data.feedback);
         } catch (err) {
             console.error("プレビューエラー:", err);
-            setPreviewResult("エラー: フィードバック生成に失敗しました。APIキーを確認してください。");
+            setPreviewResult(`エラー: ${err instanceof Error ? err.message : "フィードバック生成に失敗しました"}`);
         } finally {
             setPreviewing(false);
         }

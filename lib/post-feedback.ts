@@ -14,7 +14,7 @@ import {
     serverTimestamp,
     Timestamp
 } from "firebase/firestore";
-import { generatePostFeedback, DEFAULT_FEEDBACK_PROMPT } from "./ai-service";
+import { DEFAULT_FEEDBACK_PROMPT } from "./ai-service";
 
 // フィードバック型定義
 export interface PostFeedback {
@@ -99,8 +99,25 @@ export async function generateAndSaveFeedback(
         try {
             console.log(`🤖 Generating feedback for post: ${post.url.substring(0, 50)}...`);
 
-            // AIフィードバック生成
-            const feedbackText = await generatePostFeedback(post.content, customPrompt);
+            // APIルート経由でAIフィードバック生成（サーバー側でAPIキーを使用）
+            const response = await fetch("/api/ai-feedback", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify({
+                    content: post.content,
+                    prompt: customPrompt,
+                }),
+            });
+
+            const data = await response.json();
+
+            if (!response.ok) {
+                throw new Error(data.error || "フィードバック生成に失敗しました");
+            }
+
+            const feedbackText = data.feedback;
 
             // Firestoreに保存
             const feedbackData = {
