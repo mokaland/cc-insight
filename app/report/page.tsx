@@ -58,6 +58,9 @@ export default function ReportPage() {
   const [existingReport, setExistingReport] = useState<Report | null>(null);
   const [isEditMode, setIsEditMode] = useState(false);
   const [modifyCount, setModifyCount] = useState(0);
+
+  // 🔧 送信成功後のフォーム再充填防止用フラグ
+  const [justSubmitted, setJustSubmitted] = useState(false);
   
   // ログインユーザーのチームを自動設定
   const selectedTeam = userProfile?.team || "";
@@ -124,6 +127,9 @@ export default function ReportPage() {
   useEffect(() => {
     if (!user) return;
 
+    // 🔧 送信直後は下書き復元もスキップ
+    if (justSubmitted) return;
+
     const draftKey = `report-draft-${user.uid}-${date}`;
     const savedDraft = localStorage.getItem(draftKey);
 
@@ -160,19 +166,25 @@ export default function ReportPage() {
         console.error("下書き復元エラー:", e);
       }
     }
-  }, [user, date, existingReport, isXTeam]);
+  }, [user, date, existingReport, isXTeam, justSubmitted]);
 
   // 🔒 既存レポートチェック（デイリーロック）
   useEffect(() => {
     const checkExistingReport = async () => {
       if (!user || !selectedTeam) return;
-      
+
+      // 🔧 送信直後はフォーム再充填をスキップ
+      if (justSubmitted) {
+        console.log('📝 送信直後のためフォーム再充填をスキップ');
+        return;
+      }
+
       const existing = await getTodayReport(user.uid, date);
       if (existing) {
         setExistingReport(existing);
         setIsEditMode(true);
         setModifyCount((existing as any).modifyCount || 0);
-        
+
         // フォームに既存データを充填
         if (isXTeam) {
           setXPostCount(String(existing.postCount || ""));
@@ -201,9 +213,9 @@ export default function ReportPage() {
         setModifyCount(0);
       }
     };
-    
+
     checkExistingReport();
-  }, [user, date, selectedTeam, isXTeam]);
+  }, [user, date, selectedTeam, isXTeam, justSubmitted]);
 
   const addUrlField = () => {
     setXPostUrls([...xPostUrls, ""]);
@@ -413,6 +425,9 @@ export default function ReportPage() {
 
       setSuccess(true);
 
+      // 🔧 フォーム再充填防止フラグを設定
+      setJustSubmitted(true);
+
       // 🗑️ 下書き削除（報告成功時）
       if (user) {
         const draftKey = `report-draft-${user.uid}-${date}`;
@@ -486,6 +501,7 @@ export default function ReportPage() {
     setXPostUrls([""]);
     setXLikeCount("");
     setXReplyCount("");
+    setXFollowers(""); // 🔧 Xフォロワー数もリセット
     setXTodayComment("");
   };
 
