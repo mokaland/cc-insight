@@ -96,6 +96,10 @@ export default function MyPage() {
   const [snsLoading, setSnsLoading] = useState(false);
   const [snsMessage, setSnsMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
+  // 個別SNS保存処理用の状態（フックはトップレベルで宣言する必要がある）
+  const [savingKey, setSavingKey] = useState<string | null>(null);
+  const [inputUrls, setInputUrls] = useState<{[key: string]: string}>({});
+
   useEffect(() => {
     const loadData = async () => {
       if (!user) return;
@@ -159,6 +163,17 @@ export default function MyPage() {
     loadData();
   }, [user]);
 
+  // inputUrlsを初期化（snsAccountsが変更されたとき）
+  useEffect(() => {
+    const urls: {[key: string]: string} = {};
+    const snsKeys = ['instagram', 'youtube', 'tiktok', 'x'] as const;
+    snsKeys.forEach(key => {
+      const snsData = snsAccounts[key] as SnsAccountApproval | undefined;
+      urls[key] = snsData?.url || '';
+    });
+    setInputUrls(urls);
+  }, [snsAccounts]);
+
   if (loading) {
     return <PageLoader text="マイページを読み込み中..." />;
   }
@@ -185,21 +200,6 @@ export default function MyPage() {
   // チームに応じたSNS入力順序
   const teamId = userProfile?.team as keyof typeof SNS_ORDER_BY_TEAM || 'fukugyou';
   const snsOrder = SNS_ORDER_BY_TEAM[teamId] || SNS_ORDER_BY_TEAM.fukugyou;
-
-  // 個別SNS保存処理（個別送信対応）
-  const [savingKey, setSavingKey] = useState<string | null>(null);
-  const [inputUrls, setInputUrls] = useState<{[key: string]: string}>({});
-
-  // inputUrlsを初期化
-  useEffect(() => {
-    const urls: {[key: string]: string} = {};
-    const snsKeys = ['instagram', 'youtube', 'tiktok', 'x'] as const;
-    snsKeys.forEach(key => {
-      const snsData = snsAccounts[key] as SnsAccountApproval | undefined;
-      urls[key] = snsData?.url || '';
-    });
-    setInputUrls(urls);
-  }, [snsAccounts]);
 
   const handleSaveSingleSns = async (snsKey: 'instagram' | 'youtube' | 'tiktok' | 'x') => {
     if (!user) return;

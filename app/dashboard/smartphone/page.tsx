@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { CircularProgress } from "@/components/circular-progress";
 import { GlassCard, TodayProgress, NeonGauge } from "@/components/glass-card";
-import { FileText, Heart, MessageCircle, Users, Target, Calendar, TrendingUp, Twitter, ExternalLink, ChevronDown, ChevronUp } from "lucide-react";
+import { FileText, Heart, MessageCircle, Users, Target, Calendar, TrendingUp, Twitter, ExternalLink, ChevronDown, ChevronUp, Copy, CheckCircle } from "lucide-react";
 import { getReportsByPeriod, calculateTeamStats, teams, Report } from "@/lib/firestore";
 
 const team = teams.find((t) => t.id === "buppan")!;
@@ -115,33 +115,44 @@ export default function SmartphoneTeamPage() {
     }
   };
 
-  // メンバー個別のURL一括オープン
-  // ブラウザのポップアップブロッカー対策: 遅延を入れて順次開く
-  const openMemberUrls = (memberName: string) => {
+  // コピー完了メッセージの状態
+  const [copyMessage, setCopyMessage] = useState<string | null>(null);
+
+  // メンバー個別のURLをクリップボードにコピー
+  const copyMemberUrls = async (memberName: string) => {
     const member = memberPostUrls.find(m => m.name === memberName);
     if (member) {
-      member.urls.forEach(({ url }, index) => {
-        setTimeout(() => {
-          window.open(url, "_blank");
-        }, index * 300); // 300ms間隔で順次開く
-      });
+      const urlText = member.urls.map(({ url }) => url).join('\n');
+      try {
+        await navigator.clipboard.writeText(urlText);
+        setCopyMessage(`${member.name}さんの${member.urls.length}件のURLをコピーしました`);
+        setTimeout(() => setCopyMessage(null), 3000);
+      } catch (error) {
+        console.error('コピー失敗:', error);
+        setCopyMessage('コピーに失敗しました');
+        setTimeout(() => setCopyMessage(null), 3000);
+      }
     }
   };
 
-  // 期間全体のURL一括オープン
-  // ブラウザのポップアップブロッカー対策: 遅延を入れて順次開く
-  const openAllUrls = () => {
+  // 期間全体のURLをクリップボードにコピー
+  const copyAllUrls = async () => {
     const allUrls: string[] = [];
     memberPostUrls.forEach(member => {
       member.urls.forEach(({ url }) => {
         allUrls.push(url);
       });
     });
-    allUrls.forEach((url, index) => {
-      setTimeout(() => {
-        window.open(url, "_blank");
-      }, index * 300); // 300ms間隔で順次開く
-    });
+    const urlText = allUrls.join('\n');
+    try {
+      await navigator.clipboard.writeText(urlText);
+      setCopyMessage(`全${allUrls.length}件のURLをコピーしました`);
+      setTimeout(() => setCopyMessage(null), 3000);
+    } catch (error) {
+      console.error('コピー失敗:', error);
+      setCopyMessage('コピーに失敗しました');
+      setTimeout(() => setCopyMessage(null), 3000);
+    }
   };
 
   // 全投稿URL数を計算
@@ -282,6 +293,14 @@ export default function SmartphoneTeamPage() {
 
       {/* 🆕 投稿URL一括確認セクション（常に表示） */}
       <GlassCard glowColor="#3b82f6" className="p-4 md:p-6">
+        {/* コピー成功メッセージ */}
+        {copyMessage && (
+          <div className="mb-4 p-3 rounded-lg bg-green-500/20 border border-green-500/30 flex items-center gap-2 text-green-300">
+            <CheckCircle className="h-4 w-4 flex-shrink-0" />
+            <span className="text-sm">{copyMessage}</span>
+          </div>
+        )}
+
         {/* ヘッダー（モバイル対応：縦並び） */}
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 mb-4">
           <div className="flex items-center gap-2">
@@ -291,11 +310,11 @@ export default function SmartphoneTeamPage() {
           </div>
           {totalUrlCount > 0 && (
             <Button
-              onClick={openAllUrls}
+              onClick={copyAllUrls}
               className="w-full md:w-auto bg-gradient-to-r from-blue-500 to-cyan-500 text-white hover:from-blue-600 hover:to-cyan-600"
             >
-              <ExternalLink className="h-4 w-4 mr-2" />
-              全{totalUrlCount}件を一括で開く
+              <Copy className="h-4 w-4 mr-2" />
+              全{totalUrlCount}件のURLをコピー
             </Button>
           )}
         </div>
@@ -333,12 +352,12 @@ export default function SmartphoneTeamPage() {
                       variant="outline"
                       onClick={(e) => {
                         e.stopPropagation();
-                        openMemberUrls(member.name);
+                        copyMemberUrls(member.name);
                       }}
                       className="text-blue-400 border-blue-400/30 hover:bg-blue-400/10 text-xs md:text-sm"
                     >
-                      <ExternalLink className="h-3 w-3 mr-1" />
-                      一括で開く
+                      <Copy className="h-3 w-3 mr-1" />
+                      URLをコピー
                     </Button>
                     {expandedMember === member.name ? (
                       <ChevronUp className="h-5 w-5 text-muted-foreground flex-shrink-0" />
@@ -460,16 +479,16 @@ export default function SmartphoneTeamPage() {
                     </div>
                   </div>
                   <div className="flex items-center gap-6 text-sm">
-                    {/* 投稿URL一括オープンボタン */}
+                    {/* 投稿URLコピーボタン */}
                     {memberUrls && memberUrls.urls.length > 0 && (
                       <Button
                         size="sm"
                         variant="ghost"
-                        onClick={() => openMemberUrls(member.name)}
+                        onClick={() => copyMemberUrls(member.name)}
                         className="text-blue-400 hover:text-blue-300 hover:bg-blue-400/10"
-                        title={`${memberUrls.urls.length}件の投稿を確認`}
+                        title={`${memberUrls.urls.length}件のURLをコピー`}
                       >
-                        <ExternalLink className="h-4 w-4 mr-1" />
+                        <Copy className="h-4 w-4 mr-1" />
                         {memberUrls.urls.length}件
                       </Button>
                     )}
