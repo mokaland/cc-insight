@@ -9,11 +9,11 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { 
-  Send, 
-  User, 
-  Calendar, 
-  Eye, 
+import {
+  Send,
+  User,
+  Calendar,
+  Eye,
   UserPlus,
   Link2,
   MousePointerClick,
@@ -33,6 +33,7 @@ import {
   Zap
 } from "lucide-react";
 import { teams, processReportWithEnergy, getTodayReport, updateReport, Report, getAllUsers, getUserGuardianProfile, getPreviousFollowerCounts } from "@/lib/firestore";
+import { processPostFeedback } from "@/lib/post-feedback";
 import EnergyToast from "@/components/energy-toast";
 import { ReportSuccessCelebration } from "@/components/report-success-celebration";
 import { LevelUpCelebration } from "@/components/level-up-celebration";
@@ -61,7 +62,7 @@ export default function ReportPage() {
 
   // 🔧 送信成功後のフォーム再充填防止用フラグ
   const [justSubmitted, setJustSubmitted] = useState(false);
-  
+
   // ログインユーザーのチームを自動設定
   const selectedTeam = userProfile?.team || "";
 
@@ -83,7 +84,7 @@ export default function ReportPage() {
 
   // X運用（物販）用の項目
   const [xPostCount, setXPostCount] = useState("");
-  const [xPostUrls, setXPostUrls] = useState<string[]>([""]);
+  const [xPosts, setXPosts] = useState<{ url: string; content: string }[]>([{ url: "", content: "" }]);
   const [xLikeCount, setXLikeCount] = useState("");
   const [xReplyCount, setXReplyCount] = useState("");
   const [xFollowers, setXFollowers] = useState(""); // 🆕 Xフォロワー数追加
@@ -104,7 +105,7 @@ export default function ReportPage() {
       weeklyStories, igFollowers, ytFollowers, tiktokFollowers,
       igPosts, ytPosts, tiktokPosts, todayComment,
       // X系データ
-      xPostCount, xPostUrls, xLikeCount, xReplyCount, xFollowers, xTodayComment,
+      xPostCount, xPosts, xLikeCount, xReplyCount, xFollowers, xTodayComment,
       // メタ情報
       savedAt: Date.now(),
       isXTeam
@@ -120,7 +121,7 @@ export default function ReportPage() {
     user, date, igViews, igProfileAccess, igExternalTaps, igInteractions,
     weeklyStories, igFollowers, ytFollowers, tiktokFollowers,
     igPosts, ytPosts, tiktokPosts, todayComment,
-    xPostCount, xPostUrls, xLikeCount, xReplyCount, xFollowers, xTodayComment, isXTeam
+    xPostCount, xPosts, xLikeCount, xReplyCount, xFollowers, xTodayComment, isXTeam
   ]);
 
   // 📥 下書き復元機能
@@ -155,7 +156,7 @@ export default function ReportPage() {
           } else {
             // X系データ復元
             setXPostCount(draft.xPostCount || "");
-            setXPostUrls(draft.xPostUrls || [""]);
+            setXPosts(draft.xPosts || [{ url: "", content: "" }]);
             setXLikeCount(draft.xLikeCount || "");
             setXReplyCount(draft.xReplyCount || "");
             setXFollowers(draft.xFollowers || "");
@@ -188,7 +189,11 @@ export default function ReportPage() {
         // フォームに既存データを充填
         if (isXTeam) {
           setXPostCount(String(existing.postCount || ""));
-          setXPostUrls(existing.postUrls || [""]);
+          // 既存データが古い形式（string[]）の場合の互換性対応
+          const existingPosts = existing.posts ||
+            (existing.postUrls?.map((url: string) => ({ url, content: "" }))) ||
+            [{ url: "", content: "" }];
+          setXPosts(existingPosts);
           setXLikeCount(String(existing.likeCount || ""));
           setXReplyCount(String(existing.replyCount || ""));
           setXFollowers(String((existing as any).xFollowers || "")); // 🆕 Xフォロワー数復元
@@ -217,18 +222,24 @@ export default function ReportPage() {
     checkExistingReport();
   }, [user, date, selectedTeam, isXTeam, justSubmitted]);
 
-  const addUrlField = () => {
-    setXPostUrls([...xPostUrls, ""]);
+  const addPostField = () => {
+    setXPosts([...xPosts, { url: "", content: "" }]);
   };
 
-  const removeUrlField = (index: number) => {
-    setXPostUrls(xPostUrls.filter((_, i) => i !== index));
+  const removePostField = (index: number) => {
+    setXPosts(xPosts.filter((_, i) => i !== index));
   };
 
-  const updateUrl = (index: number, value: string) => {
-    const newUrls = [...xPostUrls];
-    newUrls[index] = value;
-    setXPostUrls(newUrls);
+  const updatePostUrl = (index: number, value: string) => {
+    const newPosts = [...xPosts];
+    newPosts[index] = { ...newPosts[index], url: value };
+    setXPosts(newPosts);
+  };
+
+  const updatePostContent = (index: number, value: string) => {
+    const newPosts = [...xPosts];
+    newPosts[index] = { ...newPosts[index], content: value };
+    setXPosts(newPosts);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -256,26 +267,26 @@ export default function ReportPage() {
       setError(`日報の修正は1日${MAX_MODIFY_COUNT}回までです。修正回数: ${modifyCount}/${MAX_MODIFY_COUNT}`);
       return;
     }
-    
+
     console.log('🚀 送信開始', { name: userProfile.displayName, selectedTeam, date });
     setSubmitting(true);
     setError("");
     setSuccess(false);
 
     // タイムアウト用Promise
-    const timeout = new Promise((_, reject) => 
+    const timeout = new Promise((_, reject) =>
       setTimeout(() => reject(new Error("タイムアウト: 10秒以内に応答がありませんでした")), 10000)
     );
 
     try {
       console.log('📝 Firestoreにデータ送信中...');
-      
+
       // ⚠️ 安全装置：undefined防止のフォールバック処理
       // 優先順位: ① userProfile.realName → ② userProfile.displayName → ③ user.displayName → ④ "名前未設定メンバー"
       const safeRealName = userProfile.realName || userProfile.displayName || user.displayName || "名前未設定メンバー";
       const safeName = userProfile.displayName || user.displayName || "名前未設定";
       const safeEmail = user.email || "メールアドレス未設定";
-      
+
       console.log('✅ バリデーション完了', {
         userId: user.uid,
         realName: safeRealName,
@@ -283,22 +294,22 @@ export default function ReportPage() {
         email: safeEmail,
         team: selectedTeam
       });
-      
+
       // 🔧 C-1: 前回のフォロワー数を取得（差分計算のため）
       const previousFollowers = await getPreviousFollowerCounts(user.uid);
-      
+
       if (!previousFollowers && !isEditMode) {
         setError("前回データの取得に失敗しました。もう一度お試しください。");
         return;
       }
-      
+
       // フォロワー数の差分計算（現在値 - 前回値）
       // ⚠️ Math.max(0, ...) でマイナスは0扱い（減少は無視）
       const currentIgFollowers = parseInt(igFollowers) || 0;
       const currentYtFollowers = parseInt(ytFollowers) || 0;
       const currentTiktokFollowers = parseInt(tiktokFollowers) || 0;
       const currentXFollowers = parseInt(xFollowers) || 0;
-      
+
       // 🔒 編集モード: 既存レポートのフォロワー数を維持（二重カウント防止）
       // 🆕 新規作成: 前回レポートとの差分を計算
       const igFollowerGrowth = isEditMode ? (existingReport?.igFollowers || 0) :
@@ -309,16 +320,17 @@ export default function ReportPage() {
         Math.max(0, currentTiktokFollowers - (previousFollowers?.tiktokFollowers || 0));
       const xFollowerGrowth = isEditMode ? (existingReport?.xFollowers || 0) :
         Math.max(0, currentXFollowers - (previousFollowers?.xFollowers || 0));
-      
+
       console.log('📊 フォロワー数差分計算', {
         現在: { ig: currentIgFollowers, yt: currentYtFollowers, tt: currentTiktokFollowers, x: currentXFollowers },
         前回: previousFollowers,
         増分: { ig: igFollowerGrowth, yt: ytFollowerGrowth, tt: tiktokFollowerGrowth, x: xFollowerGrowth }
       });
-      
+
       const baseData = isXTeam ? {
         postCount: parseInt(xPostCount) || 0,
-        postUrls: xPostUrls.filter(url => url.trim() !== ""),
+        postUrls: xPosts.map(p => p.url).filter(url => url.trim() !== ""),
+        posts: xPosts.filter(p => p.url.trim() !== "" || p.content.trim() !== ""),
         likeCount: parseInt(xLikeCount) || 0,
         replyCount: parseInt(xReplyCount) || 0,
         xFollowers: xFollowerGrowth, // ✅ 差分（増分）を保存
@@ -365,7 +377,7 @@ export default function ReportPage() {
           modifyCount: 0, // 🔒 新規作成時は修正回数0
           createdAt: serverTimestamp(),
         };
-        
+
         await Promise.race([
           addDoc(collection(db, "reports"), reportData),
           timeout
@@ -398,9 +410,9 @@ export default function ReportPage() {
                     name: guardian.name,
                     color: attr.color,
                     stageName: instance.stage === 0 ? "卵" :
-                              instance.stage === 1 ? "幼体" :
-                              instance.stage === 2 ? "成長体" :
-                              instance.stage === 3 ? "成熟体" : "究極体"
+                      instance.stage === 1 ? "幼体" :
+                        instance.stage === 2 ? "成長体" :
+                          instance.stage === 3 ? "成熟体" : "究極体"
                   });
                 }
 
@@ -439,11 +451,11 @@ export default function ReportPage() {
         const commentToSend = isXTeam ? xTodayComment : todayComment;
         if (commentToSend && commentToSend.trim() !== "" && !isEditMode) {
           console.log('💬 今日の一言をDMに自動送信中...');
-          
+
           // 全ユーザー取得 → 管理者のみフィルター
           const allUsers = await getAllUsers();
           const admins = allUsers.filter(u => u.role === "admin");
-          
+
           if (admins.length > 0) {
             // 各管理者にDM送信
             for (const admin of admins) {
@@ -465,7 +477,44 @@ export default function ReportPage() {
         console.error("DM自動送信エラー:", dmError);
         // DM送信失敗でも日報送信は成功扱い
       }
-      
+
+      // 🤖 AIフィードバック生成・DM送信（X運用チームのみ、新規作成時のみ）
+      if (isXTeam && !isEditMode) {
+        try {
+          // 投稿内容があるポストのみフィルター
+          const postsWithContent = xPosts.filter(p => p.content && p.content.trim() !== "");
+
+          if (postsWithContent.length > 0) {
+            console.log(`🤖 AIフィードバック生成開始: ${postsWithContent.length}件`);
+
+            // 管理者を取得（フィードバック送信元として使用）
+            const allUsers = await getAllUsers();
+            const admins = allUsers.filter(u => u.role === "admin");
+
+            if (admins.length > 0) {
+              const adminUser = admins[0]; // 最初の管理者を送信元として使用
+
+              // バックグラウンドでフィードバック生成・送信
+              processPostFeedback(
+                `report-${user.uid}-${date}`,
+                postsWithContent,
+                user.uid,
+                userProfile.displayName,
+                adminUser.uid,
+                adminUser.displayName
+              ).then(() => {
+                console.log('✅ AIフィードバック生成・DM送信完了');
+              }).catch((feedbackError) => {
+                console.error('AIフィードバックエラー:', feedbackError);
+              });
+            }
+          }
+        } catch (feedbackSetupError) {
+          console.error('AIフィードバック設定エラー:', feedbackSetupError);
+          // フィードバック失敗でも日報送信は成功扱い
+        }
+      }
+
       // フォームリセット
       resetForm();
     } catch (err: unknown) {
@@ -498,7 +547,7 @@ export default function ReportPage() {
     setTodayComment("");
     // X系
     setXPostCount("");
-    setXPostUrls([""]);
+    setXPosts([{ url: "", content: "" }]);
     setXLikeCount("");
     setXReplyCount("");
     setXFollowers(""); // 🔧 Xフォロワー数もリセット
@@ -539,16 +588,16 @@ export default function ReportPage() {
     <div className="min-h-screen cosmic-bg relative overflow-hidden p-4 md:p-8 md:pb-8">
       {/* 星雲背景エフェクト */}
       <div className="fixed inset-0 overflow-hidden pointer-events-none">
-        <div className="nebula-bg absolute top-0 left-1/4 w-[600px] h-[600px] rounded-full blur-3xl opacity-30" 
-             style={{
-               background: `radial-gradient(ellipse at center, ${teamColor}30, ${teamColor}20 40%, transparent 70%)`
-             }} 
+        <div className="nebula-bg absolute top-0 left-1/4 w-[600px] h-[600px] rounded-full blur-3xl opacity-30"
+          style={{
+            background: `radial-gradient(ellipse at center, ${teamColor}30, ${teamColor}20 40%, transparent 70%)`
+          }}
         />
         <div className="nebula-bg absolute bottom-0 right-1/4 w-[500px] h-[500px] rounded-full blur-3xl opacity-20"
-             style={{
-               background: 'radial-gradient(ellipse at center, rgba(34, 211, 238, 0.2) 0%, rgba(168, 85, 247, 0.15) 40%, transparent 70%)',
-               animationDelay: '5s'
-             }} 
+          style={{
+            background: 'radial-gradient(ellipse at center, rgba(34, 211, 238, 0.2) 0%, rgba(168, 85, 247, 0.15) 40%, transparent 70%)',
+            animationDelay: '5s'
+          }}
         />
       </div>
 
@@ -572,7 +621,7 @@ export default function ReportPage() {
       <div className="max-w-2xl mx-auto relative">
         {/* Header */}
         <div className="text-center mb-8 -mt-2">
-          <h1 
+          <h1
             className="text-3xl font-bold bg-clip-text text-transparent mb-2"
             style={{ backgroundImage: `linear-gradient(to right, ${teamColor}, #a855f7, #06b6d4)` }}
           >
@@ -583,9 +632,9 @@ export default function ReportPage() {
           </p>
         </div>
 
-        <Card 
+        <Card
           className="backdrop-blur-xl border-2 transition-all duration-300"
-          style={{ 
+          style={{
             backgroundColor: 'rgba(255,255,255,0.05)',
             borderColor: selectedTeam ? `${teamColor}40` : 'rgba(255,255,255,0.1)',
             boxShadow: selectedTeam ? `0 0 40px ${teamColor}20` : 'none'
@@ -604,7 +653,7 @@ export default function ReportPage() {
             <form onSubmit={handleSubmit} className="space-y-6">
               {/* Success Message（シンプル版） */}
               {success && !showCelebration && (
-                <div 
+                <div
                   className="p-6 rounded-2xl border-2 relative overflow-hidden"
                   style={{
                     backgroundColor: `${teamColor}10`,
@@ -613,7 +662,7 @@ export default function ReportPage() {
                   }}
                 >
                   <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent animate-pulse" />
-                  
+
                   <div className="relative z-10 text-center">
                     <div className="text-6xl mb-4 animate-bounce">✅</div>
                     <h3 className="text-2xl font-bold mb-2" style={{ color: teamColor }}>
@@ -646,13 +695,13 @@ export default function ReportPage() {
                 <>
                   {/* 所属チーム表示 */}
                   <div className="p-4 rounded-xl border-2 bg-white/10"
-                    style={{ 
+                    style={{
                       borderColor: teamColor,
                       boxShadow: `0 0 25px ${teamColor}40`
                     }}
                   >
                     <div className="flex items-center gap-3">
-                      <span 
+                      <span
                         className="w-4 h-4 rounded-full animate-pulse"
                         style={{ backgroundColor: teamColor, boxShadow: `0 0 10px ${teamColor}` }}
                       />
@@ -670,7 +719,7 @@ export default function ReportPage() {
                         <User className="w-4 h-4" />
                         報告者
                       </Label>
-                      <div 
+                      <div
                         className="px-3 py-2 rounded-md bg-white/10 border text-white"
                         style={{ borderColor: `${teamColor}30` }}
                       >
@@ -763,42 +812,72 @@ export default function ReportPage() {
                         />
                       </div>
 
-                      {/* 投稿URL */}
-                      <div className="space-y-3">
-                        <Label className="flex items-center gap-2 text-white">
-                          <Link2 className="w-4 h-4 text-yellow-500" />
-                          投稿したポストのURL
-                        </Label>
-                        {xPostUrls.map((url, index) => (
-                          <div key={index} className="flex gap-2">
-                            <Input
-                              placeholder="https://x.com/..."
-                              value={url}
-                              onChange={(e) => updateUrl(index, e.target.value)}
-                              className="bg-white/5 border-yellow-500/30 focus:border-yellow-500"
-                            />
-                            {xPostUrls.length > 1 && (
-                              <Button
-                                type="button"
-                                variant="ghost"
-                                size="icon"
-                                onClick={() => removeUrlField(index)}
-                                className="text-red-400 hover:text-red-300"
-                              >
-                                <Trash2 className="w-4 h-4" />
-                              </Button>
-                            )}
+                      {/* 投稿URL + 投稿内容（AIフィードバック用） */}
+                      <div className="space-y-4">
+                        <div>
+                          <Label className="flex items-center gap-2 text-white">
+                            <Link2 className="w-4 h-4 text-yellow-500" />
+                            投稿したポスト
+                          </Label>
+                          <p className="text-xs text-slate-400 mt-1">
+                            🤖 投稿内容を入力すると、AIから詳細なフィードバックがDMで届きます
+                          </p>
+                        </div>
+
+                        {xPosts.map((post, index) => (
+                          <div key={index} className="p-4 rounded-xl border border-yellow-500/20 bg-yellow-500/5 space-y-3">
+                            <div className="flex items-center justify-between">
+                              <span className="text-sm text-yellow-400 font-medium">投稿 {index + 1}</span>
+                              {xPosts.length > 1 && (
+                                <Button
+                                  type="button"
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => removePostField(index)}
+                                  className="text-red-400 hover:text-red-300 h-7 px-2"
+                                >
+                                  <Trash2 className="w-4 h-4 mr-1" />
+                                  削除
+                                </Button>
+                              )}
+                            </div>
+
+                            {/* 投稿URL */}
+                            <div className="space-y-1">
+                              <Label className="text-xs text-slate-300">投稿URL</Label>
+                              <Input
+                                placeholder="https://x.com/..."
+                                value={post.url}
+                                onChange={(e) => updatePostUrl(index, e.target.value)}
+                                className="bg-white/5 border-yellow-500/30 focus:border-yellow-500"
+                              />
+                            </div>
+
+                            {/* 投稿内容（AIフィードバック用） */}
+                            <div className="space-y-1">
+                              <Label className="text-xs text-slate-300 flex items-center gap-1">
+                                投稿内容
+                                <span className="text-yellow-400 text-[10px]">（AIフィードバック用）</span>
+                              </Label>
+                              <textarea
+                                placeholder="投稿のテキストをコピペしてください..."
+                                value={post.content}
+                                onChange={(e) => updatePostContent(index, e.target.value)}
+                                className="w-full h-24 px-3 py-2 rounded-md bg-white/5 border border-yellow-500/30 focus:border-yellow-500 focus:outline-none resize-none text-sm"
+                              />
+                            </div>
                           </div>
                         ))}
+
                         <Button
                           type="button"
                           variant="outline"
                           size="sm"
-                          onClick={addUrlField}
+                          onClick={addPostField}
                           className="border-yellow-500/30 text-yellow-400 hover:bg-yellow-500/10"
                         >
                           <Plus className="w-4 h-4 mr-2" />
-                          URLを追加
+                          投稿を追加
                         </Button>
                       </div>
 
@@ -945,7 +1024,7 @@ export default function ReportPage() {
                         <div className="space-y-2">
                           <Label className="flex items-center gap-2 text-sm text-white">
                             <svg className="w-4 h-4" style={{ color: teamColor }} viewBox="0 0 24 24" fill="currentColor">
-                              <path d="M12.525.02c1.31-.02 2.61-.01 3.91-.02.08 1.53.63 3.09 1.75 4.17 1.12 1.11 2.7 1.62 4.24 1.79v4.03c-1.44-.05-2.89-.35-4.2-.97-.57-.26-1.1-.59-1.62-.93-.01 2.92.01 5.84-.02 8.75-.08 1.4-.54 2.79-1.35 3.94-1.31 1.92-3.58 3.17-5.91 3.21-1.43.08-2.86-.31-4.08-1.03-2.02-1.19-3.44-3.37-3.65-5.71-.02-.5-.03-1-.01-1.49.18-1.9 1.12-3.72 2.58-4.96 1.66-1.44 3.98-2.13 6.15-1.72.02 1.48-.04 2.96-.04 4.44-.99-.32-2.15-.23-3.02.37-.63.41-1.11 1.04-1.36 1.75-.21.51-.15 1.07-.14 1.61.24 1.64 1.82 3.02 3.5 2.87 1.12-.01 2.19-.66 2.77-1.61.19-.33.4-.67.41-1.06.1-1.79.06-3.57.07-5.36.01-4.03-.01-8.05.02-12.07z"/>
+                              <path d="M12.525.02c1.31-.02 2.61-.01 3.91-.02.08 1.53.63 3.09 1.75 4.17 1.12 1.11 2.7 1.62 4.24 1.79v4.03c-1.44-.05-2.89-.35-4.2-.97-.57-.26-1.1-.59-1.62-.93-.01 2.92.01 5.84-.02 8.75-.08 1.4-.54 2.79-1.35 3.94-1.31 1.92-3.58 3.17-5.91 3.21-1.43.08-2.86-.31-4.08-1.03-2.02-1.19-3.44-3.37-3.65-5.71-.02-.5-.03-1-.01-1.49.18-1.9 1.12-3.72 2.58-4.96 1.66-1.44 3.98-2.13 6.15-1.72.02 1.48-.04 2.96-.04 4.44-.99-.32-2.15-.23-3.02.37-.63.41-1.11 1.04-1.36 1.75-.21.51-.15 1.07-.14 1.61.24 1.64 1.82 3.02 3.5 2.87 1.12-.01 2.19-.66 2.77-1.61.19-.33.4-.67.41-1.06.1-1.79.06-3.57.07-5.36.01-4.03-.01-8.05.02-12.07z" />
                             </svg>
                             TikTok フォロワー数
                           </Label>
@@ -964,7 +1043,7 @@ export default function ReportPage() {
 
                       {/* ✅ SNS別投稿数（菅原副社長の要求） */}
                       <div className="p-4 rounded-xl border-2 space-y-4"
-                        style={{ 
+                        style={{
                           borderColor: `${teamColor}40`,
                           backgroundColor: `${teamColor}05`
                         }}
@@ -1012,7 +1091,7 @@ export default function ReportPage() {
                           <div className="space-y-2">
                             <Label className="flex items-center gap-2 text-sm text-white">
                               <svg className="w-4 h-4" style={{ color: teamColor }} viewBox="0 0 24 24" fill="currentColor">
-                                <path d="M12.525.02c1.31-.02 2.61-.01 3.91-.02.08 1.53.63 3.09 1.75 4.17 1.12 1.11 2.7 1.62 4.24 1.79v4.03c-1.44-.05-2.89-.35-4.2-.97-.57-.26-1.10-.59-1.62-.93-.01 2.92.01 5.84-.02 8.75-.08 1.4-.54 2.79-1.35 3.94-1.31 1.92-3.58 3.17-5.91 3.21-1.43.08-2.86-.31-4.08-1.03-2.02-1.19-3.44-3.37-3.65-5.71-.02-.5-.03-1-.01-1.49.18-1.9 1.12-3.72 2.58-4.96 1.66-1.44 3.98-2.13 6.15-1.72.02 1.48-.04 2.96-.04 4.44-.99-.32-2.15-.23-3.02.37-.63.41-1.11 1.04-1.36 1.75-.21.51-.15 1.07-.14 1.61.24 1.64 1.82 3.02 3.5 2.87 1.12-.01 2.19-.66 2.77-1.61.19-.33.4-.67.41-1.06.1-1.79.06-3.57.07-5.36.01-4.03-.01-8.05.02-12.07z"/>
+                                <path d="M12.525.02c1.31-.02 2.61-.01 3.91-.02.08 1.53.63 3.09 1.75 4.17 1.12 1.11 2.7 1.62 4.24 1.79v4.03c-1.44-.05-2.89-.35-4.2-.97-.57-.26-1.10-.59-1.62-.93-.01 2.92.01 5.84-.02 8.75-.08 1.4-.54 2.79-1.35 3.94-1.31 1.92-3.58 3.17-5.91 3.21-1.43.08-2.86-.31-4.08-1.03-2.02-1.19-3.44-3.37-3.65-5.71-.02-.5-.03-1-.01-1.49.18-1.9 1.12-3.72 2.58-4.96 1.66-1.44 3.98-2.13 6.15-1.72.02 1.48-.04 2.96-.04 4.44-.99-.32-2.15-.23-3.02.37-.63.41-1.11 1.04-1.36 1.75-.21.51-.15 1.07-.14 1.61.24 1.64 1.82 3.02 3.5 2.87 1.12-.01 2.19-.66 2.77-1.61.19-.33.4-.67.41-1.06.1-1.79.06-3.57.07-5.36.01-4.03-.01-8.05.02-12.07z" />
                               </svg>
                               TT 投稿数
                             </Label>
@@ -1061,7 +1140,7 @@ export default function ReportPage() {
                   <Button
                     type="submit"
                     className="w-full h-12 text-lg text-white hover:opacity-90 transition-all"
-                    style={{ 
+                    style={{
                       background: `linear-gradient(to right, ${teamColor}, #a855f7)`,
                       boxShadow: `0 0 30px ${teamColor}40`
                     }}
@@ -1086,7 +1165,7 @@ export default function ReportPage() {
         </Card>
 
       </div>
-      
+
       {/* 🎉 セレブレーションモーダル */}
       <ReportSuccessCelebration
         isOpen={showCelebration}

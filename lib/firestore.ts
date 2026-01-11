@@ -77,6 +77,7 @@ export interface Report {
   // X系
   postCount?: number;
   postUrls?: string[];
+  posts?: { url: string; content: string }[];  // 🆕 AIフィードバック用
   likeCount?: number;
   replyCount?: number;
   xFollowers?: number;  // 現在のXフォロワー数
@@ -98,9 +99,9 @@ export function getDateRange(period: string): { start: Date; end: Date } {
   const now = new Date();
   const end = new Date(now);
   end.setHours(23, 59, 59, 999);
-  
+
   let start = new Date(now);
-  
+
   switch (period) {
     case "today":
       start.setHours(0, 0, 0, 0);
@@ -133,7 +134,7 @@ export function getDateRange(period: string): { start: Date; end: Date } {
       start.setDate(now.getDate() - 7);
       start.setHours(0, 0, 0, 0);
   }
-  
+
   return { start, end };
 }
 
@@ -192,7 +193,7 @@ export async function getReportsByPeriod(
 
   const snapshot = await getDocs(q);
   const reports: Report[] = [];
-  
+
   snapshot.forEach((doc) => {
     const data = doc.data();
     if (!teamId || data.team === teamId) {
@@ -207,7 +208,7 @@ export async function getReportsByPeriod(
 export function calculateTeamStats(reports: Report[], teamId: string) {
   const teamReports = reports.filter(r => r.team === teamId);
   const team = teams.find(t => t.id === teamId);
-  
+
   if (!team || teamReports.length === 0) {
     return {
       totalViews: 0,
@@ -234,7 +235,7 @@ export function calculateTeamStats(reports: Report[], teamId: string) {
 
   // メンバーごとに集計
   const memberStats: { [name: string]: any } = {};
-  
+
   // 詳細KPI集計用
   let totalProfileAccess = 0;
   let totalExternalTaps = 0;
@@ -242,10 +243,10 @@ export function calculateTeamStats(reports: Report[], teamId: string) {
   let totalStories = 0;
   let totalLikes = 0;
   let totalReplies = 0;
-  
+
   // 最新フォロワー数（メンバーごと）
   const latestFollowers: { [name: string]: { ig: number; yt: number; tiktok: number; x: number } } = {};
-  
+
   teamReports.forEach(report => {
     if (!memberStats[report.name]) {
       memberStats[report.name] = {
@@ -259,23 +260,23 @@ export function calculateTeamStats(reports: Report[], teamId: string) {
         reports: 0
       };
     }
-    
+
     const stats = memberStats[report.name];
     stats.reports++;
-    
+
     if (team.type === "shorts") {
       stats.views += report.igViews || 0;
       stats.impressions += report.igProfileAccess || 0;
       stats.interactions += report.igInteractions || 0;
       // ✅ SNS別投稿数を正確に集計（報告1件=1投稿ではない）
       stats.posts += (report.igPosts || 0) + (report.ytPosts || 0) + (report.tiktokPosts || 0);
-      
+
       // 詳細KPI集計
       totalProfileAccess += report.igProfileAccess || 0;
       totalExternalTaps += report.igExternalTaps || 0;
       totalInteractions += report.igInteractions || 0;
       totalStories += report.weeklyStories || 0;
-      
+
       // 最新フォロワー数を保持
       if (!latestFollowers[report.name]) {
         latestFollowers[report.name] = { ig: 0, yt: 0, tiktok: 0, x: 0 };
@@ -287,11 +288,11 @@ export function calculateTeamStats(reports: Report[], teamId: string) {
       stats.posts += report.postCount || 0;
       stats.likes += report.likeCount || 0;
       stats.replies += report.replyCount || 0;
-      
+
       // X（Twitter）統計
       totalLikes += report.likeCount || 0;
       totalReplies += report.replyCount || 0;
-      
+
       // X（Twitter）フォロワー数を保持
       if (!latestFollowers[report.name]) {
         latestFollowers[report.name] = { ig: 0, yt: 0, tiktok: 0, x: 0 };
@@ -376,7 +377,7 @@ export function calculateOverallStats(reports: Report[]) {
 
   reports.forEach(report => {
     memberSet.add(report.name);
-    
+
     if (report.teamType === "shorts") {
       totalViews += report.igViews || 0;
       totalImpressions += report.igProfileAccess || 0;
@@ -386,7 +387,7 @@ export function calculateOverallStats(reports: Report[]) {
       totalStories += report.weeklyStories || 0;
       // ✅ SNS別投稿数を正確に集計
       totalPosts += (report.igPosts || 0) + (report.ytPosts || 0) + (report.tiktokPosts || 0);
-      
+
       // 最新のフォロワー数を保持
       const key = `${report.team}-${report.name}`;
       if (!latestFollowers[key]) {
@@ -434,12 +435,12 @@ export async function deleteAllReports(): Promise<number> {
   const q = query(collection(db, "reports"));
   const snapshot = await getDocs(q);
   let count = 0;
-  
+
   const deletePromises = snapshot.docs.map(async (docSnapshot) => {
     await deleteDoc(doc(db, "reports", docSnapshot.id));
     count++;
   });
-  
+
   await Promise.all(deletePromises);
   return count;
 }
@@ -450,7 +451,7 @@ export function calculateRankings(reports: Report[], type: "views" | "posts" | "
 
   reports.forEach(report => {
     const key = `${report.team}-${report.name}`;
-    
+
     if (!memberStats[key]) {
       memberStats[key] = {
         name: report.name,
@@ -464,7 +465,7 @@ export function calculateRankings(reports: Report[], type: "views" | "posts" | "
     }
 
     const stats = memberStats[key];
-    
+
     if (report.teamType === "shorts") {
       stats.views += report.igViews || 0;
       // ✅ SNS別投稿数を正確に集計
@@ -497,7 +498,7 @@ export interface User {
   approvedAt?: Timestamp;
   approvedBy?: string;
   lastLoginAt?: Timestamp;
-  
+
   // 🛡️ 守護神システム（新設）
   gender?: Gender;                    // 性別
   ageGroup?: AgeGroup;                // 年齢層
@@ -505,7 +506,7 @@ export interface User {
   activeGuardianId?: string;          // 現在アクティブな守護神のID
   completedSeasons?: CompletedSeason[]; // 殿堂入りした守護神の記録
   profileCompleted?: boolean;         // プロフィール入力完了フラグ
-  
+
   // 🔥 ストリークシステム（後方互換性のため残す）
   currentStreak?: number;
   maxStreak?: number;
@@ -520,11 +521,11 @@ export async function getAllUsers(): Promise<User[]> {
   const q = query(collection(db, "users"), orderBy("createdAt", "desc"));
   const snapshot = await getDocs(q);
   const users: User[] = [];
-  
+
   snapshot.forEach((doc) => {
     users.push({ uid: doc.id, ...doc.data() } as User);
   });
-  
+
   return users;
 }
 
@@ -594,40 +595,40 @@ export async function getUserStats(userId: string): Promise<{
       where("userId", "==", userId),
       orderBy("createdAt", "desc")
     );
-    
+
     const snapshot = await getDocs(q);
     const reports: Report[] = [];
     snapshot.forEach((doc) => {
       reports.push({ id: doc.id, ...doc.data() } as Report);
     });
-    
+
     // 統計計算
     let totalViews = 0;
     let weeklyViews = 0;
     let previousWeekViews = 0;
-    
+
     const now = new Date();
     const weekStart = new Date(now);
     weekStart.setDate(now.getDate() - 7);
     const prevWeekStart = new Date(now);
     prevWeekStart.setDate(now.getDate() - 14);
-    
+
     reports.forEach(report => {
       const views = report.igViews || 0;
       totalViews += views;
-      
+
       const reportDate = report.createdAt?.toDate?.() || new Date(report.date);
-      
+
       if (reportDate >= weekStart) {
         weeklyViews += views;
       } else if (reportDate >= prevWeekStart && reportDate < weekStart) {
         previousWeekViews += views;
       }
     });
-    
+
     // ストリーク計算
     const { currentStreak } = calculateStreak(reports);
-    
+
     return {
       totalViews,
       totalReports: reports.length,
@@ -652,23 +653,23 @@ function calculateStreak(reports: Report[]): { currentStreak: number; longestStr
   if (reports.length === 0) {
     return { currentStreak: 0, longestStreak: 0 };
   }
-  
-  const sortedReports = [...reports].sort((a, b) => 
+
+  const sortedReports = [...reports].sort((a, b) =>
     new Date(b.date).getTime() - new Date(a.date).getTime()
   );
-  
+
   const today = new Date();
   today.setHours(0, 0, 0, 0);
-  
+
   let currentStreak = 0;
   let longestStreak = 0;
   let tempStreak = 0;
   let expectedDate = new Date(today);
-  
+
   for (const report of sortedReports) {
     const reportDate = new Date(report.date);
     reportDate.setHours(0, 0, 0, 0);
-    
+
     if (reportDate.getTime() === expectedDate.getTime()) {
       tempStreak++;
       if (currentStreak === 0 || tempStreak === currentStreak + 1) {
@@ -685,9 +686,9 @@ function calculateStreak(reports: Report[]): { currentStreak: number; longestStr
       expectedDate.setDate(expectedDate.getDate() - 1);
     }
   }
-  
+
   longestStreak = Math.max(longestStreak, tempStreak);
-  
+
   return { currentStreak, longestStreak };
 }
 
@@ -815,10 +816,10 @@ export async function setUserDemographics(
 ): Promise<void> {
   const currentProfile = await getUserGuardianProfile(userId);
   const updatedProfile: UserGuardianProfile = currentProfile || createNewUserProfile();
-  
+
   updatedProfile.gender = gender;
   updatedProfile.ageGroup = ageGroup;
-  
+
   await setDoc(doc(db, "users", userId), {
     guardianProfile: updatedProfile,
     gender,  // 後方互換性のため
@@ -840,35 +841,35 @@ export async function unlockGuardian(
     if (!profile) {
       return { success: false, message: "ユーザープロファイルが見つかりません" };
     }
-    
+
     // 解放可能かチェック
     const canUnlock = canUnlockGuardian(guardianId, profile);
     if (!canUnlock.canUnlock) {
       return { success: false, message: canUnlock.reason || "解放できません" };
     }
-    
+
     // エナジー消費
     if (energyCost > 0 && profile.energy.current < energyCost) {
       return { success: false, message: `エナジーが足りません（${energyCost}必要）` };
     }
-    
+
     // 守護神インスタンス作成
     const instance = createGuardianInstance(guardianId);
-    
+
     // プロファイル更新
     profile.guardians[guardianId] = instance;
     profile.energy.current -= energyCost;
-    
+
     // 最初の守護神の場合、アクティブに設定
     if (!profile.activeGuardianId) {
       profile.activeGuardianId = guardianId;
     }
-    
+
     await updateUserGuardianProfile(userId, profile);
-    
-    return { 
-      success: true, 
-      message: `${GUARDIANS[guardianId].name}を解放しました！` 
+
+    return {
+      success: true,
+      message: `${GUARDIANS[guardianId].name}を解放しました！`
     };
   } catch (error) {
     console.error("Error unlocking guardian:", error);
@@ -1003,18 +1004,18 @@ export async function switchActiveGuardian(
     if (!profile) {
       return { success: false, message: "プロファイルが見つかりません" };
     }
-    
+
     const guardian = profile.guardians[guardianId];
     if (!guardian || !guardian.unlocked) {
       return { success: false, message: "この守護神は解放されていません" };
     }
-    
+
     profile.activeGuardianId = guardianId;
     await updateUserGuardianProfile(userId, profile);
-    
-    return { 
-      success: true, 
-      message: `${GUARDIANS[guardianId].name}をアクティブにしました` 
+
+    return {
+      success: true,
+      message: `${GUARDIANS[guardianId].name}をアクティブにしました`
     };
   } catch (error) {
     console.error("Error switching guardian:", error);
@@ -1062,10 +1063,10 @@ export async function isGuardianProfileInitialized(userId: string): Promise<bool
   try {
     const userDoc = await getDoc(doc(db, "users", userId));
     if (!userDoc.exists()) return false;
-    
+
     const userData = userDoc.data();
-    return userData.guardianProfile !== undefined && 
-           userData.guardianProfile.gender !== undefined;
+    return userData.guardianProfile !== undefined &&
+      userData.guardianProfile.gender !== undefined;
   } catch (error) {
     console.error("Error checking profile:", error);
     return false;
@@ -1079,7 +1080,7 @@ export async function hasAnyGuardian(userId: string): Promise<boolean> {
   try {
     const profile = await getUserGuardianProfile(userId);
     if (!profile) return false;
-    
+
     return Object.values(profile.guardians).some(g => g?.unlocked);
   } catch (error) {
     console.error("Error checking guardians:", error);
@@ -1099,20 +1100,20 @@ export async function getUserRecentReports(userId: string, days: number = 7): Pr
     const startDate = new Date();
     startDate.setDate(startDate.getDate() - days);
     const startDateStr = startDate.toISOString().split("T")[0];
-    
+
     const q = query(
       collection(db, "reports"),
       where("userId", "==", userId),
       where("date", ">=", startDateStr),
       orderBy("date", "desc")
     );
-    
+
     const snapshot = await getDocs(q);
     const reports: Report[] = [];
     snapshot.forEach((doc) => {
       reports.push({ id: doc.id, ...doc.data() } as Report);
     });
-    
+
     return reports;
   } catch (error) {
     console.error("Error fetching recent reports:", error);
@@ -1153,9 +1154,9 @@ export async function getPreviousFollowerCounts(
       orderBy('createdAt', 'desc'),
       limit(1)
     );
-    
+
     const snapshot = await getDocs(q);
-    
+
     if (snapshot.empty) {
       // 初回報告: 全て0から始まる
       return {
@@ -1165,9 +1166,9 @@ export async function getPreviousFollowerCounts(
         xFollowers: 0
       };
     }
-    
+
     const lastReport = snapshot.docs[0].data() as Report;
-    
+
     // 前回のストック値を取得
     // ⚠️ 現在のスキーマでは*Followersに直接ストック値が入っている可能性があるため、
     //    将来的に*FollowersStock フィールドに移行する
@@ -1204,48 +1205,48 @@ export function detectAnomalies(
     inconsistentGrowth: false,
     suspiciousPattern: false,
   };
-  
+
   if (reports.length === 0) return flags;
-  
+
   // 1. エナジーと成果の比率チェック
   const avgViews = reports.reduce((sum, r) => sum + (r.igViews || 0), 0) / reports.length;
   const avgPosts = reports.reduce((sum, r) => sum + ((r.igPosts || 0) + (r.ytPosts || 0) + (r.tiktokPosts || 0) + (r.postCount || 0)), 0) / reports.length;
-  
+
   // Stage 3以上で高エナジーなのに成果が低い
   if (guardianStage >= 3 && energy > 300 && avgViews < 1000 && avgPosts < 2) {
     flags.highEnergyLowOutput = true;
   }
-  
+
   // 2. 修正頻度チェック
   const modifyCount = reports.reduce((sum, r) => sum + ((r as any).modifyCount || 0), 0);
   if (modifyCount > reports.length * 2) {
     flags.frequentModification = true;
   }
-  
+
   // 3. 成長パターンチェック（急激な変化）
   if (reports.length >= 3) {
     const recent = reports.slice(0, 3);
     const older = reports.slice(3, 6);
-    
+
     if (older.length > 0) {
       const recentAvg = recent.reduce((sum, r) => sum + (r.igViews || r.postCount || 0), 0) / recent.length;
       const olderAvg = older.reduce((sum, r) => sum + (r.igViews || r.postCount || 0), 0) / older.length;
-      
+
       // 3倍以上の急激な増加
       if (recentAvg > olderAvg * 3 && olderAvg > 0) {
         flags.inconsistentGrowth = true;
       }
     }
   }
-  
+
   // 4. 怪しいパターン（すべての数値が同じ等）
-  const allSame = reports.every(r => 
+  const allSame = reports.every(r =>
     (r.igViews || 0) === (reports[0].igViews || 0)
   );
   if (allSame && reports.length >= 3) {
     flags.suspiciousPattern = true;
   }
-  
+
   return flags;
 }
 
@@ -1263,10 +1264,10 @@ export async function getTodayReport(userId: string, date: string): Promise<Repo
       where("userId", "==", userId),
       where("date", "==", date)
     );
-    
+
     const snapshot = await getDocs(q);
     if (snapshot.empty) return null;
-    
+
     const doc = snapshot.docs[0];
     return { id: doc.id, ...doc.data() } as Report;
   } catch (error) {
@@ -1308,25 +1309,25 @@ export async function updateReport(
   try {
     const reportRef = doc(db, "reports", reportId);
     const reportDoc = await getDoc(reportRef);
-    
+
     if (!reportDoc.exists()) {
       return { success: false, message: "レポートが見つかりません" };
     }
-    
+
     const currentData = reportDoc.data();
     const modifyCount = (currentData.modifyCount || 0) + 1;
-    
+
     await setDoc(reportRef, {
       ...updates,
       modifyCount,
       modifiedAt: serverTimestamp(),
     }, { merge: true });
-    
-    return { 
-      success: true, 
-      message: modifyCount >= 3 
-        ? "⚠️ 守護神が不信感を抱いています" 
-        : "レポートを修正しました" 
+
+    return {
+      success: true,
+      message: modifyCount >= 3
+        ? "⚠️ 守護神が不信感を抱いています"
+        : "レポートを修正しました"
     };
   } catch (error) {
     console.error("Error updating report:", error);
@@ -1482,7 +1483,7 @@ export async function getPenaltyStatus(userId: string): Promise<PenaltyStatus | 
   try {
     const userDoc = await getDoc(doc(db, "users", userId));
     if (!userDoc.exists()) return null;
-    
+
     const userData = userDoc.data();
     return (userData.penaltyStatus as PenaltyStatus) || {
       isPenalized: false,
