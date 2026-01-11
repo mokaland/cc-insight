@@ -155,108 +155,26 @@ export default function SmartphoneTeamPage() {
     }
   };
 
-  // PC用：メンバーのURLを新しいウィンドウでリスト表示（ユーザーがCtrl+クリックで開く）
+  // PC用：メンバーのURLを専用ページで開く
   const openMemberUrlsInPopup = (memberName: string) => {
     const member = memberPostUrls.find(m => m.name === memberName);
     if (!member || member.urls.length === 0) return;
 
-    // HTMLコンテンツを生成
-    const htmlContent = `
-      <!DOCTYPE html>
-      <html>
-      <head>
-        <title>${member.name}さんの投稿URL一覧</title>
-        <meta charset="UTF-8">
-        <style>
-          body { 
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            background: #0f172a; 
-            color: #e2e8f0; 
-            padding: 20px; 
-            margin: 0;
-          }
-          h1 { color: #60a5fa; font-size: 18px; margin-bottom: 20px; }
-          .count { color: #94a3b8; font-size: 14px; margin-bottom: 20px; }
-          .url-list { list-style: none; padding: 0; margin: 0; }
-          .url-item { 
-            margin-bottom: 12px; 
-            padding: 12px; 
-            background: rgba(255,255,255,0.05); 
-            border-radius: 8px;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-          }
-          .url-item:hover { background: rgba(255,255,255,0.1); }
-          .date { color: #94a3b8; font-size: 12px; min-width: 80px; }
-          a { 
-            color: #60a5fa; 
-            text-decoration: none; 
-            word-break: break-all;
-            flex: 1;
-          }
-          a:hover { text-decoration: underline; }
-          .tip { 
-            margin-top: 20px; 
-            padding: 12px; 
-            background: rgba(59, 130, 246, 0.2); 
-            border-radius: 8px;
-            font-size: 13px;
-            color: #93c5fd;
-          }
-          .open-all {
-            display: inline-block;
-            margin-bottom: 20px;
-            padding: 12px 24px;
-            background: linear-gradient(to right, #22c55e, #10b981);
-            color: white;
-            border: none;
-            border-radius: 8px;
-            cursor: pointer;
-            font-size: 14px;
-            font-weight: bold;
-          }
-          .open-all:hover { opacity: 0.9; }
-        </style>
-      </head>
-      <body>
-        <h1>🔗 ${member.name}さんの投稿URL一覧</h1>
-        <p class="count">${member.urls.length}件のURL</p>
-        <button class="open-all" onclick="openAllLinks()">⚡ 全て一括で開く（許可が必要な場合あり）</button>
-        <ul class="url-list">
-          ${member.urls.map((item, i) => `
-            <li class="url-item">
-              <span class="date">${item.date}</span>
-              <a href="${item.url}" target="_blank" rel="noopener">${item.url}</a>
-            </li>
-          `).join('')}
-        </ul>
-        <div class="tip">
-          💡 ヒント: 各リンクをクリックするか、Ctrl+クリック（Mac: Cmd+クリック）で新しいタブで開けます。<br>
-          「全て一括で開く」ボタンはポップアップブロッカーの設定によっては一部しか開かない場合があります。
-        </div>
-        <script>
-          function openAllLinks() {
-            const links = document.querySelectorAll('a');
-            links.forEach((link, i) => {
-              setTimeout(() => {
-                window.open(link.href, '_blank');
-              }, i * 200);
-            });
-          }
-        </script>
-      </body>
-      </html>
-    `;
+    // sessionStorageにデータを保存
+    const data = {
+      title: `${member.name}さんの投稿URL一覧`,
+      urls: member.urls.map(item => ({
+        date: item.date,
+        url: item.url
+      }))
+    };
+    sessionStorage.setItem("urlOpenerData", JSON.stringify(data));
 
-    const newWindow = window.open('about:blank', '_blank');
-    if (newWindow) {
-      newWindow.document.write(htmlContent);
-      newWindow.document.close();
-    }
+    // 専用ページを新しいタブで開く
+    window.open("/admin/url-opener", "_blank");
   };
 
-  // PC用：全URLを新しいウィンドウでリスト表示
+  // PC用：全URLを専用ページで開く
   const openAllUrlsInPopup = () => {
     const allUrlsWithInfo: { name: string; date: string; url: string }[] = [];
     memberPostUrls.forEach(member => {
@@ -266,102 +184,15 @@ export default function SmartphoneTeamPage() {
     });
     if (allUrlsWithInfo.length === 0) return;
 
-    // HTMLコンテンツを生成
-    const htmlContent = `
-      <!DOCTYPE html>
-      <html>
-      <head>
-        <title>投稿URL一覧（全${allUrlsWithInfo.length}件）</title>
-        <meta charset="UTF-8">
-        <style>
-          body { 
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            background: #0f172a; 
-            color: #e2e8f0; 
-            padding: 20px; 
-            margin: 0;
-          }
-          h1 { color: #60a5fa; font-size: 18px; margin-bottom: 20px; }
-          .count { color: #94a3b8; font-size: 14px; margin-bottom: 20px; }
-          .url-list { list-style: none; padding: 0; margin: 0; }
-          .url-item { 
-            margin-bottom: 12px; 
-            padding: 12px; 
-            background: rgba(255,255,255,0.05); 
-            border-radius: 8px;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-          }
-          .url-item:hover { background: rgba(255,255,255,0.1); }
-          .name { color: #fbbf24; font-size: 12px; min-width: 80px; font-weight: bold; }
-          .date { color: #94a3b8; font-size: 12px; min-width: 80px; }
-          a { 
-            color: #60a5fa; 
-            text-decoration: none; 
-            word-break: break-all;
-            flex: 1;
-          }
-          a:hover { text-decoration: underline; }
-          .tip { 
-            margin-top: 20px; 
-            padding: 12px; 
-            background: rgba(59, 130, 246, 0.2); 
-            border-radius: 8px;
-            font-size: 13px;
-            color: #93c5fd;
-          }
-          .open-all {
-            display: inline-block;
-            margin-bottom: 20px;
-            padding: 12px 24px;
-            background: linear-gradient(to right, #22c55e, #10b981);
-            color: white;
-            border: none;
-            border-radius: 8px;
-            cursor: pointer;
-            font-size: 14px;
-            font-weight: bold;
-          }
-          .open-all:hover { opacity: 0.9; }
-        </style>
-      </head>
-      <body>
-        <h1>🔗 投稿URL一覧</h1>
-        <p class="count">全${allUrlsWithInfo.length}件のURL</p>
-        <button class="open-all" onclick="openAllLinks()">⚡ 全て一括で開く（許可が必要な場合あり）</button>
-        <ul class="url-list">
-          ${allUrlsWithInfo.map((item, i) => `
-            <li class="url-item">
-              <span class="name">${item.name}</span>
-              <span class="date">${item.date}</span>
-              <a href="${item.url}" target="_blank" rel="noopener">${item.url}</a>
-            </li>
-          `).join('')}
-        </ul>
-        <div class="tip">
-          💡 ヒント: 各リンクをクリックするか、Ctrl+クリック（Mac: Cmd+クリック）で新しいタブで開けます。<br>
-          「全て一括で開く」ボタンはポップアップブロッカーの設定によっては一部しか開かない場合があります。
-        </div>
-        <script>
-          function openAllLinks() {
-            const links = document.querySelectorAll('a');
-            links.forEach((link, i) => {
-              setTimeout(() => {
-                window.open(link.href, '_blank');
-              }, i * 200);
-            });
-          }
-        </script>
-      </body>
-      </html>
-    `;
+    // sessionStorageにデータを保存
+    const data = {
+      title: `投稿URL一覧（全${allUrlsWithInfo.length}件）`,
+      urls: allUrlsWithInfo
+    };
+    sessionStorage.setItem("urlOpenerData", JSON.stringify(data));
 
-    const newWindow = window.open('about:blank', '_blank');
-    if (newWindow) {
-      newWindow.document.write(htmlContent);
-      newWindow.document.close();
-    }
+    // 専用ページを新しいタブで開く
+    window.open("/admin/url-opener", "_blank");
   };
 
   // 全投稿URL数を計算
