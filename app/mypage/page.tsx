@@ -24,7 +24,7 @@ import {
   SnsAccountApproval,
   PROFILE_COMPLETION_BONUS
 } from "@/lib/guardian-collection";
-import { getUserSnsAccounts, saveSnsAccount } from "@/lib/firestore";
+import { getUserSnsAccounts, saveSnsAccount, saveSnsAccounts } from "@/lib/firestore";
 import { Sparkles, Crown, Settings, Check, Gift, Clock, AlertCircle } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -201,24 +201,39 @@ export default function MyPage() {
   const teamId = userProfile?.team as keyof typeof SNS_ORDER_BY_TEAM || 'fukugyou';
   const snsOrder = SNS_ORDER_BY_TEAM[teamId] || SNS_ORDER_BY_TEAM.fukugyou;
 
-  const handleSaveSingleSns = async (snsKey: 'instagram' | 'youtube' | 'tiktok' | 'x') => {
+  // 一括保存処理（入力されているすべてのURLを一括で送信）
+  const handleSaveAllSns = async () => {
     if (!user) return;
-    setSavingKey(snsKey);
+    setSavingKey('all');
     setSnsMessage(null);
 
     try {
-      const result = await saveSnsAccount(user.uid, snsKey, inputUrls[snsKey] || '');
+      const result = await saveSnsAccounts(user.uid, {
+        instagram: inputUrls.instagram || '',
+        youtube: inputUrls.youtube || '',
+        tiktok: inputUrls.tiktok || '',
+        x: inputUrls.x || ''
+      });
 
       if (result.success) {
         setSnsMessage({ type: 'success', text: result.message });
-        // ステート更新
-        setSnsAccounts(prev => ({
-          ...prev,
-          [snsKey]: {
-            url: inputUrls[snsKey]?.trim() || undefined,
-            status: inputUrls[snsKey]?.trim() ? 'pending' : 'none',
-          } as SnsAccountApproval
-        }));
+        // ステート更新（変更されたSNSのみ）
+        const snsKeys = ['instagram', 'youtube', 'tiktok', 'x'] as const;
+        setSnsAccounts(prev => {
+          const updated = { ...prev };
+          for (const key of snsKeys) {
+            const url = inputUrls[key]?.trim();
+            const current = prev[key] as SnsAccountApproval | undefined;
+            // 承認済みはスキップ、URLが変更された場合のみ更新
+            if (current?.status !== 'approved' && url && url !== current?.url) {
+              updated[key] = {
+                url,
+                status: 'pending' as const,
+              } as SnsAccountApproval;
+            }
+          }
+          return updated;
+        });
       } else {
         setSnsMessage({ type: 'error', text: result.message });
       }
@@ -228,6 +243,19 @@ export default function MyPage() {
       setSavingKey(null);
     }
   };
+
+  // 変更があるかどうかをチェック（一括送信ボタンの有効/無効判定用）
+  const hasAnyChanges = (() => {
+    const snsKeys = ['instagram', 'youtube', 'tiktok', 'x'] as const;
+    for (const key of snsKeys) {
+      const snsData = snsAccounts[key] as SnsAccountApproval | undefined;
+      if (snsData?.status === 'approved') continue; // 承認済みはスキップ
+      const currentUrl = inputUrls[key]?.trim() || '';
+      const savedUrl = snsData?.url || '';
+      if (currentUrl !== savedUrl) return true;
+    }
+    return false;
+  })();
 
   if (!activeGuardian || !activeInstance) {
     return (
@@ -1032,12 +1060,12 @@ export default function MyPage() {
               <p className="text-sm text-yellow-300">
                 全4つのSNSが承認されると <span className="font-bold">{PROFILE_COMPLETION_BONUS}エナジー</span> 獲得！
               </p>
-              <p className="text-xs text-yellow-300/70">※各SNSのプロフィールページURLを入力して個別に送信してください</p>
+              <p className="text-xs text-yellow-300/70">※各SNSのプロフィールページURLを入力して「一括送信」を押してください</p>
             </div>
           </div>
         )}
 
-        {/* SNS入力フォーム（個別承認対応） */}
+        {/* SNS入力フォーム（一括送信対応） */}
         <div className="space-y-4">
           {snsOrder.map((snsKey) => {
             const snsInfo = SNS_LABELS[snsKey];
@@ -1047,7 +1075,6 @@ export default function MyPage() {
             const isPending = status === 'pending';
             const isRejected = status === 'rejected';
             const currentUrl = inputUrls[snsKey] || '';
-            const hasChanged = currentUrl !== (snsData?.url || '');
 
             return (
               <div key={snsKey} className="glass-bg p-4 rounded-xl">
@@ -1080,36 +1107,38 @@ export default function MyPage() {
                   <p className="text-xs text-red-300/70 mb-2">却下理由: {snsData.rejectionReason}</p>
                 )}
 
-                {/* URL入力 + 送信ボタン */}
-                <div className="flex gap-2">
-                  <Input
-                    placeholder={snsInfo.placeholder}
-                    value={currentUrl}
-                    onChange={(e) => setInputUrls(prev => ({
-                      ...prev,
-                      [snsKey]: e.target.value
-                    }))}
-                    disabled={isApproved}
-                    className={`flex-1 bg-white/5 border-slate-600 ${isApproved ? 'opacity-60 cursor-not-allowed' : ''}`}
-                  />
-                  {!isApproved && (
-                    <Button
-                      onClick={() => handleSaveSingleSns(snsKey)}
-                      disabled={savingKey === snsKey || (!hasChanged && !isRejected)}
-                      size="sm"
-                      className={`px-4 ${
-                        hasChanged || isRejected
-                          ? 'bg-blue-500 hover:bg-blue-600'
-                          : 'bg-slate-600 cursor-not-allowed'
-                      }`}
-                    >
-                      {savingKey === snsKey ? '...' : isRejected ? '再申請' : '送信'}
-                    </Button>
-                  )}
-                </div>
+                {/* URL入力のみ（送信ボタンは下部に一括） */}
+                <Input
+                  placeholder={snsInfo.placeholder}
+                  value={currentUrl}
+                  onChange={(e) => setInputUrls(prev => ({
+                    ...prev,
+                    [snsKey]: e.target.value
+                  }))}
+                  disabled={isApproved || isPending}
+                  className={`bg-white/5 border-slate-600 ${(isApproved || isPending) ? 'opacity-60 cursor-not-allowed' : ''}`}
+                />
               </div>
             );
           })}
+        </div>
+
+        {/* 一括送信ボタン */}
+        <div className="mt-6">
+          <Button
+            onClick={handleSaveAllSns}
+            disabled={savingKey === 'all' || !hasAnyChanges}
+            className={`w-full py-3 text-lg font-bold ${
+              hasAnyChanges
+                ? 'bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600'
+                : 'bg-slate-600 cursor-not-allowed'
+            }`}
+          >
+            {savingKey === 'all' ? '送信中...' : hasAnyChanges ? '入力したURLを一括送信' : '変更なし'}
+          </Button>
+          <p className="text-xs text-slate-400 text-center mt-2">
+            入力または変更されたURLのみが送信されます
+          </p>
         </div>
 
         {/* メッセージ表示 */}

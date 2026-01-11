@@ -2006,21 +2006,15 @@ export async function approveSnsAccount(
       return { success: false, message: `${SNS_LABELS[snsKey].label}は承認待ち状態ではありません`, allApproved: false };
     }
 
-    // 承認状態に更新
-    await setDoc(doc(db, "users", userId), {
-      snsAccounts: {
-        [snsKey]: {
-          ...targetSns,
-          status: 'approved',
-          reviewedAt: serverTimestamp(),
-          reviewedBy: adminUid
-        }
-      }
-    }, { merge: true });
+    // 承認状態に更新（ドット表記でネストフィールドを個別に更新）
+    await updateDoc(doc(db, "users", userId), {
+      [`snsAccounts.${snsKey}.status`]: 'approved',
+      [`snsAccounts.${snsKey}.reviewedAt`]: serverTimestamp(),
+      [`snsAccounts.${snsKey}.reviewedBy`]: adminUid
+    });
 
     // 全SNSが承認済みかチェック
     const snsKeys = ['instagram', 'youtube', 'tiktok', 'x'] as const;
-    let allApproved = true;
     let approvedCount = 0;
 
     for (const key of snsKeys) {
@@ -2030,21 +2024,16 @@ export async function approveSnsAccount(
         approvedCount++;
       } else if (snsData?.status === 'approved') {
         approvedCount++;
-      } else if (snsData?.url) {
-        // URLがあるが承認されていない
-        allApproved = false;
       }
     }
 
     // 全4つが承認済みならボーナス付与
     if (approvedCount === 4 && !snsAccounts.completionBonusClaimed) {
-      await setDoc(doc(db, "users", userId), {
-        snsAccounts: {
-          profileCompleted: true,
-          completionBonusClaimed: true,
-          completedAt: serverTimestamp()
-        }
-      }, { merge: true });
+      await updateDoc(doc(db, "users", userId), {
+        'snsAccounts.profileCompleted': true,
+        'snsAccounts.completionBonusClaimed': true,
+        'snsAccounts.completedAt': serverTimestamp()
+      });
 
       await addProfileCompletionBonus(userId);
 
@@ -2089,18 +2078,13 @@ export async function rejectSnsAccount(
       return { success: false, message: `${SNS_LABELS[snsKey].label}は承認待ち状態ではありません` };
     }
 
-    // 却下状態に更新
-    await setDoc(doc(db, "users", userId), {
-      snsAccounts: {
-        [snsKey]: {
-          ...targetSns,
-          status: 'rejected',
-          reviewedAt: serverTimestamp(),
-          reviewedBy: adminUid,
-          rejectionReason: reason
-        }
-      }
-    }, { merge: true });
+    // 却下状態に更新（ドット表記でネストフィールドを個別に更新）
+    await updateDoc(doc(db, "users", userId), {
+      [`snsAccounts.${snsKey}.status`]: 'rejected',
+      [`snsAccounts.${snsKey}.reviewedAt`]: serverTimestamp(),
+      [`snsAccounts.${snsKey}.reviewedBy`]: adminUid,
+      [`snsAccounts.${snsKey}.rejectionReason`]: reason
+    });
 
     return { success: true, message: `${SNS_LABELS[snsKey].label}を却下しました。` };
   } catch (error) {

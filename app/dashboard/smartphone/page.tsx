@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { CircularProgress } from "@/components/circular-progress";
 import { GlassCard, TodayProgress, NeonGauge } from "@/components/glass-card";
-import { FileText, Heart, MessageCircle, Users, Target, Calendar, TrendingUp, Twitter, ExternalLink, ChevronDown, ChevronUp, Copy, CheckCircle } from "lucide-react";
+import { FileText, Heart, MessageCircle, Users, Target, Calendar, TrendingUp, Twitter, ExternalLink, ChevronDown, ChevronUp, Copy, CheckCircle, Play, RotateCcw } from "lucide-react";
 import { getReportsByPeriod, calculateTeamStats, teams, Report } from "@/lib/firestore";
 
 const team = teams.find((t) => t.id === "buppan")!;
@@ -118,6 +118,9 @@ export default function SmartphoneTeamPage() {
   // コピー完了メッセージの状態
   const [copyMessage, setCopyMessage] = useState<string | null>(null);
 
+  // 順次オープン用の状態（PCで1クリック=1URL開く）
+  const [openIndex, setOpenIndex] = useState<{ member?: string; index: number } | null>(null);
+
   // メンバー個別のURLをクリップボードにコピー
   const copyMemberUrls = async (memberName: string) => {
     const member = memberPostUrls.find(m => m.name === memberName);
@@ -153,6 +156,67 @@ export default function SmartphoneTeamPage() {
       setCopyMessage('コピーに失敗しました');
       setTimeout(() => setCopyMessage(null), 3000);
     }
+  };
+
+  // PC用：メンバーのURLを1つずつ順次開く（クリックするたびに次のURLが開く）
+  const openMemberUrlsSequentially = (memberName: string) => {
+    const member = memberPostUrls.find(m => m.name === memberName);
+    if (!member || member.urls.length === 0) return;
+
+    // 現在のインデックスを取得（このメンバーで初めてなら0から）
+    const currentIndex = openIndex?.member === memberName ? openIndex.index : 0;
+
+    if (currentIndex < member.urls.length) {
+      // URLを開く
+      window.open(member.urls[currentIndex].url, "_blank");
+      // 次のインデックスへ
+      const nextIndex = currentIndex + 1;
+      if (nextIndex >= member.urls.length) {
+        // 全て開き終わったらリセット
+        setOpenIndex(null);
+        setCopyMessage(`${member.name}さんの全${member.urls.length}件を開きました`);
+        setTimeout(() => setCopyMessage(null), 3000);
+      } else {
+        setOpenIndex({ member: memberName, index: nextIndex });
+        setCopyMessage(`${member.name}さん: ${nextIndex}/${member.urls.length}件目を開きました（続けてクリック）`);
+      }
+    }
+  };
+
+  // PC用：全URLを1つずつ順次開く
+  const openAllUrlsSequentially = () => {
+    const allUrls: { name: string; url: string }[] = [];
+    memberPostUrls.forEach(member => {
+      member.urls.forEach(({ url }) => {
+        allUrls.push({ name: member.name, url });
+      });
+    });
+    if (allUrls.length === 0) return;
+
+    // 現在のインデックスを取得（初めてなら0から）
+    const currentIndex = openIndex?.member === 'all' ? openIndex.index : 0;
+
+    if (currentIndex < allUrls.length) {
+      // URLを開く
+      window.open(allUrls[currentIndex].url, "_blank");
+      // 次のインデックスへ
+      const nextIndex = currentIndex + 1;
+      if (nextIndex >= allUrls.length) {
+        // 全て開き終わったらリセット
+        setOpenIndex(null);
+        setCopyMessage(`全${allUrls.length}件を開きました`);
+        setTimeout(() => setCopyMessage(null), 3000);
+      } else {
+        setOpenIndex({ member: 'all', index: nextIndex });
+        setCopyMessage(`${nextIndex}/${allUrls.length}件目を開きました（続けてクリック）`);
+      }
+    }
+  };
+
+  // インデックスをリセット
+  const resetOpenIndex = () => {
+    setOpenIndex(null);
+    setCopyMessage(null);
   };
 
   // 全投稿URL数を計算
@@ -309,13 +373,40 @@ export default function SmartphoneTeamPage() {
             <span className="text-sm text-muted-foreground">（{totalUrlCount}件）</span>
           </div>
           {totalUrlCount > 0 && (
-            <Button
-              onClick={copyAllUrls}
-              className="w-full md:w-auto bg-gradient-to-r from-blue-500 to-cyan-500 text-white hover:from-blue-600 hover:to-cyan-600"
-            >
-              <Copy className="h-4 w-4 mr-2" />
-              全{totalUrlCount}件のURLをコピー
-            </Button>
+            <div className="flex flex-col md:flex-row gap-2 w-full md:w-auto">
+              {/* PC用：順次開くボタン（1クリック=1URL）*/}
+              <div className="hidden md:flex items-center gap-2">
+                {openIndex?.member === 'all' && (
+                  <Button
+                    onClick={resetOpenIndex}
+                    variant="outline"
+                    size="sm"
+                    className="border-red-400/30 text-red-400 hover:bg-red-400/10"
+                  >
+                    <RotateCcw className="h-4 w-4 mr-1" />
+                    リセット
+                  </Button>
+                )}
+                <Button
+                  onClick={openAllUrlsSequentially}
+                  className="bg-gradient-to-r from-green-500 to-emerald-500 text-white hover:from-green-600 hover:to-emerald-600"
+                >
+                  <Play className="h-4 w-4 mr-2" />
+                  {openIndex?.member === 'all'
+                    ? `次を開く (${openIndex.index + 1}/${totalUrlCount})`
+                    : `順次開く (${totalUrlCount}件)`
+                  }
+                </Button>
+              </div>
+              {/* コピーボタン（モバイル・PC共通） */}
+              <Button
+                onClick={copyAllUrls}
+                className="w-full md:w-auto bg-gradient-to-r from-blue-500 to-cyan-500 text-white hover:from-blue-600 hover:to-cyan-600"
+              >
+                <Copy className="h-4 w-4 mr-2" />
+                全{totalUrlCount}件のURLをコピー
+              </Button>
+            </div>
           )}
         </div>
 
@@ -347,6 +438,22 @@ export default function SmartphoneTeamPage() {
                     </div>
                   </div>
                   <div className="flex items-center gap-2 ml-11 md:ml-0">
+                    {/* PC用：個別メンバーの順次開くボタン */}
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        openMemberUrlsSequentially(member.name);
+                      }}
+                      className="hidden md:flex text-green-400 border-green-400/30 hover:bg-green-400/10 text-xs md:text-sm"
+                    >
+                      <Play className="h-3 w-3 mr-1" />
+                      {openIndex?.member === member.name
+                        ? `次へ (${openIndex.index + 1}/${member.urls.length})`
+                        : `順次開く`
+                      }
+                    </Button>
                     <Button
                       size="sm"
                       variant="outline"
@@ -357,7 +464,7 @@ export default function SmartphoneTeamPage() {
                       className="text-blue-400 border-blue-400/30 hover:bg-blue-400/10 text-xs md:text-sm"
                     >
                       <Copy className="h-3 w-3 mr-1" />
-                      URLをコピー
+                      コピー
                     </Button>
                     {expandedMember === member.name ? (
                       <ChevronUp className="h-5 w-5 text-muted-foreground flex-shrink-0" />
