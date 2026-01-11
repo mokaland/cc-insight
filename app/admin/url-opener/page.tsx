@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
+import { useSearchParams } from "next/navigation";
 import { ExternalLink, Play, Copy, CheckCircle, ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
@@ -12,28 +13,16 @@ interface UrlItem {
 }
 
 export default function UrlOpenerPage() {
+    const searchParams = useSearchParams();
     const [urls, setUrls] = useState<UrlItem[]>([]);
     const [title, setTitle] = useState("投稿URL一覧");
     const [isOpening, setIsOpening] = useState(false);
     const [openedCount, setOpenedCount] = useState(0);
     const [copyMessage, setCopyMessage] = useState<string | null>(null);
-
-    useEffect(() => {
-        // sessionStorageからURLデータを取得
-        const storedData = sessionStorage.getItem("urlOpenerData");
-        if (storedData) {
-            try {
-                const data = JSON.parse(storedData);
-                setUrls(data.urls || []);
-                setTitle(data.title || "投稿URL一覧");
-            } catch (e) {
-                console.error("Failed to parse URL data:", e);
-            }
-        }
-    }, []);
+    const hasAutoOpened = useRef(false);
 
     // 全URLを一括で開く
-    const openAllUrls = () => {
+    const openAllUrls = useCallback(() => {
         if (urls.length === 0 || isOpening) return;
 
         setIsOpening(true);
@@ -55,7 +44,33 @@ export default function UrlOpenerPage() {
                 setIsOpening(false);
             }
         }, 200);
-    };
+    }, [urls, isOpening]);
+
+    useEffect(() => {
+        // sessionStorageからURLデータを取得
+        const storedData = sessionStorage.getItem("urlOpenerData");
+        if (storedData) {
+            try {
+                const data = JSON.parse(storedData);
+                setUrls(data.urls || []);
+                setTitle(data.title || "投稿URL一覧");
+            } catch (e) {
+                console.error("Failed to parse URL data:", e);
+            }
+        }
+    }, []);
+
+    // auto=trueの場合、URLが読み込まれたら自動で開く
+    useEffect(() => {
+        const autoOpen = searchParams.get("auto") === "true";
+        if (autoOpen && urls.length > 0 && !hasAutoOpened.current && !isOpening) {
+            hasAutoOpened.current = true;
+            // 少し遅延させて確実にページレンダリング後に実行
+            setTimeout(() => {
+                openAllUrls();
+            }, 100);
+        }
+    }, [searchParams, urls, isOpening, openAllUrls]);
 
     // 全URLをクリップボードにコピー
     const copyAllUrls = async () => {

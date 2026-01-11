@@ -170,8 +170,8 @@ export default function SmartphoneTeamPage() {
     };
     sessionStorage.setItem("urlOpenerData", JSON.stringify(data));
 
-    // 専用ページを新しいタブで開く
-    window.open("/admin/url-opener", "_blank");
+    // 専用ページを新しいタブで開く（自動でURLを開く）
+    window.open("/admin/url-opener?auto=true", "_blank");
   };
 
   // PC用：全URLを専用ページで開く
@@ -191,8 +191,8 @@ export default function SmartphoneTeamPage() {
     };
     sessionStorage.setItem("urlOpenerData", JSON.stringify(data));
 
-    // 専用ページを新しいタブで開く
-    window.open("/admin/url-opener", "_blank");
+    // 専用ページを新しいタブで開く（自動でURLを開く）
+    window.open("/admin/url-opener?auto=true", "_blank");
   };
 
   // 全投稿URL数を計算
