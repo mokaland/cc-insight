@@ -21,9 +21,10 @@ import {
   SNS_ORDER_BY_TEAM,
   SNS_LABELS,
   SnsAccounts,
+  SnsAccountApproval,
   PROFILE_COMPLETION_BONUS
 } from "@/lib/guardian-collection";
-import { getUserSnsAccounts, saveSnsAccounts } from "@/lib/firestore";
+import { getUserSnsAccounts, saveSnsAccount } from "@/lib/firestore";
 import { Sparkles, Crown, Settings, Check, Gift, Clock, AlertCircle } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -185,37 +186,46 @@ export default function MyPage() {
   const teamId = userProfile?.team as keyof typeof SNS_ORDER_BY_TEAM || 'fukugyou';
   const snsOrder = SNS_ORDER_BY_TEAM[teamId] || SNS_ORDER_BY_TEAM.fukugyou;
 
-  // SNS保存処理
-  const handleSaveSns = async () => {
+  // 個別SNS保存処理（個別送信対応）
+  const [savingKey, setSavingKey] = useState<string | null>(null);
+  const [inputUrls, setInputUrls] = useState<{[key: string]: string}>({});
+
+  // inputUrlsを初期化
+  useEffect(() => {
+    const urls: {[key: string]: string} = {};
+    const snsKeys = ['instagram', 'youtube', 'tiktok', 'x'] as const;
+    snsKeys.forEach(key => {
+      const snsData = snsAccounts[key] as SnsAccountApproval | undefined;
+      urls[key] = snsData?.url || '';
+    });
+    setInputUrls(urls);
+  }, [snsAccounts]);
+
+  const handleSaveSingleSns = async (snsKey: 'instagram' | 'youtube' | 'tiktok' | 'x') => {
     if (!user) return;
-    setSnsLoading(true);
+    setSavingKey(snsKey);
     setSnsMessage(null);
 
     try {
-      const result = await saveSnsAccounts(user.uid, {
-        instagram: snsAccounts.instagram,
-        youtube: snsAccounts.youtube,
-        tiktok: snsAccounts.tiktok,
-        x: snsAccounts.x,
-      });
+      const result = await saveSnsAccount(user.uid, snsKey, inputUrls[snsKey] || '');
 
       if (result.success) {
         setSnsMessage({ type: 'success', text: result.message });
-        if (result.submitted) {
-          // 承認待ち状態に更新
-          setSnsAccounts(prev => ({
-            ...prev,
-            profileCompleted: true,
-            approvalStatus: 'pending',
-          }));
-        }
+        // ステート更新
+        setSnsAccounts(prev => ({
+          ...prev,
+          [snsKey]: {
+            url: inputUrls[snsKey]?.trim() || undefined,
+            status: inputUrls[snsKey]?.trim() ? 'pending' : 'none',
+          } as SnsAccountApproval
+        }));
       } else {
         setSnsMessage({ type: 'error', text: result.message });
       }
     } catch {
       setSnsMessage({ type: 'error', text: '保存に失敗しました' });
     } finally {
-      setSnsLoading(false);
+      setSavingKey(null);
     }
   };
 
@@ -999,78 +1009,104 @@ export default function MyPage() {
         </div>
       </GlassCard>
 
-      {/* 📱 SNSアカウント設定 */}
+      {/* 📱 SNSアカウント設定（個別承認対応） */}
       <GlassCard glowColor="#3B82F6" className="p-6">
         <div className="flex items-center gap-3 mb-4">
           <Settings className="w-6 h-6 text-blue-400" />
           <h2 className="text-2xl font-bold text-white">SNSアカウント設定</h2>
         </div>
 
-        {/* 承認状態に応じたステータス表示 */}
-        {snsAccounts.approvalStatus === 'approved' && (
+        {/* 全SNS承認完了時のボーナス表示 */}
+        {snsAccounts.completionBonusClaimed && (
           <div className="glass-bg p-3 rounded-xl border border-green-500/30 mb-4 flex items-center gap-3">
             <Check className="w-5 h-5 text-green-400 flex-shrink-0" />
-            <p className="text-sm text-green-300">承認済み・ボーナス受取済み</p>
+            <p className="text-sm text-green-300">全SNS承認済み・ボーナス{PROFILE_COMPLETION_BONUS}E受取済み</p>
           </div>
         )}
 
-        {snsAccounts.approvalStatus === 'pending' && (
-          <div className="glass-bg p-3 rounded-xl border border-yellow-500/30 mb-4 flex items-center gap-3">
-            <Clock className="w-5 h-5 text-yellow-400 flex-shrink-0 animate-pulse" />
-            <div>
-              <p className="text-sm text-yellow-300 font-bold">審査中</p>
-              <p className="text-xs text-yellow-300/70">運営がアカウントを確認しています。承認後にボーナスが付与されます。</p>
-            </div>
-          </div>
-        )}
-
-        {snsAccounts.approvalStatus === 'rejected' && (
-          <div className="glass-bg p-3 rounded-xl border border-red-500/30 mb-4">
-            <div className="flex items-center gap-3 mb-2">
-              <AlertCircle className="w-5 h-5 text-red-400 flex-shrink-0" />
-              <p className="text-sm text-red-300 font-bold">却下されました</p>
-            </div>
-            {snsAccounts.rejectionReason && (
-              <p className="text-xs text-red-300/70 ml-8">理由: {snsAccounts.rejectionReason}</p>
-            )}
-            <p className="text-xs text-slate-400 ml-8 mt-1">正しいアカウント情報を入力して再申請してください。</p>
-          </div>
-        )}
-
-        {/* ボーナス案内（未申請 or 却下の場合のみ） */}
-        {(!snsAccounts.approvalStatus || snsAccounts.approvalStatus === 'none' || snsAccounts.approvalStatus === 'rejected') && (
+        {/* ボーナス案内（ボーナス未受取の場合） */}
+        {!snsAccounts.completionBonusClaimed && (
           <div className="glass-bg p-3 rounded-xl border border-yellow-500/30 mb-4 flex items-center gap-3">
             <Gift className="w-5 h-5 text-yellow-400 flex-shrink-0" />
             <div>
               <p className="text-sm text-yellow-300">
-                全て入力して承認されると <span className="font-bold">{PROFILE_COMPLETION_BONUS}エナジー</span> 獲得！
+                全4つのSNSが承認されると <span className="font-bold">{PROFILE_COMPLETION_BONUS}エナジー</span> 獲得！
               </p>
-              <p className="text-xs text-yellow-300/70">※運営が実際のアカウントを確認します</p>
+              <p className="text-xs text-yellow-300/70">※各SNSのプロフィールページURLを入力して個別に送信してください</p>
             </div>
           </div>
         )}
 
-        {/* SNS入力フォーム */}
+        {/* SNS入力フォーム（個別承認対応） */}
         <div className="space-y-4">
           {snsOrder.map((snsKey) => {
             const snsInfo = SNS_LABELS[snsKey];
-            const isDisabled = snsAccounts.approvalStatus === 'approved' || snsAccounts.approvalStatus === 'pending';
+            const snsData = snsAccounts[snsKey] as SnsAccountApproval | undefined;
+            const status = snsData?.status || 'none';
+            const isApproved = status === 'approved';
+            const isPending = status === 'pending';
+            const isRejected = status === 'rejected';
+            const currentUrl = inputUrls[snsKey] || '';
+            const hasChanged = currentUrl !== (snsData?.url || '');
+
             return (
-              <div key={snsKey} className="space-y-2">
-                <Label className="flex items-center gap-2 text-white">
-                  <span className="text-lg">{snsInfo.icon}</span>
-                  {snsInfo.label}
-                </Label>
-                <Input
-                  placeholder={snsInfo.placeholder}
-                  value={snsAccounts[snsKey as keyof SnsAccounts] as string || ''}
-                  onChange={(e) => setSnsAccounts(prev => ({
-                    ...prev,
-                    [snsKey]: e.target.value
-                  }))}
-                  disabled={isDisabled}
-                  className={`bg-white/5 border-slate-600 ${isDisabled ? 'opacity-60 cursor-not-allowed' : ''}`}
-                />
+              <div key={snsKey} className="glass-bg p-4 rounded-xl">
+                {/* ヘッダー：SNS名とステータス */}
+                <div className="flex items-center justify-between mb-2">
+                  <Label className="flex items-center gap-2 text-white">
+                    <span className="text-lg">{snsInfo.icon}</span>
+                    {snsInfo.label}
+                  </Label>
+                  {/* ステータスバッジ */}
+                  {isApproved && (
+                    <span className="flex items-center gap-1 text-xs bg-green-500/20 text-green-300 px-2 py-1 rounded-full">
+                      <Check className="w-3 h-3" /> 承認済み
+                    </span>
+                  )}
+                  {isPending && (
+                    <span className="flex items-center gap-1 text-xs bg-yellow-500/20 text-yellow-300 px-2 py-1 rounded-full">
+                      <Clock className="w-3 h-3 animate-pulse" /> 審査中
+                    </span>
+                  )}
+                  {isRejected && (
+                    <span className="flex items-center gap-1 text-xs bg-red-500/20 text-red-300 px-2 py-1 rounded-full">
+                      <AlertCircle className="w-3 h-3" /> 却下
+                    </span>
+                  )}
+                </div>
+
+                {/* 却下理由 */}
+                {isRejected && snsData?.rejectionReason && (
+                  <p className="text-xs text-red-300/70 mb-2">却下理由: {snsData.rejectionReason}</p>
+                )}
+
+                {/* URL入力 + 送信ボタン */}
+                <div className="flex gap-2">
+                  <Input
+                    placeholder={snsInfo.placeholder}
+                    value={currentUrl}
+                    onChange={(e) => setInputUrls(prev => ({
+                      ...prev,
+                      [snsKey]: e.target.value
+                    }))}
+                    disabled={isApproved}
+                    className={`flex-1 bg-white/5 border-slate-600 ${isApproved ? 'opacity-60 cursor-not-allowed' : ''}`}
+                  />
+                  {!isApproved && (
+                    <Button
+                      onClick={() => handleSaveSingleSns(snsKey)}
+                      disabled={savingKey === snsKey || (!hasChanged && !isRejected)}
+                      size="sm"
+                      className={`px-4 ${
+                        hasChanged || isRejected
+                          ? 'bg-blue-500 hover:bg-blue-600'
+                          : 'bg-slate-600 cursor-not-allowed'
+                      }`}
+                    >
+                      {savingKey === snsKey ? '...' : isRejected ? '再申請' : '送信'}
+                    </Button>
+                  )}
+                </div>
               </div>
             );
           })}
@@ -1085,17 +1121,6 @@ export default function MyPage() {
           }`}>
             {snsMessage.text}
           </div>
-        )}
-
-        {/* 保存ボタン（承認済み or 審査中は非表示） */}
-        {snsAccounts.approvalStatus !== 'approved' && snsAccounts.approvalStatus !== 'pending' && (
-          <Button
-            onClick={handleSaveSns}
-            disabled={snsLoading}
-            className="w-full mt-4 bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600"
-          >
-            {snsLoading ? '送信中...' : snsAccounts.approvalStatus === 'rejected' ? '再申請する' : '申請する'}
-          </Button>
         )}
       </GlassCard>
 

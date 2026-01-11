@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { User, teams, Report, getUserStats, getUserGuardianProfile, getUserSnsAccounts } from "@/lib/firestore";
-import { SnsAccounts } from "@/lib/guardian-collection";
+import { SnsAccounts, SnsAccountApproval } from "@/lib/guardian-collection";
 import { getDoc, doc, collection, query, where, orderBy, getDocs } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { GlassCard } from "@/components/glass-card";
@@ -525,60 +525,107 @@ export default function UserDetailPage() {
           </CardTitle>
         </CardHeader>
         <CardContent>
-          {snsAccounts && (snsAccounts.instagram || snsAccounts.youtube || snsAccounts.tiktok || snsAccounts.x) ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {snsAccounts.instagram && (
-                <div className="flex items-center gap-3 p-3 rounded-lg bg-gradient-to-r from-pink-500/10 to-purple-500/10 border border-pink-500/20">
-                  <Instagram className="w-5 h-5 text-pink-400" />
-                  <div>
-                    <div className="text-xs text-muted-foreground">Instagram</div>
-                    <div className="font-medium text-pink-300">{snsAccounts.instagram}</div>
-                  </div>
+          {(() => {
+            const igData = snsAccounts?.instagram as SnsAccountApproval | undefined;
+            const ytData = snsAccounts?.youtube as SnsAccountApproval | undefined;
+            const ttData = snsAccounts?.tiktok as SnsAccountApproval | undefined;
+            const xData = snsAccounts?.x as SnsAccountApproval | undefined;
+            const hasAny = igData?.url || ytData?.url || ttData?.url || xData?.url;
+
+            if (!hasAny) {
+              return (
+                <div className="text-center py-6 text-muted-foreground">
+                  <Instagram className="w-8 h-8 mx-auto mb-2 opacity-50" />
+                  <p>SNSアカウントが登録されていません</p>
                 </div>
-              )}
-              {snsAccounts.youtube && (
-                <div className="flex items-center gap-3 p-3 rounded-lg bg-gradient-to-r from-red-500/10 to-orange-500/10 border border-red-500/20">
-                  <Youtube className="w-5 h-5 text-red-400" />
-                  <div>
-                    <div className="text-xs text-muted-foreground">YouTube</div>
-                    <div className="font-medium text-red-300">{snsAccounts.youtube}</div>
-                  </div>
-                </div>
-              )}
-              {snsAccounts.tiktok && (
-                <div className="flex items-center gap-3 p-3 rounded-lg bg-gradient-to-r from-cyan-500/10 to-teal-500/10 border border-cyan-500/20">
-                  <Music2 className="w-5 h-5 text-cyan-400" />
-                  <div>
-                    <div className="text-xs text-muted-foreground">TikTok</div>
-                    <div className="font-medium text-cyan-300">{snsAccounts.tiktok}</div>
-                  </div>
-                </div>
-              )}
-              {snsAccounts.x && (
-                <div className="flex items-center gap-3 p-3 rounded-lg bg-gradient-to-r from-slate-500/10 to-gray-500/10 border border-slate-500/20">
-                  <span className="text-lg font-bold text-slate-400">𝕏</span>
-                  <div>
-                    <div className="text-xs text-muted-foreground">X (Twitter)</div>
-                    <div className="font-medium text-slate-300">{snsAccounts.x}</div>
-                  </div>
-                </div>
-              )}
-            </div>
-          ) : (
-            <div className="text-center py-6 text-muted-foreground">
-              <Instagram className="w-8 h-8 mx-auto mb-2 opacity-50" />
-              <p>SNSアカウントが登録されていません</p>
-            </div>
-          )}
-          {snsAccounts?.profileCompleted && (
+              );
+            }
+
+            return (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {igData?.url && (
+                  <a
+                    href={igData.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-3 p-3 rounded-lg bg-gradient-to-r from-pink-500/10 to-purple-500/10 border border-pink-500/20 hover:border-pink-500/40 transition-colors"
+                  >
+                    <Instagram className="w-5 h-5 text-pink-400" />
+                    <div className="flex-1 min-w-0">
+                      <div className="text-xs text-muted-foreground flex items-center gap-2">
+                        Instagram
+                        <span className={`px-1.5 py-0.5 rounded text-[10px] ${igData.status === 'approved' ? 'bg-green-500/20 text-green-300' : igData.status === 'pending' ? 'bg-yellow-500/20 text-yellow-300' : 'bg-red-500/20 text-red-300'}`}>
+                          {igData.status === 'approved' ? '承認済' : igData.status === 'pending' ? '審査中' : '却下'}
+                        </span>
+                      </div>
+                      <div className="font-medium text-pink-300 truncate text-sm">{igData.url}</div>
+                    </div>
+                  </a>
+                )}
+                {ytData?.url && (
+                  <a
+                    href={ytData.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-3 p-3 rounded-lg bg-gradient-to-r from-red-500/10 to-orange-500/10 border border-red-500/20 hover:border-red-500/40 transition-colors"
+                  >
+                    <Youtube className="w-5 h-5 text-red-400" />
+                    <div className="flex-1 min-w-0">
+                      <div className="text-xs text-muted-foreground flex items-center gap-2">
+                        YouTube
+                        <span className={`px-1.5 py-0.5 rounded text-[10px] ${ytData.status === 'approved' ? 'bg-green-500/20 text-green-300' : ytData.status === 'pending' ? 'bg-yellow-500/20 text-yellow-300' : 'bg-red-500/20 text-red-300'}`}>
+                          {ytData.status === 'approved' ? '承認済' : ytData.status === 'pending' ? '審査中' : '却下'}
+                        </span>
+                      </div>
+                      <div className="font-medium text-red-300 truncate text-sm">{ytData.url}</div>
+                    </div>
+                  </a>
+                )}
+                {ttData?.url && (
+                  <a
+                    href={ttData.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-3 p-3 rounded-lg bg-gradient-to-r from-cyan-500/10 to-teal-500/10 border border-cyan-500/20 hover:border-cyan-500/40 transition-colors"
+                  >
+                    <Music2 className="w-5 h-5 text-cyan-400" />
+                    <div className="flex-1 min-w-0">
+                      <div className="text-xs text-muted-foreground flex items-center gap-2">
+                        TikTok
+                        <span className={`px-1.5 py-0.5 rounded text-[10px] ${ttData.status === 'approved' ? 'bg-green-500/20 text-green-300' : ttData.status === 'pending' ? 'bg-yellow-500/20 text-yellow-300' : 'bg-red-500/20 text-red-300'}`}>
+                          {ttData.status === 'approved' ? '承認済' : ttData.status === 'pending' ? '審査中' : '却下'}
+                        </span>
+                      </div>
+                      <div className="font-medium text-cyan-300 truncate text-sm">{ttData.url}</div>
+                    </div>
+                  </a>
+                )}
+                {xData?.url && (
+                  <a
+                    href={xData.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-3 p-3 rounded-lg bg-gradient-to-r from-slate-500/10 to-gray-500/10 border border-slate-500/20 hover:border-slate-500/40 transition-colors"
+                  >
+                    <span className="text-lg font-bold text-slate-400">𝕏</span>
+                    <div className="flex-1 min-w-0">
+                      <div className="text-xs text-muted-foreground flex items-center gap-2">
+                        X (Twitter)
+                        <span className={`px-1.5 py-0.5 rounded text-[10px] ${xData.status === 'approved' ? 'bg-green-500/20 text-green-300' : xData.status === 'pending' ? 'bg-yellow-500/20 text-yellow-300' : 'bg-red-500/20 text-red-300'}`}>
+                          {xData.status === 'approved' ? '承認済' : xData.status === 'pending' ? '審査中' : '却下'}
+                        </span>
+                      </div>
+                      <div className="font-medium text-slate-300 truncate text-sm">{xData.url}</div>
+                    </div>
+                  </a>
+                )}
+              </div>
+            );
+          })()}
+          {snsAccounts?.completionBonusClaimed && (
             <div className="mt-4 flex items-center gap-2 text-sm text-green-400">
               <Zap className="w-4 h-4" />
-              プロフィール完成ボーナス受取済み
-              {snsAccounts.completedAt && (
-                <span className="text-muted-foreground">
-                  ({snsAccounts.completedAt.toDate?.()?.toLocaleDateString("ja-JP") || "日付不明"})
-                </span>
-              )}
+              全SNS承認完了・ボーナス受取済み
             </div>
           )}
         </CardContent>

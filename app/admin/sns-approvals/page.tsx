@@ -9,8 +9,10 @@ import {
   getPendingSnsApprovals,
   approveSnsAccount,
   rejectSnsAccount,
+  type PendingUserSns,
+  type PendingSnsItem,
 } from "@/lib/firestore";
-import { SnsAccounts, SNS_LABELS, PROFILE_COMPLETION_BONUS } from "@/lib/guardian-collection";
+import { SNS_LABELS, PROFILE_COMPLETION_BONUS, SnsAccountApproval } from "@/lib/guardian-collection";
 import { Timestamp } from "firebase/firestore";
 import {
   Check,
@@ -22,21 +24,12 @@ import {
 } from "lucide-react";
 import { PageLoader } from "@/components/ui/loading-spinner";
 
-interface PendingApproval {
-  userId: string;
-  userName: string;
-  userEmail: string;
-  team: string;
-  snsAccounts: SnsAccounts;
-  submittedAt: Timestamp | null;
-}
-
 export default function SnsApprovalsPage() {
   const { user, userProfile } = useAuth();
   const [loading, setLoading] = useState(true);
-  const [pendingApprovals, setPendingApprovals] = useState<PendingApproval[]>([]);
-  const [processingUserId, setProcessingUserId] = useState<string | null>(null);
-  const [rejectingUserId, setRejectingUserId] = useState<string | null>(null);
+  const [pendingApprovals, setPendingApprovals] = useState<PendingUserSns[]>([]);
+  const [processingKey, setProcessingKey] = useState<string | null>(null); // userId_snsKey
+  const [rejectingKey, setRejectingKey] = useState<string | null>(null); // userId_snsKey
   const [rejectionReason, setRejectionReason] = useState("");
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
@@ -65,42 +58,64 @@ export default function SnsApprovalsPage() {
     );
   }
 
-  const handleApprove = async (userId: string) => {
+  const handleApprove = async (userId: string, snsKey: 'instagram' | 'youtube' | 'tiktok' | 'x') => {
     if (!user) return;
-    setProcessingUserId(userId);
+    const key = `${userId}_${snsKey}`;
+    setProcessingKey(key);
     setMessage(null);
 
     try {
-      const result = await approveSnsAccount(userId, user.uid);
+      const result = await approveSnsAccount(userId, snsKey, user.uid);
       if (result.success) {
         setMessage({ type: 'success', text: result.message });
-        // リストから削除
-        setPendingApprovals(prev => prev.filter(a => a.userId !== userId));
+        // リストから該当SNSを削除
+        setPendingApprovals(prev => {
+          return prev.map(approval => {
+            if (approval.userId === userId) {
+              return {
+                ...approval,
+                pendingItems: approval.pendingItems.filter(item => item.snsKey !== snsKey)
+              };
+            }
+            return approval;
+          }).filter(approval => approval.pendingItems.length > 0);
+        });
       } else {
         setMessage({ type: 'error', text: result.message });
       }
     } catch (error) {
       setMessage({ type: 'error', text: '承認処理に失敗しました' });
     } finally {
-      setProcessingUserId(null);
+      setProcessingKey(null);
     }
   };
 
-  const handleReject = async (userId: string) => {
+  const handleReject = async (userId: string, snsKey: 'instagram' | 'youtube' | 'tiktok' | 'x') => {
     if (!user || !rejectionReason.trim()) {
       setMessage({ type: 'error', text: '却下理由を入力してください' });
       return;
     }
-    setProcessingUserId(userId);
+    const key = `${userId}_${snsKey}`;
+    setProcessingKey(key);
     setMessage(null);
 
     try {
-      const result = await rejectSnsAccount(userId, user.uid, rejectionReason.trim());
+      const result = await rejectSnsAccount(userId, snsKey, user.uid, rejectionReason.trim());
       if (result.success) {
         setMessage({ type: 'success', text: result.message });
-        // リストから削除
-        setPendingApprovals(prev => prev.filter(a => a.userId !== userId));
-        setRejectingUserId(null);
+        // リストから該当SNSを削除
+        setPendingApprovals(prev => {
+          return prev.map(approval => {
+            if (approval.userId === userId) {
+              return {
+                ...approval,
+                pendingItems: approval.pendingItems.filter(item => item.snsKey !== snsKey)
+              };
+            }
+            return approval;
+          }).filter(approval => approval.pendingItems.length > 0);
+        });
+        setRejectingKey(null);
         setRejectionReason("");
       } else {
         setMessage({ type: 'error', text: result.message });
@@ -108,7 +123,7 @@ export default function SnsApprovalsPage() {
     } catch (error) {
       setMessage({ type: 'error', text: '却下処理に失敗しました' });
     } finally {
-      setProcessingUserId(null);
+      setProcessingKey(null);
     }
   };
 
@@ -124,21 +139,8 @@ export default function SnsApprovalsPage() {
     });
   };
 
-  const getSnsUrl = (type: string, username: string): string => {
-    const cleanUsername = username.replace('@', '');
-    switch (type) {
-      case 'instagram':
-        return `https://instagram.com/${cleanUsername}`;
-      case 'youtube':
-        return `https://youtube.com/@${cleanUsername}`;
-      case 'tiktok':
-        return `https://tiktok.com/@${cleanUsername}`;
-      case 'x':
-        return `https://x.com/${cleanUsername}`;
-      default:
-        return '#';
-    }
-  };
+  // 承認待ちの総数を計算
+  const totalPendingCount = pendingApprovals.reduce((sum, user) => sum + user.pendingItems.length, 0);
 
   if (loading) {
     return <PageLoader text="承認待ちリストを読み込み中..." />;
@@ -153,7 +155,7 @@ export default function SnsApprovalsPage() {
             SNSアカウント承認
           </h1>
           <p className="text-slate-400 mt-1">
-            メンバーのSNSアカウントを確認して承認または却下します
+            各SNSアカウントを個別に確認して承認または却下します
           </p>
         </div>
         <Button
@@ -173,8 +175,13 @@ export default function SnsApprovalsPage() {
             <Clock className="w-6 h-6 text-yellow-400" />
           </div>
           <div>
-            <p className="text-2xl font-bold text-white">{pendingApprovals.length}</p>
-            <p className="text-sm text-slate-400">承認待ち</p>
+            <p className="text-2xl font-bold text-white">{totalPendingCount}</p>
+            <p className="text-sm text-slate-400">承認待ちSNS（{pendingApprovals.length}ユーザー）</p>
+          </div>
+          <div className="ml-auto text-right">
+            <p className="text-xs text-yellow-400">
+              全4SNS承認で +{PROFILE_COMPLETION_BONUS}E 付与
+            </p>
           </div>
         </div>
       </GlassCard>
@@ -206,93 +213,107 @@ export default function SnsApprovalsPage() {
                   <h3 className="text-lg font-bold text-white">{approval.userName}</h3>
                   <p className="text-sm text-slate-400">{approval.userEmail}</p>
                   <p className="text-xs text-slate-500 mt-1">
-                    チーム: {approval.team} | 申請日時: {formatDate(approval.submittedAt)}
+                    チーム: {approval.team}
                   </p>
                 </div>
                 <div className="text-right">
-                  <p className="text-xs text-yellow-400">
-                    承認すると +{PROFILE_COMPLETION_BONUS}E 付与
-                  </p>
+                  <span className="text-xs bg-yellow-500/20 text-yellow-300 px-2 py-1 rounded-full">
+                    {approval.pendingItems.length}件待ち
+                  </span>
                 </div>
               </div>
 
-              {/* SNSアカウント一覧 */}
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
-                {(['instagram', 'youtube', 'tiktok', 'x'] as const).map((snsKey) => {
-                  const value = approval.snsAccounts[snsKey];
-                  const snsInfo = SNS_LABELS[snsKey];
-                  if (!value) return null;
+              {/* 個別SNS承認カード */}
+              <div className="space-y-3">
+                {approval.pendingItems.map((item) => {
+                  const snsInfo = SNS_LABELS[item.snsKey];
+                  const key = `${approval.userId}_${item.snsKey}`;
+                  const isProcessing = processingKey === key;
+                  const isRejecting = rejectingKey === key;
 
                   return (
-                    <div key={snsKey} className="glass-bg p-3 rounded-xl">
-                      <div className="flex items-center gap-2 mb-2">
-                        <span className="text-lg">{snsInfo.icon}</span>
-                        <span className="text-xs text-slate-400">{snsInfo.label}</span>
+                    <div key={item.snsKey} className="glass-bg p-4 rounded-xl">
+                      {/* SNS情報とリンク */}
+                      <div className="flex items-center gap-3 mb-3">
+                        <span className="text-2xl">{snsInfo.icon}</span>
+                        <div className="flex-1 min-w-0">
+                          <span className="text-sm font-bold text-white">{snsInfo.label}</span>
+                          <p className="text-xs text-slate-500">
+                            申請: {formatDate(item.submittedAt)}
+                          </p>
+                        </div>
+                        <a
+                          href={item.url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="flex items-center gap-2 bg-blue-500/20 hover:bg-blue-500/30 text-blue-300 px-3 py-2 rounded-lg transition-colors"
+                        >
+                          <span className="text-xs">確認</span>
+                          <ExternalLink className="w-4 h-4" />
+                        </a>
                       </div>
-                      <a
-                        href={getSnsUrl(snsKey, value)}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-sm text-blue-400 hover:text-blue-300 flex items-center gap-1 break-all"
-                      >
-                        {value}
-                        <ExternalLink className="w-3 h-3 flex-shrink-0" />
-                      </a>
+
+                      {/* URL表示 */}
+                      <p className="text-xs text-slate-400 mb-3 break-all">{item.url}</p>
+
+                      {/* アクションボタン */}
+                      {isRejecting ? (
+                        <div className="space-y-2">
+                          <Input
+                            placeholder="却下理由を入力してください"
+                            value={rejectionReason}
+                            onChange={(e) => setRejectionReason(e.target.value)}
+                            className="bg-white/5 border-slate-600 text-sm"
+                          />
+                          <div className="flex gap-2">
+                            <Button
+                              onClick={() => handleReject(approval.userId, item.snsKey)}
+                              disabled={isProcessing}
+                              size="sm"
+                              className="flex-1 bg-red-600 hover:bg-red-700"
+                            >
+                              {isProcessing ? '処理中...' : '却下確定'}
+                            </Button>
+                            <Button
+                              onClick={() => {
+                                setRejectingKey(null);
+                                setRejectionReason("");
+                              }}
+                              variant="outline"
+                              size="sm"
+                              className="flex-1"
+                            >
+                              キャンセル
+                            </Button>
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="flex gap-2">
+                          <Button
+                            onClick={() => handleApprove(approval.userId, item.snsKey)}
+                            disabled={isProcessing}
+                            size="sm"
+                            className="flex-1 bg-green-600 hover:bg-green-700 flex items-center justify-center gap-1"
+                          >
+                            <Check className="w-3 h-3" />
+                            {isProcessing ? '...' : '承認'}
+                          </Button>
+                          <Button
+                            onClick={() => setRejectingKey(key)}
+                            disabled={isProcessing}
+                            variant="outline"
+                            size="sm"
+                            className="flex-1 border-red-500/50 text-red-400 hover:bg-red-500/10 flex items-center justify-center gap-1"
+                          >
+                            <X className="w-3 h-3" />
+                            却下
+                          </Button>
+                        </div>
+                      )}
                     </div>
                   );
                 })}
               </div>
-
-              {/* アクションボタン */}
-              {rejectingUserId === approval.userId ? (
-                <div className="space-y-3">
-                  <Input
-                    placeholder="却下理由を入力してください"
-                    value={rejectionReason}
-                    onChange={(e) => setRejectionReason(e.target.value)}
-                    className="bg-white/5 border-slate-600"
-                  />
-                  <div className="flex gap-3">
-                    <Button
-                      onClick={() => handleReject(approval.userId)}
-                      disabled={processingUserId === approval.userId}
-                      className="flex-1 bg-red-600 hover:bg-red-700"
-                    >
-                      {processingUserId === approval.userId ? '処理中...' : '却下を確定'}
-                    </Button>
-                    <Button
-                      onClick={() => {
-                        setRejectingUserId(null);
-                        setRejectionReason("");
-                      }}
-                      variant="outline"
-                      className="flex-1"
-                    >
-                      キャンセル
-                    </Button>
-                  </div>
-                </div>
-              ) : (
-                <div className="flex gap-3">
-                  <Button
-                    onClick={() => handleApprove(approval.userId)}
-                    disabled={processingUserId === approval.userId}
-                    className="flex-1 bg-green-600 hover:bg-green-700 flex items-center justify-center gap-2"
-                  >
-                    <Check className="w-4 h-4" />
-                    {processingUserId === approval.userId ? '処理中...' : '承認'}
-                  </Button>
-                  <Button
-                    onClick={() => setRejectingUserId(approval.userId)}
-                    disabled={processingUserId === approval.userId}
-                    variant="outline"
-                    className="flex-1 border-red-500/50 text-red-400 hover:bg-red-500/10 flex items-center justify-center gap-2"
-                  >
-                    <X className="w-4 h-4" />
-                    却下
-                  </Button>
-                </div>
-              )}
             </GlassCard>
           ))}
         </div>

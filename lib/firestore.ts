@@ -27,7 +27,10 @@ import {
   canUnlockGuardian,
   getEnergyToNextStage,
   SnsAccounts,
-  PROFILE_COMPLETION_BONUS
+  SnsAccountApproval,
+  SnsApprovalStatus,
+  PROFILE_COMPLETION_BONUS,
+  SNS_LABELS
 } from "./guardian-collection";
 
 // 型エイリアス（後方互換性のため）
@@ -1720,15 +1723,88 @@ export async function getUserSnsAccounts(userId: string): Promise<SnsAccounts | 
 }
 
 /**
- * SNSアカウント情報を保存（承認待ち状態に設定）
- * 全入力完了時は承認待ちとなり、管理者承認後にボーナス付与
- * @returns { success: boolean, submitted: boolean, message: string }
+ * 個別SNSアカウントのURLを保存（承認待ち状態に設定）
+ * 各SNSごとに個別の承認状態を持つ
+ */
+export async function saveSnsAccount(
+  userId: string,
+  snsKey: 'instagram' | 'youtube' | 'tiktok' | 'x',
+  url: string
+): Promise<{ success: boolean; message: string }> {
+  try {
+    const trimmedUrl = url.trim();
+
+    // URL形式チェック
+    if (trimmedUrl && !trimmedUrl.startsWith('https://') && !trimmedUrl.startsWith('http://')) {
+      return {
+        success: false,
+        message: `${SNS_LABELS[snsKey].label}のURLは https:// で始まる形式で入力してください`
+      };
+    }
+
+    // 現在のユーザーデータを取得
+    const userDoc = await getDoc(doc(db, "users", userId));
+    if (!userDoc.exists()) {
+      return { success: false, message: "ユーザーが見つかりません" };
+    }
+
+    const currentData = userDoc.data();
+    const currentSnsAccounts: SnsAccounts = currentData?.snsAccounts || {};
+    const currentSnsData = currentSnsAccounts[snsKey] as SnsAccountApproval | undefined;
+
+    // 既に承認済みの場合は変更不可
+    if (currentSnsData?.status === 'approved') {
+      return { success: false, message: `${SNS_LABELS[snsKey].label}は承認済みのため変更できません` };
+    }
+
+    // 新しいSNSアカウント情報
+    const newSnsData: SnsAccountApproval = {
+      url: trimmedUrl || undefined,
+      status: trimmedUrl ? 'pending' : 'none',
+      submittedAt: trimmedUrl ? serverTimestamp() as unknown as Timestamp : undefined,
+    };
+
+    // Firestoreに保存
+    await setDoc(doc(db, "users", userId), {
+      snsAccounts: {
+        [snsKey]: newSnsData
+      }
+    }, { merge: true });
+
+    return {
+      success: true,
+      message: trimmedUrl
+        ? `${SNS_LABELS[snsKey].label}のURLを送信しました。運営の承認をお待ちください。`
+        : `${SNS_LABELS[snsKey].label}のURLを削除しました`
+    };
+  } catch (error) {
+    console.error("Error saving SNS account:", error);
+    return { success: false, message: "保存に失敗しました" };
+  }
+}
+
+/**
+ * 複数のSNSアカウント情報を一括保存（後方互換性のため残す）
  */
 export async function saveSnsAccounts(
   userId: string,
-  snsData: Pick<SnsAccounts, 'instagram' | 'youtube' | 'tiktok' | 'x'>
+  snsData: { instagram?: string; youtube?: string; tiktok?: string; x?: string }
 ): Promise<{ success: boolean; submitted: boolean; message: string }> {
   try {
+    const snsKeys = ['instagram', 'youtube', 'tiktok', 'x'] as const;
+
+    // URL形式のバリデーション
+    for (const key of snsKeys) {
+      const url = snsData[key]?.trim();
+      if (url && !url.startsWith('https://') && !url.startsWith('http://')) {
+        return {
+          success: false,
+          submitted: false,
+          message: `${SNS_LABELS[key].label}のURLは https:// で始まる形式で入力してください`
+        };
+      }
+    }
+
     // 現在のユーザーデータを取得
     const userDoc = await getDoc(doc(db, "users", userId));
     if (!userDoc.exists()) {
@@ -1738,50 +1814,49 @@ export async function saveSnsAccounts(
     const currentData = userDoc.data();
     const currentSnsAccounts: SnsAccounts = currentData?.snsAccounts || {};
 
-    // 既に承認済みの場合は変更不可
-    if (currentSnsAccounts.approvalStatus === 'approved') {
-      return { success: false, submitted: false, message: "承認済みのため変更できません" };
+    // 各SNSのデータを作成
+    const updatedSnsAccounts: Partial<SnsAccounts> = {};
+    let hasNewSubmission = false;
+
+    for (const key of snsKeys) {
+      const url = snsData[key]?.trim();
+      const current = currentSnsAccounts[key] as SnsAccountApproval | undefined;
+
+      // 承認済みの場合はスキップ
+      if (current?.status === 'approved') {
+        continue;
+      }
+
+      // URLが変更された場合、または新規入力の場合
+      if (url && url !== current?.url) {
+        updatedSnsAccounts[key] = {
+          url,
+          status: 'pending',
+          submittedAt: serverTimestamp() as unknown as Timestamp,
+        };
+        hasNewSubmission = true;
+      } else if (!url && current?.url) {
+        // URLが削除された場合
+        updatedSnsAccounts[key] = {
+          url: undefined,
+          status: 'none',
+        };
+      }
     }
 
-    // 全4項目が入力されているかチェック
-    const allFieldsFilled = Boolean(
-      snsData.instagram?.trim() &&
-      snsData.youtube?.trim() &&
-      snsData.tiktok?.trim() &&
-      snsData.x?.trim()
-    );
-
-    // SNSアカウント情報の更新データ
-    const updatedSnsAccounts: Partial<SnsAccounts> = {
-      instagram: snsData.instagram?.trim() || undefined,
-      youtube: snsData.youtube?.trim() || undefined,
-      tiktok: snsData.tiktok?.trim() || undefined,
-      x: snsData.x?.trim() || undefined,
-      profileCompleted: allFieldsFilled,
-    };
-
-    // 全入力完了時は承認待ち状態に設定（この時点で承認済みではないことは確認済み）
-    if (allFieldsFilled) {
-      updatedSnsAccounts.approvalStatus = 'pending';
-      updatedSnsAccounts.submittedAt = serverTimestamp() as unknown as Timestamp;
-    } else {
-      // 未完了の場合は状態をリセット
-      updatedSnsAccounts.approvalStatus = 'none';
+    // 更新がある場合のみ保存
+    if (Object.keys(updatedSnsAccounts).length > 0) {
+      await setDoc(doc(db, "users", userId), {
+        snsAccounts: updatedSnsAccounts
+      }, { merge: true });
     }
-
-    // Firestoreに保存
-    await setDoc(doc(db, "users", userId), {
-      snsAccounts: updatedSnsAccounts
-    }, { merge: true });
-
-    const submitted = allFieldsFilled;
 
     return {
       success: true,
-      submitted,
-      message: submitted
-        ? "SNSアカウント情報を送信しました。運営の承認をお待ちください。"
-        : "SNSアカウント情報を保存しました"
+      submitted: hasNewSubmission,
+      message: hasNewSubmission
+        ? "SNSプロフィールURLを送信しました。運営の承認をお待ちください。"
+        : "変更はありませんでした"
     };
   } catch (error) {
     console.error("Error saving SNS accounts:", error);
@@ -1832,40 +1907,75 @@ async function addProfileCompletionBonus(userId: string): Promise<void> {
 }
 
 // =====================================
-// 📱 SNS承認管理機能
+// 📱 SNS承認管理機能（個別承認対応）
 // =====================================
 
-/**
- * 承認待ちのSNSアカウント一覧を取得
- */
-export async function getPendingSnsApprovals(): Promise<Array<{
+export interface PendingSnsItem {
+  snsKey: 'instagram' | 'youtube' | 'tiktok' | 'x';
+  url: string;
+  submittedAt: Timestamp | null;
+}
+
+export interface PendingUserSns {
   userId: string;
   userName: string;
   userEmail: string;
   team: string;
+  pendingItems: PendingSnsItem[];
   snsAccounts: SnsAccounts;
-  submittedAt: Timestamp | null;
-}>> {
+}
+
+/**
+ * 承認待ちのSNSアカウント一覧を取得（個別承認対応）
+ * 少なくとも1つ以上のSNSがpending状態のユーザーを取得
+ */
+export async function getPendingSnsApprovals(): Promise<PendingUserSns[]> {
   try {
     const usersRef = collection(db, "users");
-    const q = query(
-      usersRef,
-      where("snsAccounts.approvalStatus", "==", "pending"),
-      orderBy("snsAccounts.submittedAt", "desc")
-    );
-    const snapshot = await getDocs(q);
+    // 全ユーザーを取得してフィルタリング（Firestoreの制約回避）
+    const snapshot = await getDocs(usersRef);
 
-    return snapshot.docs.map(doc => {
-      const data = doc.data();
-      return {
-        userId: doc.id,
-        userName: data.name || data.displayName || "名前未設定",
-        userEmail: data.email || "",
-        team: data.team || "未設定",
-        snsAccounts: data.snsAccounts || {},
-        submittedAt: data.snsAccounts?.submittedAt || null
-      };
+    const results: PendingUserSns[] = [];
+    const snsKeys = ['instagram', 'youtube', 'tiktok', 'x'] as const;
+
+    snapshot.docs.forEach(docSnap => {
+      const data = docSnap.data();
+      const snsAccounts = data.snsAccounts as SnsAccounts | undefined;
+      if (!snsAccounts) return;
+
+      const pendingItems: PendingSnsItem[] = [];
+
+      for (const key of snsKeys) {
+        const snsData = snsAccounts[key] as SnsAccountApproval | undefined;
+        if (snsData?.status === 'pending' && snsData.url) {
+          pendingItems.push({
+            snsKey: key,
+            url: snsData.url,
+            submittedAt: snsData.submittedAt || null
+          });
+        }
+      }
+
+      if (pendingItems.length > 0) {
+        results.push({
+          userId: docSnap.id,
+          userName: data.name || data.displayName || "名前未設定",
+          userEmail: data.email || "",
+          team: data.team || "未設定",
+          pendingItems,
+          snsAccounts
+        });
+      }
     });
+
+    // 最新の申請順にソート
+    results.sort((a, b) => {
+      const aTime = a.pendingItems[0]?.submittedAt?.toMillis() || 0;
+      const bTime = b.pendingItems[0]?.submittedAt?.toMillis() || 0;
+      return bTime - aTime;
+    });
+
+    return results;
   } catch (error) {
     console.error("Error getting pending SNS approvals:", error);
     return [];
@@ -1873,52 +1983,94 @@ export async function getPendingSnsApprovals(): Promise<Array<{
 }
 
 /**
- * SNSアカウントを承認してボーナスを付与
+ * 個別SNSアカウントを承認
+ * 全SNSが承認済みになったらボーナスを付与
  */
 export async function approveSnsAccount(
   userId: string,
+  snsKey: 'instagram' | 'youtube' | 'tiktok' | 'x',
   adminUid: string
-): Promise<{ success: boolean; message: string }> {
+): Promise<{ success: boolean; message: string; allApproved: boolean }> {
   try {
     const userDoc = await getDoc(doc(db, "users", userId));
     if (!userDoc.exists()) {
-      return { success: false, message: "ユーザーが見つかりません" };
+      return { success: false, message: "ユーザーが見つかりません", allApproved: false };
     }
 
     const userData = userDoc.data();
     const snsAccounts: SnsAccounts = userData?.snsAccounts || {};
+    const targetSns = snsAccounts[snsKey] as SnsAccountApproval | undefined;
 
-    if (snsAccounts.approvalStatus !== 'pending') {
-      return { success: false, message: "このユーザーは承認待ち状態ではありません" };
+    if (!targetSns || targetSns.status !== 'pending') {
+      return { success: false, message: `${SNS_LABELS[snsKey].label}は承認待ち状態ではありません`, allApproved: false };
     }
 
     // 承認状態に更新
     await setDoc(doc(db, "users", userId), {
       snsAccounts: {
-        ...snsAccounts,
-        approvalStatus: 'approved',
-        reviewedAt: serverTimestamp(),
-        reviewedBy: adminUid,
-        completionBonusClaimed: true,
-        completedAt: serverTimestamp()
+        [snsKey]: {
+          ...targetSns,
+          status: 'approved',
+          reviewedAt: serverTimestamp(),
+          reviewedBy: adminUid
+        }
       }
     }, { merge: true });
 
-    // ボーナス付与
-    await addProfileCompletionBonus(userId);
+    // 全SNSが承認済みかチェック
+    const snsKeys = ['instagram', 'youtube', 'tiktok', 'x'] as const;
+    let allApproved = true;
+    let approvedCount = 0;
 
-    return { success: true, message: "承認しました。ボーナスを付与しました。" };
+    for (const key of snsKeys) {
+      const snsData = snsAccounts[key] as SnsAccountApproval | undefined;
+      if (key === snsKey) {
+        // 今回承認したものはapprovedとしてカウント
+        approvedCount++;
+      } else if (snsData?.status === 'approved') {
+        approvedCount++;
+      } else if (snsData?.url) {
+        // URLがあるが承認されていない
+        allApproved = false;
+      }
+    }
+
+    // 全4つが承認済みならボーナス付与
+    if (approvedCount === 4 && !snsAccounts.completionBonusClaimed) {
+      await setDoc(doc(db, "users", userId), {
+        snsAccounts: {
+          profileCompleted: true,
+          completionBonusClaimed: true,
+          completedAt: serverTimestamp()
+        }
+      }, { merge: true });
+
+      await addProfileCompletionBonus(userId);
+
+      return {
+        success: true,
+        message: `${SNS_LABELS[snsKey].label}を承認しました。全SNS承認完了！ボーナス${PROFILE_COMPLETION_BONUS}Eを付与しました。`,
+        allApproved: true
+      };
+    }
+
+    return {
+      success: true,
+      message: `${SNS_LABELS[snsKey].label}を承認しました。`,
+      allApproved: false
+    };
   } catch (error) {
     console.error("Error approving SNS account:", error);
-    return { success: false, message: "承認に失敗しました" };
+    return { success: false, message: "承認に失敗しました", allApproved: false };
   }
 }
 
 /**
- * SNSアカウントを却下
+ * 個別SNSアカウントを却下
  */
 export async function rejectSnsAccount(
   userId: string,
+  snsKey: 'instagram' | 'youtube' | 'tiktok' | 'x',
   adminUid: string,
   reason: string
 ): Promise<{ success: boolean; message: string }> {
@@ -1930,23 +2082,26 @@ export async function rejectSnsAccount(
 
     const userData = userDoc.data();
     const snsAccounts: SnsAccounts = userData?.snsAccounts || {};
+    const targetSns = snsAccounts[snsKey] as SnsAccountApproval | undefined;
 
-    if (snsAccounts.approvalStatus !== 'pending') {
-      return { success: false, message: "このユーザーは承認待ち状態ではありません" };
+    if (!targetSns || targetSns.status !== 'pending') {
+      return { success: false, message: `${SNS_LABELS[snsKey].label}は承認待ち状態ではありません` };
     }
 
     // 却下状態に更新
     await setDoc(doc(db, "users", userId), {
       snsAccounts: {
-        ...snsAccounts,
-        approvalStatus: 'rejected',
-        reviewedAt: serverTimestamp(),
-        reviewedBy: adminUid,
-        rejectionReason: reason
+        [snsKey]: {
+          ...targetSns,
+          status: 'rejected',
+          reviewedAt: serverTimestamp(),
+          reviewedBy: adminUid,
+          rejectionReason: reason
+        }
       }
     }, { merge: true });
 
-    return { success: true, message: "却下しました。" };
+    return { success: true, message: `${SNS_LABELS[snsKey].label}を却下しました。` };
   } catch (error) {
     console.error("Error rejecting SNS account:", error);
     return { success: false, message: "却下に失敗しました" };

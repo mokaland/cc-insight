@@ -21,21 +21,27 @@ import { Timestamp } from "firebase/firestore";
 // SNS承認状態
 export type SnsApprovalStatus = 'none' | 'pending' | 'approved' | 'rejected';
 
-export interface SnsAccounts {
-  instagram?: string;     // @username形式
-  youtube?: string;       // チャンネル名/ID
-  tiktok?: string;        // @username形式
-  x?: string;             // @username形式
-  profileCompleted?: boolean;  // 全入力完了フラグ
-  completedAt?: Timestamp;     // 完了日時
-  completionBonusClaimed?: boolean; // 完了ボーナス受取済みフラグ
-
-  // 承認制フィールド
-  approvalStatus?: SnsApprovalStatus;  // 承認状態
+// 個別SNSアカウントの承認情報
+export interface SnsAccountApproval {
+  url?: string;                        // プロフィールURL
+  status: SnsApprovalStatus;           // 承認状態
   submittedAt?: Timestamp;             // 申請日時
   reviewedAt?: Timestamp;              // 審査日時
   reviewedBy?: string;                 // 審査した管理者のUID
   rejectionReason?: string;            // 却下理由（あれば）
+}
+
+export interface SnsAccounts {
+  // 各SNSの個別承認情報
+  instagram?: SnsAccountApproval;
+  youtube?: SnsAccountApproval;
+  tiktok?: SnsAccountApproval;
+  x?: SnsAccountApproval;
+
+  // 全体フラグ（後方互換性のため残す）
+  profileCompleted?: boolean;          // 全て承認済みフラグ
+  completedAt?: Timestamp;             // 完了日時
+  completionBonusClaimed?: boolean;    // 完了ボーナス受取済みフラグ
 }
 
 // チーム別SNS入力順序
@@ -45,11 +51,31 @@ export const SNS_ORDER_BY_TEAM = {
   buppan: ['x', 'instagram', 'youtube', 'tiktok'] as const,
 };
 
-export const SNS_LABELS: Record<string, { label: string; placeholder: string; icon: string }> = {
-  instagram: { label: 'Instagram', placeholder: '@username', icon: '📷' },
-  youtube: { label: 'YouTube', placeholder: 'チャンネル名またはID', icon: '🎬' },
-  tiktok: { label: 'TikTok', placeholder: '@username', icon: '🎵' },
-  x: { label: 'X (Twitter)', placeholder: '@username', icon: '𝕏' },
+export const SNS_LABELS: Record<string, { label: string; placeholder: string; icon: string; urlPattern: RegExp }> = {
+  instagram: {
+    label: 'Instagram',
+    placeholder: 'https://instagram.com/username',
+    icon: '📷',
+    urlPattern: /^https?:\/\/(www\.)?instagram\.com\/[a-zA-Z0-9_.]+\/?$/
+  },
+  youtube: {
+    label: 'YouTube',
+    placeholder: 'https://youtube.com/@channelname',
+    icon: '🎬',
+    urlPattern: /^https?:\/\/(www\.)?youtube\.com\/(@[a-zA-Z0-9_.-]+|channel\/[a-zA-Z0-9_-]+|c\/[a-zA-Z0-9_-]+)\/?$/
+  },
+  tiktok: {
+    label: 'TikTok',
+    placeholder: 'https://tiktok.com/@username',
+    icon: '🎵',
+    urlPattern: /^https?:\/\/(www\.)?tiktok\.com\/@[a-zA-Z0-9_.]+\/?$/
+  },
+  x: {
+    label: 'X (Twitter)',
+    placeholder: 'https://x.com/username',
+    icon: '𝕏',
+    urlPattern: /^https?:\/\/(www\.)?(x|twitter)\.com\/[a-zA-Z0-9_]+\/?$/
+  },
 };
 
 // プロフィール完成ボーナス

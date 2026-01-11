@@ -18,7 +18,8 @@ import {
   Search,
   MessageCircle,
   MessageSquare,
-  Ticket
+  Ticket,
+  CheckSquare,
 } from "lucide-react";
 import { getUserGuardianProfile } from "@/lib/firestore";
 import { GUARDIANS, ATTRIBUTES, EVOLUTION_STAGES, getGuardianImagePath, GuardianId } from "@/lib/guardian-collection";
@@ -109,6 +110,12 @@ const adminNavItems = [
     subtitle: "発行・管理",
     href: "/admin/invitations",
     icon: Ticket,
+  },
+  {
+    title: "SNS承認",
+    subtitle: "アカウント確認",
+    href: "/admin/sns-approvals",
+    icon: CheckSquare,
   },
 ];
 
