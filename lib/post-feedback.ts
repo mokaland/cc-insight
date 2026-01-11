@@ -169,15 +169,14 @@ export async function sendFeedbackAsDM(
     // 全フィードバックを1つのDMにまとめる
     let dmMessage = `【📊 投稿フィードバック】\n\n`;
     dmMessage += `${toUserName}さん、お疲れ様です！\n`;
-    dmMessage += `本日の投稿${feedbacks.length}件について、AIによるフィードバックをお届けします。\n\n`;
-    dmMessage += `━━━━━━━━━━━━━━━━━━\n\n`;
+    dmMessage += `本日の投稿${feedbacks.length}件について、フィードバックをお届けします。\n\n`;
 
     feedbacks.forEach((fb, index) => {
         dmMessage += `【投稿 ${index + 1}】\n`;
         dmMessage += `📝 投稿内容:\n${fb.postContent.substring(0, 100)}${fb.postContent.length > 100 ? '...' : ''}\n\n`;
-        dmMessage += `🤖 フィードバック:\n${fb.feedback}\n\n`;
+        dmMessage += `💬 フィードバック:\n${fb.feedback}\n\n`;
         if (index < feedbacks.length - 1) {
-            dmMessage += `━━━━━━━━━━━━━━━━━━\n\n`;
+            dmMessage += `──────────────────\n\n`;
         }
     });
 
@@ -193,6 +192,7 @@ export async function sendFeedbackAsDM(
             message: dmMessage,
             isAdmin: true,
             isAutoFeedback: true, // 自動フィードバックフラグ
+            read: false, // 🆕 未読フラグ
             participants: [fromUserId, toUserId],
             createdAt: serverTimestamp(),
         });

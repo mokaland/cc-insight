@@ -252,6 +252,39 @@ service cloud.firestore {
       allow delete: if isAdmin();
     }
 
+    // sns_accounts collection（SNSアカウント管理）
+    match /sns_accounts/{accountId} {
+      // 読み取り: 本人または管理者
+      allow read: if isAuthenticated() && 
+        (resource.data.userId == request.auth.uid || isAdmin());
+
+      // 作成: 認証済みユーザー（自分のアカウント登録）
+      allow create: if isAuthenticated() && 
+        request.resource.data.userId == request.auth.uid;
+
+      // 更新: 本人（status=pending設定）または管理者（承認処理）
+      allow update: if isAuthenticated() && 
+        (resource.data.userId == request.auth.uid || isAdmin());
+
+      // 削除: 管理者のみ
+      allow delete: if isAdmin();
+    }
+
+    // guardian_profiles collection（守護神プロフィール）
+    match /guardian_profiles/{userId} {
+      // 読み取り: 誰でも可能（ランキング表示等で使用）
+      allow read: if true;
+
+      // 作成: 本人のみ
+      allow create: if isOwner(userId);
+
+      // 更新: 本人または管理者（ボーナス付与等）
+      allow update: if isOwner(userId) || isAdmin();
+
+      // 削除: 管理者のみ
+      allow delete: if isAdmin();
+    }
+
     // その他のコレクションはデフォルトで禁止
     match /{document=**} {
       allow read, write: if false;

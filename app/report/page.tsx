@@ -478,14 +478,14 @@ export default function ReportPage() {
         // DM送信失敗でも日報送信は成功扱い
       }
 
-      // 🤖 AIフィードバック生成・DM送信（X運用チームのみ、新規作成時のみ）
+      // 運営フィードバック生成・DM送信（X運用チームのみ、新規作成時のみ）
       if (isXTeam && !isEditMode) {
         try {
           // 投稿内容があるポストのみフィルター
           const postsWithContent = xPosts.filter(p => p.content && p.content.trim() !== "");
 
           if (postsWithContent.length > 0) {
-            console.log(`🤖 AIフィードバック生成開始: ${postsWithContent.length}件`);
+            console.log(`💬 フィードバック生成準備: ${postsWithContent.length}件`);
 
             // 管理者を取得（フィードバック送信元として使用）
             const allUsers = await getAllUsers();
@@ -494,23 +494,33 @@ export default function ReportPage() {
             if (admins.length > 0) {
               const adminUser = admins[0]; // 最初の管理者を送信元として使用
 
-              // バックグラウンドでフィードバック生成・送信
-              processPostFeedback(
-                `report-${user.uid}-${date}`,
-                postsWithContent,
-                user.uid,
-                userProfile.displayName,
-                adminUser.uid,
-                adminUser.displayName
-              ).then(() => {
-                console.log('✅ AIフィードバック生成・DM送信完了');
-              }).catch((feedbackError) => {
-                console.error('AIフィードバックエラー:', feedbackError);
-              });
+              // 人間味を出すために5〜10分のランダムな遅延を入れる
+              const minDelay = 5;
+              const maxDelay = 10;
+              const delayMinutes = Math.floor(Math.random() * (maxDelay - minDelay + 1) + minDelay);
+              const delayMs = delayMinutes * 60 * 1000;
+
+              console.log(`🕐 フィードバック送信を ${delayMinutes} 分後にスケジュールしました`);
+
+              // バックグラウンドでフィードバック生成・送信（遅延実行）
+              setTimeout(() => {
+                processPostFeedback(
+                  `report-${user.uid}-${date}`,
+                  postsWithContent,
+                  user.uid,
+                  userProfile.displayName,
+                  adminUser.uid,
+                  adminUser.displayName
+                ).then(() => {
+                  console.log('✅ フィードバック送信完了');
+                }).catch((feedbackError) => {
+                  console.error('フィードバックエラー:', feedbackError);
+                });
+              }, delayMs);
             }
           }
         } catch (feedbackSetupError) {
-          console.error('AIフィードバック設定エラー:', feedbackSetupError);
+          console.error('フィードバック設定エラー:', feedbackSetupError);
           // フィードバック失敗でも日報送信は成功扱い
         }
       }
@@ -812,7 +822,7 @@ export default function ReportPage() {
                         />
                       </div>
 
-                      {/* 投稿URL + 投稿内容（AIフィードバック用） */}
+                      {/* 投稿URL + 投稿内容 */}
                       <div className="space-y-4">
                         <div>
                           <Label className="flex items-center gap-2 text-white">
@@ -820,7 +830,7 @@ export default function ReportPage() {
                             投稿したポスト
                           </Label>
                           <p className="text-xs text-slate-400 mt-1">
-                            🤖 投稿内容を入力すると、AIから詳細なフィードバックがDMで届きます
+                            💬 投稿内容を入力すると、運営からフィードバックがDMで届きます
                           </p>
                         </div>
 
@@ -853,11 +863,10 @@ export default function ReportPage() {
                               />
                             </div>
 
-                            {/* 投稿内容（AIフィードバック用） */}
+                            {/* 投稿内容 */}
                             <div className="space-y-1">
-                              <Label className="text-xs text-slate-300 flex items-center gap-1">
+                              <Label className="text-xs text-slate-300">
                                 投稿内容
-                                <span className="text-yellow-400 text-[10px]">（AIフィードバック用）</span>
                               </Label>
                               <textarea
                                 placeholder="投稿のテキストをコピペしてください..."
