@@ -185,29 +185,36 @@ export const ATTRIBUTES: Record<GuardianAttribute, {
 // 🐉 守護神キャラクター定義
 // =====================================
 
-export type GuardianId = 'horyu' | 'shishimaru' | 'hanase' | 'shiroko' | 'kitama' | 'hoshimaru';
+export type GuardianId =
+  // T1 (初期選択)
+  | 'horyu' | 'hanase' | 'kitama'
+  // T2 (条件解放)
+  | 'shishimaru' | 'shiroko' | 'hoshimaru'
+  // T3 (エンドコンテンツ)
+  | 'ryuoh' | 'koukirin' | 'tenshin';
 
-export type GuardianPersonality = 'hot' | 'cheerful' | 'gentle' | 'mysterious' | 'logical' | 'cosmic';
+export type GuardianPersonality = 'hot' | 'cheerful' | 'gentle' | 'mysterious' | 'logical' | 'cosmic' | 'majestic' | 'divine' | 'enlightened';
 
 export interface GuardianDefinition {
   id: GuardianId;
   name: string;
   reading: string;
   attribute: GuardianAttribute;
-  tier: 1 | 2;
+  tier: 1 | 2 | 3;
   personality: GuardianPersonality;
   description: string;
   ability: {
     name: string;
     description: string;
-    effectType: 'energy_boost' | 'streak_bonus' | 'streak_grace' | 'lucky_boost' | 'cost_reduce' | 'weekend_bonus';
+    effectType: 'energy_boost' | 'streak_bonus' | 'streak_grace' | 'lucky_boost' | 'cost_reduce' | 'weekend_bonus' | 'ultimate_boost' | 'team_aura' | 'performance_boost';
     effectValue: number;
   };
   unlockCondition: {
-    type: 'initial' | 'energy' | 'evolution';
+    type: 'initial' | 'energy' | 'evolution' | 'mastery';
     energyCost?: number;
     requiredGuardianId?: GuardianId;
     requiredStage?: number;
+    requiredUltimateCount?: number; // T3用：究極体到達数
   };
 }
 
@@ -338,6 +345,70 @@ export const GUARDIANS: Record<GuardianId, GuardianDefinition> = {
       energyCost: 3000,
       requiredGuardianId: 'kitama',
       requiredStage: 2
+    }
+  },
+
+  // =====================================
+  // 👑 T3 エンドコンテンツ
+  // =====================================
+  ryuoh: {
+    id: 'ryuoh',
+    name: '龍王',
+    reading: 'りゅうおう',
+    attribute: 'power',
+    tier: 3,
+    personality: 'majestic',
+    description: '火龍と獅子丸の力が融合した伝説の存在。無限の闘志でチーム全体を鼓舞する。',
+    ability: {
+      name: '覇王の咆哮',
+      description: '全てのエナジー獲得が+30%、ストリークボーナス+0.5',
+      effectType: 'ultimate_boost',
+      effectValue: 0.3
+    },
+    unlockCondition: {
+      type: 'mastery',
+      energyCost: 10000,
+      requiredUltimateCount: 2, // 剛属性2体を究極体に
+    }
+  },
+  koukirin: {
+    id: 'koukirin',
+    name: '光麒麟',
+    reading: 'こうきりん',
+    attribute: 'beauty',
+    tier: 3,
+    personality: 'divine',
+    description: '花精と白狐の魂が昇華した神聖な麒麟。その存在はチームに幸運をもたらす。',
+    ability: {
+      name: '神光の祝福',
+      description: 'ラッキーボーナス発生率3倍、ストリーク猶予+48時間',
+      effectType: 'lucky_boost',
+      effectValue: 3.0
+    },
+    unlockCondition: {
+      type: 'mastery',
+      energyCost: 10000,
+      requiredUltimateCount: 2, // 雅属性2体を究極体に
+    }
+  },
+  tenshin: {
+    id: 'tenshin',
+    name: '天神',
+    reading: 'てんしん',
+    attribute: 'cyber',
+    tier: 3,
+    personality: 'enlightened',
+    description: '機珠と星丸が融合した宇宙的知性体。全てを見通す眼で最適な道を示す。',
+    ability: {
+      name: '宇宙の叡智',
+      description: 'パフォーマンスE獲得量2倍、進化コスト-30%',
+      effectType: 'performance_boost',
+      effectValue: 2.0
+    },
+    unlockCondition: {
+      type: 'mastery',
+      energyCost: 10000,
+      requiredUltimateCount: 2, // 智属性2体を究極体に
     }
   }
 };
@@ -771,6 +842,27 @@ export const GUARDIAN_FINALE_EFFECTS: Record<GuardianId, GuardianFinaleEffect> =
     bgGradient: ['#3b82f6', '#6366f1', '#8b5cf6'],
     accentColor: '#6366f1',
     particleMotion: 'twinkle'
+  },
+  // T3: 龍王 - 覇気と炎
+  ryuoh: {
+    particleEmoji: ['👑', '🔥', '⚡', '💥'],
+    bgGradient: ['#dc2626', '#b91c1c', '#fbbf24'],
+    accentColor: '#dc2626',
+    particleMotion: 'float'
+  },
+  // T3: 光麒麟 - 神聖な光
+  koukirin: {
+    particleEmoji: ['✨', '💛', '🌟', '👑'],
+    bgGradient: ['#fbbf24', '#f59e0b', '#fcd34d'],
+    accentColor: '#f59e0b',
+    particleMotion: 'spiral'
+  },
+  // T3: 天神 - 宇宙と叡智
+  tenshin: {
+    particleEmoji: ['🌌', '✨', '💠', '⭐'],
+    bgGradient: ['#6366f1', '#4f46e5', '#8b5cf6'],
+    accentColor: '#6366f1',
+    particleMotion: 'orbit'
   }
 };
 

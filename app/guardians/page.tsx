@@ -74,6 +74,28 @@ const GUARDIAN_PERSONALITIES: Record<GuardianId, {
     favoriteThings: ["完璧", "達成", "栄光"],
     quote: "限界など存在しない。我と共に頂へ登るのだ。"
   },
+  // T3 エンドコンテンツ
+  ryuoh: {
+    personality: "威厳に満ちた王者",
+    traits: ["覇気", "無限の闘志", "統率力"],
+    backstory: "火龍と獅子丸の魂が融合して生まれた伝説の龍王。その咆哮はチーム全体を奮い立たせる。",
+    favoriteThings: ["勝利", "栄光", "仲間の成長"],
+    quote: "我と共に頂点へ。全ての障壁を打ち砕け！"
+  },
+  koukirin: {
+    personality: "神聖で慈愛に満ちた存在",
+    traits: ["祝福", "神秘", "幸運"],
+    backstory: "花精と白狐の魂が昇華して現れた聖なる麒麟。その存在は全てに幸運をもたらす。",
+    favoriteThings: ["調和", "祝福", "奇跡"],
+    quote: "あなたには神の加護がある。恐れるものは何もない。"
+  },
+  tenshin: {
+    personality: "超越的な叡智を持つ",
+    traits: ["全知", "宇宙的視野", "最適解"],
+    backstory: "機珠と星丸が融合した宇宙的知性体。全ての道を見通し、最適な選択へと導く。",
+    favoriteThings: ["真理", "効率", "進化"],
+    quote: "宇宙の摂理が君を導く。最善の道は既に見えている。"
+  },
 };
 
 export default function GuardiansPage() {
