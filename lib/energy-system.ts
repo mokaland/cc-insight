@@ -27,10 +27,107 @@ import {
 import { recordEnergyHistory, EnergyBreakdown } from "./energy-history";
 
 // =====================================
-// 💰 エナジー獲得システム
+// 💰 エナジー獲得システム v4
 // =====================================
 
-const BASE_ENERGY_PER_REPORT = 100; // 10倍スケール
+// チーム別ベースエナジー（10倍スケール）
+const BASE_ENERGY_WEEKLY = 150;   // 副業・退職チーム（週1報告）
+const BASE_ENERGY_DAILY = 30;     // スマホ物販チーム（毎日報告）
+const BASE_ENERGY_PER_REPORT = 100; // 従来の基本値（互換性維持）
+
+/**
+ * パフォーマンスエナジー計算（Shorts系）
+ * 1万再生 = 10E、100万再生リール = 300E、フォロワー30人 = 10E
+ */
+export function calculatePerformanceEnergy(reportData: {
+  views?: number;
+  viralReels100k?: number;    // 100万再生以上のリール数
+  followerGrowth?: number;
+  likes?: number;             // X系: いいね数
+  replies?: number;           // X系: リプライ数
+  posts?: number;             // X系: 投稿数
+  teamType?: 'shorts' | 'x';
+}): { total: number; breakdown: string[] } {
+  const breakdown: string[] = [];
+  let total = 0;
+
+  if (reportData.teamType === 'shorts') {
+    // Shorts系（副業・退職チーム）
+    if (reportData.views && reportData.views > 0) {
+      const viewsEnergy = Math.floor(reportData.views / 10000) * 10;
+      if (viewsEnergy > 0) {
+        total += viewsEnergy;
+        breakdown.push(`再生数: +${viewsEnergy}E (${(reportData.views / 10000).toFixed(1)}万再生)`);
+      }
+    }
+
+    if (reportData.viralReels100k && reportData.viralReels100k > 0) {
+      const viralEnergy = reportData.viralReels100k * 300;
+      total += viralEnergy;
+      breakdown.push(`100万再生リール: +${viralEnergy}E (${reportData.viralReels100k}本)`);
+    }
+
+    if (reportData.followerGrowth && reportData.followerGrowth > 0) {
+      const followerEnergy = Math.floor(reportData.followerGrowth / 30) * 10;
+      if (followerEnergy > 0) {
+        total += followerEnergy;
+        breakdown.push(`フォロワー増加: +${followerEnergy}E (+${reportData.followerGrowth}人)`);
+      }
+    }
+  } else if (reportData.teamType === 'x') {
+    // X系（スマホ物販チーム）
+    if (reportData.posts && reportData.posts > 0) {
+      const postsEnergy = reportData.posts * 30;
+      total += postsEnergy;
+      breakdown.push(`投稿数: +${postsEnergy}E (${reportData.posts}投稿)`);
+    }
+
+    const activity = (reportData.likes || 0) + (reportData.replies || 0);
+    if (activity > 0) {
+      const activityEnergy = Math.floor(activity / 50) * 20;
+      if (activityEnergy > 0) {
+        total += activityEnergy;
+        breakdown.push(`いいね+リプ: +${activityEnergy}E (${activity}活動)`);
+      }
+    }
+
+    if (reportData.followerGrowth && reportData.followerGrowth > 0) {
+      const followerEnergy = Math.floor(reportData.followerGrowth / 30) * 10;
+      if (followerEnergy > 0) {
+        total += followerEnergy;
+        breakdown.push(`フォロワー増加: +${followerEnergy}E (+${reportData.followerGrowth}人)`);
+      }
+    }
+  }
+
+  return { total, breakdown };
+}
+
+/**
+ * 継続ボーナス計算（マイルストーン達成時のみ付与）
+ * 達成時に一度だけボーナスを付与する形式
+ */
+export function calculateContinuityBonus(currentStreak: number, previousStreak: number): {
+  bonus: number;
+  milestone: string | null;
+} {
+  // 週次ストリーク用のマイルストーン（週数 -> ボーナスE）
+  const milestones: [number, number, string][] = [
+    [4, 300, '4週連続達成！'],        // 1ヶ月
+    [12, 1000, '12週連続達成！'],     // 3ヶ月
+    [26, 3000, '半年継続達成！'],     // 6ヶ月
+    [52, 8000, '1年継続達成！'],      // 1年
+  ];
+
+  for (const [weeks, bonus, message] of milestones) {
+    // 今回のストリークでマイルストーンを達成し、前回は未達成だった場合
+    if (currentStreak >= weeks && previousStreak < weeks) {
+      return { bonus, milestone: message };
+    }
+  }
+
+  return { bonus: 0, milestone: null };
+}
 
 /**
  * ストリーク日数に応じたボーナス倍率
@@ -95,6 +192,8 @@ export function isWeekend(date: Date = new Date()): boolean {
  */
 export interface EnergyEarnResult {
   baseEnergy: number;
+  performanceEnergy: number;       // 🆕 パフォーマンスE
+  continuityBonus: number;         // 🆕 継続ボーナス
   streakMultiplier: number;
   abilityBonus: number;
   luckyBonus: {
@@ -108,10 +207,23 @@ export interface EnergyEarnResult {
   };
   totalEnergy: number;
   breakdown: string[];
+  milestoneMessage?: string;       // 🆕 マイルストーン達成メッセージ
+}
+
+export interface ReportPerformanceData {
+  views?: number;
+  viralReels100k?: number;
+  followerGrowth?: number;
+  likes?: number;
+  replies?: number;
+  posts?: number;
 }
 
 export function calculateEnergyEarned(
-  userProfile: UserGuardianProfile
+  userProfile: UserGuardianProfile,
+  reportData?: ReportPerformanceData,
+  teamType?: 'shorts' | 'x',
+  previousStreak?: number
 ): EnergyEarnResult {
   const guardians = Object.values(userProfile.guardians).filter(g => g?.unlocked);
   const activeGuardianIds = guardians.map(g => g!.guardianId);
@@ -132,14 +244,25 @@ export function calculateEnergyEarned(
   let energy = BASE_ENERGY_PER_REPORT;
   breakdown.push(`基本: ${BASE_ENERGY_PER_REPORT}E`);
 
-  // 2. ストリークボーナス
+  // 2. 🆕 パフォーマンスE
+  let performanceEnergy = 0;
+  if (reportData && teamType) {
+    const perfResult = calculatePerformanceEnergy({ ...reportData, teamType });
+    performanceEnergy = perfResult.total;
+    if (performanceEnergy > 0) {
+      energy += performanceEnergy;
+      breakdown.push(...perfResult.breakdown);
+    }
+  }
+
+  // 3. ストリークボーナス
   const streakMultiplier = getStreakMultiplier(userProfile.streak.current, hasShishimaru);
   energy *= streakMultiplier;
   if (streakMultiplier > 1.0) {
     breakdown.push(`ストリーク×${streakMultiplier.toFixed(1)} (${userProfile.streak.current}日連続)`);
   }
 
-  // 3. 火龍の特性（エナジー+15%）
+  // 4. 火龍の特性（エナジー+15%）
   let abilityBonus = 0;
   if (hasHoryu) {
     abilityBonus = energy * 0.15;
@@ -147,14 +270,14 @@ export function calculateEnergyEarned(
     breakdown.push(`火龍の灼熱の意志: +15%`);
   }
 
-  // 4. ラッキーボーナス
+  // 5. ラッキーボーナス
   const luckyBonus = checkLuckyBonus(hasShiroko);
   if (luckyBonus.triggered) {
     energy *= luckyBonus.multiplier;
     breakdown.push(`🎰 ラッキーボーナス: ×${luckyBonus.multiplier}`);
   }
 
-  // 5. 週末ボーナス（星丸）
+  // 6. 週末ボーナス（星丸）
   const weekendBonus = {
     triggered: false,
     multiplier: 1
@@ -166,14 +289,30 @@ export function calculateEnergyEarned(
     breakdown.push(`✨ 星丸の星の導き: ×2.5 (週末)`);
   }
 
+  // 7. 🆕 継続ボーナス（マイルストーン）
+  let continuityBonus = 0;
+  let milestoneMessage: string | undefined;
+  if (previousStreak !== undefined) {
+    const contResult = calculateContinuityBonus(userProfile.streak.current, previousStreak);
+    continuityBonus = contResult.bonus;
+    if (continuityBonus > 0) {
+      energy += continuityBonus;
+      milestoneMessage = contResult.milestone || undefined;
+      breakdown.push(`🏆 ${milestoneMessage}: +${continuityBonus}E`);
+    }
+  }
+
   return {
     baseEnergy: BASE_ENERGY_PER_REPORT,
+    performanceEnergy,
+    continuityBonus,
     streakMultiplier,
     abilityBonus,
     luckyBonus,
     weekendBonus,
     totalEnergy: Math.floor(energy),
-    breakdown
+    breakdown,
+    milestoneMessage
   };
 }
 
