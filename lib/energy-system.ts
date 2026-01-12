@@ -30,14 +30,14 @@ import { recordEnergyHistory, EnergyBreakdown } from "./energy-history";
 // 💰 エナジー獲得システム
 // =====================================
 
-const BASE_ENERGY_PER_REPORT = 10;
+const BASE_ENERGY_PER_REPORT = 100; // 10倍スケール
 
 /**
  * ストリーク日数に応じたボーナス倍率
  */
 export function getStreakMultiplier(streakDays: number, hasShishimaru: boolean = false): number {
   let multiplier = 1.0;
-  
+
   if (streakDays >= 31) {
     multiplier = 3.0;
   } else if (streakDays >= 15) {
@@ -47,12 +47,12 @@ export function getStreakMultiplier(streakDays: number, hasShishimaru: boolean =
   } else if (streakDays >= 4) {
     multiplier = 1.2;
   }
-  
+
   // 獅子丸の特性: ストリークボーナス+0.2
   if (hasShishimaru) {
     multiplier += 0.2;
   }
-  
+
   return multiplier;
 }
 
@@ -66,7 +66,7 @@ export function checkLuckyBonus(hasShiroko: boolean = false): {
 } {
   const baseChance = hasShiroko ? 0.10 : 0.05; // 白狐で5%→10%
   const roll = Math.random();
-  
+
   if (roll < baseChance) {
     return {
       triggered: true,
@@ -74,7 +74,7 @@ export function checkLuckyBonus(hasShiroko: boolean = false): {
       message: "🎰 ラッキーボーナス発動！エナジー10倍獲得！"
     };
   }
-  
+
   return {
     triggered: false,
     multiplier: 1,
@@ -115,30 +115,30 @@ export function calculateEnergyEarned(
 ): EnergyEarnResult {
   const guardians = Object.values(userProfile.guardians).filter(g => g?.unlocked);
   const activeGuardianIds = guardians.map(g => g!.guardianId);
-  
+
   // 特性チェック
-  const hasHoryu = activeGuardianIds.includes('horyu') && 
-                   guardians.find(g => g!.guardianId === 'horyu')!.stage >= 3;
-  const hasShishimaru = activeGuardianIds.includes('shishimaru') && 
-                        guardians.find(g => g!.guardianId === 'shishimaru')!.stage >= 3;
-  const hasShiroko = activeGuardianIds.includes('shiroko') && 
-                     guardians.find(g => g!.guardianId === 'shiroko')!.stage >= 3;
-  const hasHoshimaru = activeGuardianIds.includes('hoshimaru') && 
-                       guardians.find(g => g!.guardianId === 'hoshimaru')!.stage >= 3;
-  
+  const hasHoryu = activeGuardianIds.includes('horyu') &&
+    guardians.find(g => g!.guardianId === 'horyu')!.stage >= 3;
+  const hasShishimaru = activeGuardianIds.includes('shishimaru') &&
+    guardians.find(g => g!.guardianId === 'shishimaru')!.stage >= 3;
+  const hasShiroko = activeGuardianIds.includes('shiroko') &&
+    guardians.find(g => g!.guardianId === 'shiroko')!.stage >= 3;
+  const hasHoshimaru = activeGuardianIds.includes('hoshimaru') &&
+    guardians.find(g => g!.guardianId === 'hoshimaru')!.stage >= 3;
+
   const breakdown: string[] = [];
-  
+
   // 1. 基本エナジー
   let energy = BASE_ENERGY_PER_REPORT;
   breakdown.push(`基本: ${BASE_ENERGY_PER_REPORT}E`);
-  
+
   // 2. ストリークボーナス
   const streakMultiplier = getStreakMultiplier(userProfile.streak.current, hasShishimaru);
   energy *= streakMultiplier;
   if (streakMultiplier > 1.0) {
     breakdown.push(`ストリーク×${streakMultiplier.toFixed(1)} (${userProfile.streak.current}日連続)`);
   }
-  
+
   // 3. 火龍の特性（エナジー+15%）
   let abilityBonus = 0;
   if (hasHoryu) {
@@ -146,14 +146,14 @@ export function calculateEnergyEarned(
     energy += abilityBonus;
     breakdown.push(`火龍の灼熱の意志: +15%`);
   }
-  
+
   // 4. ラッキーボーナス
   const luckyBonus = checkLuckyBonus(hasShiroko);
   if (luckyBonus.triggered) {
     energy *= luckyBonus.multiplier;
     breakdown.push(`🎰 ラッキーボーナス: ×${luckyBonus.multiplier}`);
   }
-  
+
   // 5. 週末ボーナス（星丸）
   const weekendBonus = {
     triggered: false,
@@ -165,7 +165,7 @@ export function calculateEnergyEarned(
     energy *= 2.5;
     breakdown.push(`✨ 星丸の星の導き: ×2.5 (週末)`);
   }
-  
+
   return {
     baseEnergy: BASE_ENERGY_PER_REPORT,
     streakMultiplier,
@@ -187,14 +187,14 @@ export function calculateEnergyEarned(
 export function getStreakGraceHours(userProfile: UserGuardianProfile): number {
   const hasHanase = Object.values(userProfile.guardians)
     .some(g => g?.guardianId === 'hanase' && g.unlocked && g.stage >= 3);
-  
+
   let graceHours = 24; // デフォルト24時間
-  
+
   // 花精の特性: +12時間
   if (hasHanase) {
     graceHours += 12;
   }
-  
+
   return graceHours;
 }
 
@@ -206,7 +206,7 @@ export function updateStreak(
   now: Date = new Date()
 ): UserStreakData {
   const lastReport = currentStreak.lastReportAt?.toDate();
-  
+
   if (!lastReport) {
     // 初回報告
     return {
@@ -217,12 +217,12 @@ export function updateStreak(
       graceHours: currentStreak.graceHours
     };
   }
-  
+
   const hoursSinceLastReport = (now.getTime() - lastReport.getTime()) / (1000 * 60 * 60);
   const graceHours = currentStreak.graceHours || 24;
-  
+
   let newCurrent = currentStreak.current;
-  
+
   if (hoursSinceLastReport < 24) {
     // 24時間以内: 同日扱い（連続日数変わらず）
     newCurrent = currentStreak.current;
@@ -233,7 +233,7 @@ export function updateStreak(
     // 猶予超過: リセット
     newCurrent = 1;
   }
-  
+
   return {
     current: newCurrent,
     max: Math.max(newCurrent, currentStreak.max),
@@ -383,13 +383,13 @@ export function processReportCompletion(
   now: Date = new Date()
 ): ReportCompletionResult {
   const messages: string[] = [];
-  
+
   // 1. ストリーク更新
   const newStreakData = updateStreak(userProfile.streak, now);
-  
+
   // ストリーク猶予時間を更新（花精の特性）
   newStreakData.graceHours = getStreakGraceHours(userProfile);
-  
+
   if (newStreakData.current > userProfile.streak.current) {
     messages.push(`🔥 ${newStreakData.current}日連続達成！`);
     if (newStreakData.current === newStreakData.max) {
@@ -398,7 +398,7 @@ export function processReportCompletion(
   } else if (newStreakData.current < userProfile.streak.current) {
     messages.push(`⚠️ ストリークがリセットされました`);
   }
-  
+
   // 2. エナジー獲得
   // 更新されたプロファイルを使用して計算
   const tempProfile: UserGuardianProfile = {
@@ -406,20 +406,20 @@ export function processReportCompletion(
     streak: newStreakData
   };
   const energyEarned = calculateEnergyEarned(tempProfile);
-  
+
   messages.push(`💎 ${energyEarned.totalEnergy}エナジー獲得！`);
-  
+
   if (energyEarned.luckyBonus.triggered) {
     messages.push(energyEarned.luckyBonus.message);
   }
-  
+
   // 3. エナジーデータ更新
   const newEnergyData: UserEnergyData = {
     current: userProfile.energy.current + energyEarned.totalEnergy,
     totalEarned: userProfile.energy.totalEarned + energyEarned.totalEnergy,
     lastEarnedAt: Timestamp.fromDate(now)
   };
-  
+
   // 4. 履歴記録用データ
   const historyBreakdown: EnergyBreakdown = {
     dailyReport: BASE_ENERGY_PER_REPORT,
@@ -427,7 +427,7 @@ export function processReportCompletion(
     performanceBonus: Math.floor(energyEarned.abilityBonus),
     weeklyBonus: 0, // 週次ボーナスは別途実装
   };
-  
+
   return {
     energyEarned,
     newEnergyData,
@@ -452,18 +452,18 @@ export function estimateDaysToNextEvolution(
   userProfile: UserGuardianProfile
 ): number | null {
   const currentStage = guardian.stage;
-  
+
   if (currentStage >= 4) {
     return null; // 究極体
   }
-  
+
   const nextStageEnergy = EVOLUTION_STAGES[currentStage + 1].requiredEnergy;
   const remaining = nextStageEnergy - guardian.investedEnergy;
-  
+
   // 1日あたりの平均獲得エナジーを推定
   const streakMultiplier = getStreakMultiplier(userProfile.streak.current);
   const avgDailyEnergy = BASE_ENERGY_PER_REPORT * streakMultiplier;
-  
+
   return Math.ceil(remaining / avgDailyEnergy);
 }
 
@@ -478,13 +478,13 @@ export function getCollectionProgress(userProfile: UserGuardianProfile): {
   maxStageReached: number;
 } {
   const allGuardians = Object.values(userProfile.guardians).filter(g => g?.unlocked);
-  
+
   return {
     unlockedCount: allGuardians.length,
     totalCount: 6,
     totalInvestedEnergy: allGuardians.reduce((sum, g) => sum + (g?.investedEnergy || 0), 0),
-    averageStage: allGuardians.length > 0 
-      ? allGuardians.reduce((sum, g) => sum + (g?.stage || 0), 0) / allGuardians.length 
+    averageStage: allGuardians.length > 0
+      ? allGuardians.reduce((sum, g) => sum + (g?.stage || 0), 0) / allGuardians.length
       : 0,
     maxStageReached: Math.max(...allGuardians.map(g => g?.stage || 0), 0)
   };
@@ -497,7 +497,7 @@ export function isInRapidGrowthPeriod(registeredAt: Timestamp): boolean {
   const now = new Date();
   const registered = registeredAt.toDate();
   const daysSinceRegistration = (now.getTime() - registered.getTime()) / (1000 * 60 * 60 * 24);
-  
+
   return daysSinceRegistration <= 3;
 }
 

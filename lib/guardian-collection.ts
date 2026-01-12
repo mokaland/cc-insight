@@ -79,18 +79,18 @@ export const SNS_LABELS: Record<string, { label: string; placeholder: string; ic
 };
 
 // プロフィール完成ボーナス
-export const PROFILE_COMPLETION_BONUS = 30; // 30エナジー
+export const PROFILE_COMPLETION_BONUS = 300; // 300エナジー（10倍スケール）
 
 // =====================================
 // 🎯 レベルシステム
 // =====================================
 
 export const MAX_LEVEL = 999;
-export const ENERGY_PER_LEVEL = 20; // 20エナジーごとに1レベルアップ
+export const ENERGY_PER_LEVEL = 200; // 200エナジーごとに1レベルアップ
 
 /**
  * 累計獲得エナジーからレベルを計算
- * Level = min(999, floor(totalEnergyEarned / 20) + 1)
+ * Level = min(999, floor(totalEnergyEarned / 200) + 1)
  */
 export function calculateLevel(totalEnergyEarned: number): number {
   return Math.min(MAX_LEVEL, Math.floor(totalEnergyEarned / ENERGY_PER_LEVEL) + 1);
@@ -249,7 +249,7 @@ export const GUARDIANS: Record<GuardianId, GuardianDefinition> = {
     },
     unlockCondition: {
       type: 'evolution',
-      energyCost: 300,
+      energyCost: 3000,
       requiredGuardianId: 'horyu',
       requiredStage: 2 // 成長体以上
     }
@@ -292,7 +292,7 @@ export const GUARDIANS: Record<GuardianId, GuardianDefinition> = {
     },
     unlockCondition: {
       type: 'evolution',
-      energyCost: 300,
+      energyCost: 3000,
       requiredGuardianId: 'hanase',
       requiredStage: 2
     }
@@ -335,7 +335,7 @@ export const GUARDIANS: Record<GuardianId, GuardianDefinition> = {
     },
     unlockCondition: {
       type: 'evolution',
-      energyCost: 300,
+      energyCost: 3000,
       requiredGuardianId: 'kitama',
       requiredStage: 2
     }
@@ -369,28 +369,28 @@ export const EVOLUTION_STAGES: StageDefinition[] = [
     stage: 1,
     name: '幼体',
     description: '目覚めたばかりの姿',
-    requiredEnergy: 30,     // Day 1-2で到達可能
+    requiredEnergy: 300,     // Day 1-2で到達可能
     auraIntensity: 20
   },
   {
     stage: 2,
     name: '成長体',
     description: '力が芽生え始めた姿',
-    requiredEnergy: 150,    // Day 5-7で到達可能
+    requiredEnergy: 1500,    // Day 5-7で到達可能
     auraIntensity: 50
   },
   {
     stage: 3,
     name: '成熟体',
     description: '特性が発動する完成形',
-    requiredEnergy: 600,    // Day 14-21で到達可能
+    requiredEnergy: 6000,    // Day 14-21で到達可能
     auraIntensity: 80
   },
   {
     stage: 4,
     name: '究極体',
     description: '最強の姿。伝説の存在',
-    requiredEnergy: 2000,   // Day 45-60で到達可能
+    requiredEnergy: 20000,   // Day 45-60で到達可能
     auraIntensity: 100
   }
 ];
@@ -565,10 +565,10 @@ export function canUnlockGuardian(
         return { canUnlock: true };
       }
       // 2体目以降はエナジーが必要
-      if (userProfile.energy.current >= 200) {
+      if (userProfile.energy.current >= 2000) {
         return { canUnlock: true };
       }
-      return { canUnlock: false, reason: 'エナジーが足りません（200必要）' };
+      return { canUnlock: false, reason: 'エナジーが足りません（2000必要）' };
 
     case 'evolution':
       // 前提守護神の進化が必要
