@@ -11,13 +11,53 @@
 
 import { getReportsByPeriod, Report } from "./firestore";
 import { getCurrentDecade, isWeeklyTeam, isDailyTeam, getTeamConfig } from "./team-config";
-import {
-  aggregateMetrics,
-  getTeamSchema,
-  calculateTotalContributionPoints
-} from "./report-schema";
 import { doc, getDoc, setDoc, collection, addDoc } from "firebase/firestore";
 import { db } from "./firebase";
+
+// ===== report-schema から移植した関数 =====
+
+/**
+ * レポートから貢献ポイントを計算
+ * report-schema.ts が削除されたため、ここに直接実装
+ */
+function calculateTotalContributionPoints(reports: Report[], teamId: string): number {
+  let total = 0;
+
+  for (const report of reports) {
+    // チームタイプに応じた重み付け
+    const config = getTeamConfig(teamId);
+    if (!config) continue;
+
+    // 基本ポイント: 報告提出で10pt
+    total += 10;
+
+    // フォロワー増加ポイント（各SNSのフォロワー数を合算）
+    const followers = (report.igFollowers || 0) + (report.ytFollowers || 0) +
+      (report.tiktokFollowers || 0) + (report.xFollowers || 0);
+    if (followers > 0) {
+      total += Math.floor(followers / 100); // 100フォロワーごとに1pt
+    }
+
+    // いいね数ポイント
+    if (report.likeCount && report.likeCount > 0) {
+      total += Math.floor(report.likeCount / 10);
+    }
+
+    // コメント/リプライ数ポイント
+    if (report.replyCount && report.replyCount > 0) {
+      total += report.replyCount * 5;
+    }
+
+    // 投稿数ポイント（各SNSの投稿数を合算）
+    const postCount = (report.igPosts || 0) + (report.ytPosts || 0) +
+      (report.tiktokPosts || 0) + (report.postCount || 0);
+    if (postCount > 0) {
+      total += postCount * 3;
+    }
+  }
+
+  return total;
+}
 
 export type DecadePeriod = 1 | 2 | 3; // 1=1-10日, 2=11-20日, 3=21-末日
 export type JudgmentStatus = "excellent" | "on_track" | "needs_attention" | "critical";
