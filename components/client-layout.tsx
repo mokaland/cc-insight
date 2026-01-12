@@ -155,10 +155,13 @@ function LayoutContent({ children }: { children: React.ReactNode }) {
 
         {/* メインコンテンツ - ページトランジション付き */}
         <main
-          className="flex-1 md:ml-64 pb-[var(--bottom-nav-height)] md:pb-8 p-4 md:p-8 pt-10 w-full z-10"
+          className={cn(
+            "flex-1 md:ml-64 md:pb-8 p-4 md:p-8 pt-10 w-full z-10",
+            pathname === "/dm" ? "pb-0" : "pb-[var(--bottom-nav-height)]"
+          )}
           style={{
             paddingTop: 'calc(env(safe-area-inset-top, 0px) + 1rem)',
-            paddingBottom: 'calc(5.5rem + max(env(safe-area-inset-bottom, 0px), 20px))'
+            paddingBottom: pathname === "/dm" ? '0px' : 'calc(5.5rem + max(env(safe-area-inset-bottom, 0px), 20px))'
           }}
         >
           <LogoutButton />
@@ -169,8 +172,8 @@ function LayoutContent({ children }: { children: React.ReactNode }) {
           </AnimatePresence>
         </main>
 
-        {/* ボトムナビゲーション（モバイルのみ） */}
-        <BottomNavigation />
+        {/* ボトムナビゲーション（モバイルのみ、DMページでは非表示） */}
+        {pathname !== "/dm" && <BottomNavigation />}
 
         {/* 🎁 デイリーログインボーナスモーダル */}
         {loginBonus && (
