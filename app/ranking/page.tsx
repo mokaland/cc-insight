@@ -718,6 +718,54 @@ export default function AllTeamsRankingPage() {
         </div>
       )}
 
+      {/* 📜 称号の歴史 */}
+      {teamTitles && (teamTitles.energyKing || teamTitles.streakMaster || teamTitles.growthStar) && (
+        <div className="rounded-xl p-3 border border-slate-700/50 bg-slate-800/30">
+          <div className="flex items-center gap-2 mb-2">
+            <Calendar className="w-4 h-4 text-slate-400" />
+            <h3 className="text-sm font-bold text-slate-300">📜 称号の歴史</h3>
+          </div>
+
+          {/* 今週 */}
+          <div className="border-l-2 border-yellow-500/50 pl-3 py-1">
+            <p className="text-[10px] text-slate-500 mb-1">
+              🗓 {(() => {
+                const now = new Date();
+                const startOfWeek = new Date(now);
+                startOfWeek.setDate(now.getDate() - now.getDay());
+                const endOfWeek = new Date(startOfWeek);
+                endOfWeek.setDate(startOfWeek.getDate() + 6);
+                return `${startOfWeek.getMonth() + 1}/${startOfWeek.getDate()} 〜 ${endOfWeek.getMonth() + 1}/${endOfWeek.getDate()}`;
+              })()}
+            </p>
+            <div className="flex flex-wrap gap-1">
+              {teamTitles.energyKing && (
+                <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded bg-yellow-500/10 border border-yellow-500/30 text-[9px]">
+                  <span>{teamTitles.energyKing.emoji}</span>
+                  <span className="text-yellow-300">{teamTitles.energyKing.name}</span>
+                </span>
+              )}
+              {teamTitles.streakMaster && (
+                <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded bg-orange-500/10 border border-orange-500/30 text-[9px]">
+                  <span>{teamTitles.streakMaster.emoji}</span>
+                  <span className="text-orange-300">{teamTitles.streakMaster.name}</span>
+                </span>
+              )}
+              {teamTitles.growthStar && (
+                <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded bg-emerald-500/10 border border-emerald-500/30 text-[9px]">
+                  <span>{teamTitles.growthStar.emoji}</span>
+                  <span className="text-emerald-300">{teamTitles.growthStar.name}</span>
+                </span>
+              )}
+            </div>
+          </div>
+
+          <p className="text-[9px] text-slate-600 mt-2 text-center">
+            称号履歴は毎週更新されます
+          </p>
+        </div>
+      )}
+
       {/* 詳細モーダル */}
       <MemberDetailModal
         member={selectedMember}
