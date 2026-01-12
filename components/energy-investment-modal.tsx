@@ -278,7 +278,7 @@ export default function EnergyInvestmentModal({
   const instance = profile.guardians[guardianId];
   const attr = ATTRIBUTES[guardian.attribute];
   const placeholder = getPlaceholderStyle(guardianId);
-  
+
   if (!instance || !instance.unlocked) {
     return null;
   }
@@ -758,16 +758,16 @@ export default function EnergyInvestmentModal({
             animate={{
               rotateY:
                 evolutionPhase === "cardify" ? 0 :
-                evolutionPhase === "charging" ? config.cardRotations :
-                evolutionPhase === "flash" ? config.cardRotations :
-                evolutionPhase === "reveal" ? config.cardRotations + 180 :
-                evolutionPhase === "finale" ? config.cardRotations + 180 : 0,
+                  evolutionPhase === "charging" ? config.cardRotations :
+                    evolutionPhase === "flash" ? config.cardRotations :
+                      evolutionPhase === "reveal" ? config.cardRotations + 180 :
+                        evolutionPhase === "finale" ? config.cardRotations + 180 : 0,
               scale:
                 evolutionPhase === "cardify" ? [1, 0.95] :
-                evolutionPhase === "charging" ? 0.9 :
-                evolutionPhase === "flash" ? 0.9 :
-                evolutionPhase === "reveal" ? [0.9, 1.1, 1] :
-                evolutionPhase === "finale" ? 1 : 1,
+                  evolutionPhase === "charging" ? 0.9 :
+                    evolutionPhase === "flash" ? 0.9 :
+                      evolutionPhase === "reveal" ? [0.9, 1.1, 1] :
+                        evolutionPhase === "finale" ? 1 : 1,
             }}
             transition={{
               rotateY: {
@@ -1313,7 +1313,7 @@ export default function EnergyInvestmentModal({
         </div>
 
         {/* 守護神画像 */}
-        <div 
+        <div
           className="w-full aspect-square max-h-[30vh] rounded-xl mb-4 guardian-floating relative overflow-hidden"
           style={{ background: placeholder.background }}
         >
@@ -1330,7 +1330,7 @@ export default function EnergyInvestmentModal({
           <div className="absolute inset-0 flex items-center justify-center hidden">
             <span className="text-9xl">{placeholder.emoji}</span>
           </div>
-          
+
           {/* 現在のステージバッジ */}
           <div className="absolute top-4 right-4 bg-black/60 backdrop-blur-sm px-4 py-2 rounded-lg">
             <p className="text-xs text-gray-400">Stage</p>
@@ -1374,7 +1374,7 @@ export default function EnergyInvestmentModal({
               </p>
             </div>
             <div className="w-full h-3 bg-slate-700 rounded-full overflow-hidden">
-              <div 
+              <div
                 className="h-full bg-gradient-to-r from-purple-500 to-pink-500 transition-all duration-500"
                 style={{ width: `${(nextStageInfo.current / nextStageInfo.required) * 100}%` }}
               />
@@ -1428,8 +1428,8 @@ export default function EnergyInvestmentModal({
               <input
                 type="range"
                 min="0"
-                max={Math.min(currentEnergy, 500)}
-                step="10"
+                max={Math.min(currentEnergy, 10000)}
+                step="100"
                 value={investAmount}
                 onChange={(e) => setInvestAmount(parseInt(e.target.value))}
                 className="w-full mb-3"
@@ -1452,22 +1452,22 @@ export default function EnergyInvestmentModal({
                 />
                 <div className="flex gap-2">
                   <button
-                    onClick={() => setInvestAmount(Math.min(currentEnergy, 10))}
-                    className="px-3 py-1 bg-slate-700 hover:bg-slate-600 text-white rounded text-sm"
-                  >
-                    10
-                  </button>
-                  <button
-                    onClick={() => setInvestAmount(Math.min(currentEnergy, 50))}
-                    className="px-3 py-1 bg-slate-700 hover:bg-slate-600 text-white rounded text-sm"
-                  >
-                    50
-                  </button>
-                  <button
                     onClick={() => setInvestAmount(Math.min(currentEnergy, 100))}
                     className="px-3 py-1 bg-slate-700 hover:bg-slate-600 text-white rounded text-sm"
                   >
                     100
+                  </button>
+                  <button
+                    onClick={() => setInvestAmount(Math.min(currentEnergy, 500))}
+                    className="px-3 py-1 bg-slate-700 hover:bg-slate-600 text-white rounded text-sm"
+                  >
+                    500
+                  </button>
+                  <button
+                    onClick={() => setInvestAmount(Math.min(currentEnergy, 1000))}
+                    className="px-3 py-1 bg-slate-700 hover:bg-slate-600 text-white rounded text-sm"
+                  >
+                    1000
                   </button>
                   <button
                     onClick={() => setInvestAmount(currentEnergy)}
