@@ -32,13 +32,14 @@ import {
 } from "lucide-react";
 import { ContentLoader, ButtonLoader } from "@/components/ui/loading-spinner";
 import { getAllUsers, User as UserProfile, getReportsByPeriod, Report, getUserRecentReports, detectAnomalies, AnomalyFlags } from "@/lib/firestore";
-import { 
-  getTeamConfig, 
-  getReportStatus, 
-  getAlertLevel, 
+import {
+  getTeamConfig,
+  getReportStatus,
+  getAlertLevel,
   getAlertColor,
-  ReportStatus 
+  ReportStatus
 } from "@/lib/team-config";
+import { UserQuickViewModal } from "@/components/user-quick-view-modal";
 
 interface MemberStatus {
   user: UserProfile;
@@ -77,6 +78,9 @@ export default function ActiveMonitorPage() {
   // メンバー比較機能
   const [comparisonMembers, setComparisonMembers] = useState<string[]>([]);
   const [showComparison, setShowComparison] = useState(false);
+
+  // 詳細モーダル表示用
+  const [selectedUserForModal, setSelectedUserForModal] = useState<{ userId: string; userName: string } | null>(null);
 
   const toggleMemberForComparison = (userId: string) => {
     setComparisonMembers(prev => {
@@ -192,7 +196,7 @@ export default function ActiveMonitorPage() {
 
       for (const member of memberUsers) {
         const memberReports = reports.filter(r => r.userId === member.uid);
-        
+
         // 最終報告日を取得
         let lastReportDate: Date | null = null;
         if (memberReports.length > 0) {
@@ -276,29 +280,29 @@ export default function ActiveMonitorPage() {
 
   const calculateSimpleStreak = (reports: Report[]): number => {
     if (reports.length === 0) return 0;
-    
-    const sorted = [...reports].sort((a, b) => 
+
+    const sorted = [...reports].sort((a, b) =>
       new Date(b.date).getTime() - new Date(a.date).getTime()
     );
-    
+
     let streak = 0;
     const today = new Date();
     today.setHours(0, 0, 0, 0);
-    
+
     for (const report of sorted) {
       const reportDate = new Date(report.date);
       reportDate.setHours(0, 0, 0, 0);
-      
+
       const expectedDate = new Date(today);
       expectedDate.setDate(expectedDate.getDate() - streak);
-      
+
       if (reportDate.getTime() === expectedDate.getTime()) {
         streak++;
       } else {
         break;
       }
     }
-    
+
     return streak;
   };
 
@@ -416,7 +420,7 @@ export default function ActiveMonitorPage() {
 
       {/* Summary Cards */}
       <div className="grid gap-4 md:grid-cols-5">
-        <div 
+        <div
           className="cursor-pointer hover:scale-[1.02] transition-transform"
           onClick={() => setSelectedFilter(selectedFilter === "danger" ? "all" : "danger")}
         >
@@ -433,7 +437,7 @@ export default function ActiveMonitorPage() {
           </GlassCard>
         </div>
 
-        <div 
+        <div
           className="cursor-pointer hover:scale-[1.02] transition-transform"
           onClick={() => setSelectedFilter(selectedFilter === "warning" ? "all" : "warning")}
         >
@@ -450,7 +454,7 @@ export default function ActiveMonitorPage() {
           </GlassCard>
         </div>
 
-        <div 
+        <div
           className="cursor-pointer hover:scale-[1.02] transition-transform"
           onClick={() => setSelectedFilter(selectedFilter === "attention" ? "all" : "attention")}
         >
@@ -509,9 +513,9 @@ export default function ActiveMonitorPage() {
           <span>
             フィルター: {selectedFilter === "danger" ? "離脱リスク"
               : selectedFilter === "warning" ? "要注意"
-              : selectedFilter === "attention" ? "注意"
-              : selectedFilter === "anomaly" ? "異常値検知"
-              : "正常"}
+                : selectedFilter === "attention" ? "注意"
+                  : selectedFilter === "anomaly" ? "異常値検知"
+                    : "正常"}
           </span>
           <Button
             variant="ghost"
@@ -533,7 +537,7 @@ export default function ActiveMonitorPage() {
               {selectedFilter === "all" ? "メンバーがいません" : "該当者なし"}
             </h3>
             <p className="text-sm text-muted-foreground">
-              {selectedFilter === "all" 
+              {selectedFilter === "all"
                 ? "承認済みのメンバーがまだいません"
                 : "このアラートレベルに該当するメンバーはいません"}
             </p>
@@ -541,7 +545,7 @@ export default function ActiveMonitorPage() {
         ) : (
           filteredMembers.map((member) => {
             const alertColor = getAlertColor(member.alertLevel);
-            
+
             return (
               <GlassCard
                 key={member.user.uid}
@@ -550,7 +554,7 @@ export default function ActiveMonitorPage() {
               >
                 <div className="flex items-start gap-4">
                   {/* Alert Indicator */}
-                  <div 
+                  <div
                     className="w-16 h-16 rounded-full flex items-center justify-center flex-shrink-0"
                     style={{
                       backgroundColor: `${alertColor}20`,
@@ -596,9 +600,9 @@ export default function ActiveMonitorPage() {
                           </p>
                         </div>
                       </div>
-                      
+
                       <div className="text-right flex-shrink-0">
-                        <p 
+                        <p
                           className="text-sm font-bold mb-1"
                           style={{ color: alertColor }}
                         >
@@ -625,7 +629,7 @@ export default function ActiveMonitorPage() {
                         <p className="text-lg font-bold">
                           {member.lastReportDaysAgo === 0 ? "今日"
                             : member.lastReportDaysAgo === 999 ? "-"
-                            : `${member.lastReportDaysAgo}日前`}
+                              : `${member.lastReportDaysAgo}日前`}
                         </p>
                       </div>
                     </div>
@@ -672,20 +676,23 @@ export default function ActiveMonitorPage() {
                         size="sm"
                         variant="outline"
                         className="flex-1"
-                        style={{ 
+                        style={{
                           borderColor: `${alertColor}40`,
-                          color: alertColor 
+                          color: alertColor
                         }}
-                        onClick={() => router.push(`/admin/users/${member.user.uid}`)}
+                        onClick={() => setSelectedUserForModal({
+                          userId: member.user.uid,
+                          userName: member.user.displayName
+                        })}
                       >
                         <User className="w-4 h-4 mr-2" />
                         詳細を見る
                       </Button>
-                      
+
                       {member.alertLevel !== "safe" && (
                         <Button
                           size="sm"
-                          style={{ 
+                          style={{
                             background: `linear-gradient(to right, ${alertColor}, ${member.teamColor})`,
                             color: "white"
                           }}
@@ -783,105 +790,105 @@ export default function ActiveMonitorPage() {
               paddingRight: 'max(env(safe-area-inset-right, 0px), 16px)',
             }}
           >
-          <div
-            className="bg-slate-900 rounded-2xl border-2 border-purple-500/30 max-w-6xl w-full max-h-full overflow-y-auto overscroll-contain"
-            style={{
-              WebkitOverflowScrolling: 'touch',
-            }}
-            onClick={(e) => e.stopPropagation()}
-            onTouchMove={(e) => e.stopPropagation()}
-          >
-            <div className="sticky top-0 bg-slate-900 rounded-t-2xl border-b border-purple-500/30 p-6 flex items-center justify-between z-10">
-              <h2 className="text-2xl font-bold text-purple-400 flex items-center gap-2">
-                <Users className="w-6 h-6" />
-                メンバー比較
-              </h2>
-              <button
-                onClick={() => setShowComparison(false)}
-                className="p-2 rounded-full hover:bg-white/10 transition-colors"
-              >
-                <X className="w-6 h-6" />
-              </button>
-            </div>
+            <div
+              className="bg-slate-900 rounded-2xl border-2 border-purple-500/30 max-w-6xl w-full max-h-full overflow-y-auto overscroll-contain"
+              style={{
+                WebkitOverflowScrolling: 'touch',
+              }}
+              onClick={(e) => e.stopPropagation()}
+              onTouchMove={(e) => e.stopPropagation()}
+            >
+              <div className="sticky top-0 bg-slate-900 rounded-t-2xl border-b border-purple-500/30 p-6 flex items-center justify-between z-10">
+                <h2 className="text-2xl font-bold text-purple-400 flex items-center gap-2">
+                  <Users className="w-6 h-6" />
+                  メンバー比較
+                </h2>
+                <button
+                  onClick={() => setShowComparison(false)}
+                  className="p-2 rounded-full hover:bg-white/10 transition-colors"
+                >
+                  <X className="w-6 h-6" />
+                </button>
+              </div>
 
-            <div className="p-6">
-              <div className="grid md:grid-cols-2 gap-6">
-                {comparisonMembers.map(userId => {
-                  const member = members.find(m => m.user.uid === userId);
-                  if (!member) return null;
+              <div className="p-6">
+                <div className="grid md:grid-cols-2 gap-6">
+                  {comparisonMembers.map(userId => {
+                    const member = members.find(m => m.user.uid === userId);
+                    if (!member) return null;
 
-                  const alertColor = getAlertColor(member.alertLevel);
+                    const alertColor = getAlertColor(member.alertLevel);
 
-                  return (
-                    <div key={userId} className="space-y-4">
-                      <div className="text-center pb-4 border-b border-white/10">
-                        <h3 className="text-2xl font-bold mb-1">{member.user.displayName}</h3>
-                        <p className="text-sm text-slate-400">{member.user.realName}</p>
-                        <p className="text-xs text-slate-500">{getTeamConfig(member.user.team)?.name}</p>
-                      </div>
-
-                      <div className="space-y-3">
-                        <div className="bg-white/5 rounded-lg p-4">
-                          <p className="text-xs text-slate-400 mb-2">ステータス</p>
-                          <p className="text-lg font-bold" style={{ color: alertColor }}>
-                            {getStatusLabel(member.status)}
-                          </p>
-                          <p className="text-sm text-slate-400 mt-1">
-                            {getStatusDescription(member)}
-                          </p>
+                    return (
+                      <div key={userId} className="space-y-4">
+                        <div className="text-center pb-4 border-b border-white/10">
+                          <h3 className="text-2xl font-bold mb-1">{member.user.displayName}</h3>
+                          <p className="text-sm text-slate-400">{member.user.realName}</p>
+                          <p className="text-xs text-slate-500">{getTeamConfig(member.user.team)?.name}</p>
                         </div>
 
-                        <div className="grid grid-cols-2 gap-3">
-                          <div className="bg-white/5 rounded-lg p-3">
-                            <p className="text-xs text-slate-400">総報告数</p>
-                            <p className="text-2xl font-bold">{member.totalReports}件</p>
+                        <div className="space-y-3">
+                          <div className="bg-white/5 rounded-lg p-4">
+                            <p className="text-xs text-slate-400 mb-2">ステータス</p>
+                            <p className="text-lg font-bold" style={{ color: alertColor }}>
+                              {getStatusLabel(member.status)}
+                            </p>
+                            <p className="text-sm text-slate-400 mt-1">
+                              {getStatusDescription(member)}
+                            </p>
                           </div>
-                          <div className="bg-white/5 rounded-lg p-3">
-                            <p className="text-xs text-slate-400">継続日数</p>
-                            <p className="text-2xl font-bold">{member.currentStreak}日</p>
-                          </div>
-                        </div>
 
-                        <div className="bg-white/5 rounded-lg p-3">
-                          <p className="text-xs text-slate-400 mb-1">最終報告</p>
-                          <p className="text-lg font-bold">
-                            {member.lastReportDaysAgo === 0 ? "今日"
-                              : member.lastReportDaysAgo === 999 ? "報告なし"
-                              : `${member.lastReportDaysAgo}日前`}
-                          </p>
-                        </div>
-
-                        {member.hasAnomalies && member.anomalies && (
-                          <div className="bg-orange-500/10 border border-orange-500/30 rounded-lg p-3">
-                            <p className="text-xs text-orange-400 font-bold mb-2">異常値検知</p>
-                            <div className="space-y-1 text-xs text-slate-300">
-                              {member.anomalies.highEnergyLowOutput && <div>⚠️ 高エナジーだが成果が低い</div>}
-                              {member.anomalies.frequentModification && <div>📝 修正回数が異常に多い</div>}
-                              {member.anomalies.inconsistentGrowth && <div>📈 急激な成長</div>}
-                              {member.anomalies.suspiciousPattern && <div>🔍 怪しいパターン</div>}
+                          <div className="grid grid-cols-2 gap-3">
+                            <div className="bg-white/5 rounded-lg p-3">
+                              <p className="text-xs text-slate-400">総報告数</p>
+                              <p className="text-2xl font-bold">{member.totalReports}件</p>
+                            </div>
+                            <div className="bg-white/5 rounded-lg p-3">
+                              <p className="text-xs text-slate-400">継続日数</p>
+                              <p className="text-2xl font-bold">{member.currentStreak}日</p>
                             </div>
                           </div>
-                        )}
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
 
-              <div className="mt-6 pt-6 border-t border-white/10 flex justify-center">
-                <Button
-                  onClick={() => {
-                    setShowComparison(false);
-                    setComparisonMembers([]);
-                  }}
-                  variant="outline"
-                  className="border-purple-500/30 text-purple-400"
-                >
-                  比較を終了
-                </Button>
+                          <div className="bg-white/5 rounded-lg p-3">
+                            <p className="text-xs text-slate-400 mb-1">最終報告</p>
+                            <p className="text-lg font-bold">
+                              {member.lastReportDaysAgo === 0 ? "今日"
+                                : member.lastReportDaysAgo === 999 ? "報告なし"
+                                  : `${member.lastReportDaysAgo}日前`}
+                            </p>
+                          </div>
+
+                          {member.hasAnomalies && member.anomalies && (
+                            <div className="bg-orange-500/10 border border-orange-500/30 rounded-lg p-3">
+                              <p className="text-xs text-orange-400 font-bold mb-2">異常値検知</p>
+                              <div className="space-y-1 text-xs text-slate-300">
+                                {member.anomalies.highEnergyLowOutput && <div>⚠️ 高エナジーだが成果が低い</div>}
+                                {member.anomalies.frequentModification && <div>📝 修正回数が異常に多い</div>}
+                                {member.anomalies.inconsistentGrowth && <div>📈 急激な成長</div>}
+                                {member.anomalies.suspiciousPattern && <div>🔍 怪しいパターン</div>}
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+
+                <div className="mt-6 pt-6 border-t border-white/10 flex justify-center">
+                  <Button
+                    onClick={() => {
+                      setShowComparison(false);
+                      setComparisonMembers([]);
+                    }}
+                    variant="outline"
+                    className="border-purple-500/30 text-purple-400"
+                  >
+                    比較を終了
+                  </Button>
+                </div>
               </div>
             </div>
-          </div>
           </div>
         </div>
       )}
@@ -915,149 +922,154 @@ export default function ActiveMonitorPage() {
               paddingRight: 'max(env(safe-area-inset-right, 0px), 16px)',
             }}
           >
-          <div
-            className="bg-slate-900 rounded-2xl border-2 border-cyan-500/30 max-w-2xl w-full max-h-full overflow-y-auto overscroll-contain"
-            style={{
-              WebkitOverflowScrolling: 'touch',
-            }}
-            onClick={(e) => e.stopPropagation()}
-            onTouchMove={(e) => e.stopPropagation()}
-          >
-            <div className="sticky top-0 bg-slate-900 rounded-t-2xl border-b border-cyan-500/30 p-6 flex items-center justify-between z-10">
-              <h2 className="text-2xl font-bold text-cyan-400 flex items-center gap-2">
-                <MessageCircle className="w-6 h-6" />
-                一斉通知を送信
-              </h2>
-              <button
-                onClick={() => setShowBroadcast(false)}
-                className="p-2 rounded-full hover:bg-white/10 transition-colors"
-              >
-                <X className="w-6 h-6" />
-              </button>
-            </div>
+            <div
+              className="bg-slate-900 rounded-2xl border-2 border-cyan-500/30 max-w-2xl w-full max-h-full overflow-y-auto overscroll-contain"
+              style={{
+                WebkitOverflowScrolling: 'touch',
+              }}
+              onClick={(e) => e.stopPropagation()}
+              onTouchMove={(e) => e.stopPropagation()}
+            >
+              <div className="sticky top-0 bg-slate-900 rounded-t-2xl border-b border-cyan-500/30 p-6 flex items-center justify-between z-10">
+                <h2 className="text-2xl font-bold text-cyan-400 flex items-center gap-2">
+                  <MessageCircle className="w-6 h-6" />
+                  一斉通知を送信
+                </h2>
+                <button
+                  onClick={() => setShowBroadcast(false)}
+                  className="p-2 rounded-full hover:bg-white/10 transition-colors"
+                >
+                  <X className="w-6 h-6" />
+                </button>
+              </div>
 
-            <div className="p-6 space-y-6">
-              {/* 対象選択 */}
-              <div>
-                <label className="block text-sm font-bold mb-3 text-slate-300">
-                  通知対象
-                </label>
-                <div className="grid grid-cols-2 gap-3">
-                  <button
-                    onClick={() => setBroadcastTarget("danger")}
-                    className={`p-4 rounded-lg border-2 transition-all ${
-                      broadcastTarget === "danger"
+              <div className="p-6 space-y-6">
+                {/* 対象選択 */}
+                <div>
+                  <label className="block text-sm font-bold mb-3 text-slate-300">
+                    通知対象
+                  </label>
+                  <div className="grid grid-cols-2 gap-3">
+                    <button
+                      onClick={() => setBroadcastTarget("danger")}
+                      className={`p-4 rounded-lg border-2 transition-all ${broadcastTarget === "danger"
                         ? "bg-red-500/20 border-red-500 text-red-400"
                         : "bg-slate-800 border-slate-700 text-slate-400 hover:border-red-500/50"
-                    }`}
-                  >
-                    <div className="font-bold">離脱リスク</div>
-                    <div className="text-xs mt-1">
-                      {members.filter(m => m.alertLevel === "danger").length}人
-                    </div>
-                  </button>
-                  <button
-                    onClick={() => setBroadcastTarget("warning")}
-                    className={`p-4 rounded-lg border-2 transition-all ${
-                      broadcastTarget === "warning"
+                        }`}
+                    >
+                      <div className="font-bold">離脱リスク</div>
+                      <div className="text-xs mt-1">
+                        {members.filter(m => m.alertLevel === "danger").length}人
+                      </div>
+                    </button>
+                    <button
+                      onClick={() => setBroadcastTarget("warning")}
+                      className={`p-4 rounded-lg border-2 transition-all ${broadcastTarget === "warning"
                         ? "bg-orange-500/20 border-orange-500 text-orange-400"
                         : "bg-slate-800 border-slate-700 text-slate-400 hover:border-orange-500/50"
-                    }`}
-                  >
-                    <div className="font-bold">要注意</div>
-                    <div className="text-xs mt-1">
-                      {members.filter(m => m.alertLevel === "warning").length}人
-                    </div>
-                  </button>
-                  <button
-                    onClick={() => setBroadcastTarget("attention")}
-                    className={`p-4 rounded-lg border-2 transition-all ${
-                      broadcastTarget === "attention"
+                        }`}
+                    >
+                      <div className="font-bold">要注意</div>
+                      <div className="text-xs mt-1">
+                        {members.filter(m => m.alertLevel === "warning").length}人
+                      </div>
+                    </button>
+                    <button
+                      onClick={() => setBroadcastTarget("attention")}
+                      className={`p-4 rounded-lg border-2 transition-all ${broadcastTarget === "attention"
                         ? "bg-yellow-500/20 border-yellow-500 text-yellow-400"
                         : "bg-slate-800 border-slate-700 text-slate-400 hover:border-yellow-500/50"
-                    }`}
-                  >
-                    <div className="font-bold">注意</div>
-                    <div className="text-xs mt-1">
-                      {members.filter(m => m.alertLevel === "attention").length}人
-                    </div>
-                  </button>
-                  <button
-                    onClick={() => setBroadcastTarget("all")}
-                    className={`p-4 rounded-lg border-2 transition-all ${
-                      broadcastTarget === "all"
+                        }`}
+                    >
+                      <div className="font-bold">注意</div>
+                      <div className="text-xs mt-1">
+                        {members.filter(m => m.alertLevel === "attention").length}人
+                      </div>
+                    </button>
+                    <button
+                      onClick={() => setBroadcastTarget("all")}
+                      className={`p-4 rounded-lg border-2 transition-all ${broadcastTarget === "all"
                         ? "bg-cyan-500/20 border-cyan-500 text-cyan-400"
                         : "bg-slate-800 border-slate-700 text-slate-400 hover:border-cyan-500/50"
-                    }`}
+                        }`}
+                    >
+                      <div className="font-bold">全員</div>
+                      <div className="text-xs mt-1">{members.length}人</div>
+                    </button>
+                  </div>
+                </div>
+
+                {/* メッセージ入力 */}
+                <div>
+                  <label className="block text-sm font-bold mb-3 text-slate-300">
+                    通知メッセージ
+                  </label>
+                  <textarea
+                    value={broadcastMessage}
+                    onChange={(e) => setBroadcastMessage(e.target.value)}
+                    placeholder="例: 今週の報告がまだの方は、本日中に提出をお願いします！"
+                    className="w-full h-32 px-4 py-3 rounded-lg bg-white/5 border border-white/10 text-white placeholder-slate-500 focus:border-cyan-500 focus:outline-none resize-none"
+                  />
+                  <p className="text-xs text-slate-500 mt-2">
+                    {broadcastMessage.length} / 500文字
+                  </p>
+                </div>
+
+                {/* プレビュー */}
+                <div className="bg-cyan-500/10 border border-cyan-500/30 rounded-lg p-4">
+                  <p className="text-xs text-cyan-400 font-bold mb-2">送信プレビュー</p>
+                  <div className="text-sm text-slate-300 whitespace-pre-wrap">
+                    {broadcastMessage || "(メッセージを入力してください)"}
+                  </div>
+                  <p className="text-xs text-slate-500 mt-3">
+                    対象: {broadcastTarget === "all" ? "全メンバー" :
+                      broadcastTarget === "danger" ? "離脱リスク" :
+                        broadcastTarget === "warning" ? "要注意" : "注意"}
+                    （{(broadcastTarget === "all" ? members : members.filter(m => m.alertLevel === broadcastTarget)).length}人）
+                  </p>
+                </div>
+
+                {/* 送信ボタン */}
+                <div className="flex gap-3">
+                  <Button
+                    onClick={() => setShowBroadcast(false)}
+                    variant="outline"
+                    className="flex-1 border-slate-700"
+                    disabled={isSending}
                   >
-                    <div className="font-bold">全員</div>
-                    <div className="text-xs mt-1">{members.length}人</div>
-                  </button>
+                    キャンセル
+                  </Button>
+                  <Button
+                    onClick={sendBroadcastNotification}
+                    disabled={isSending || !broadcastMessage.trim()}
+                    className="flex-1 bg-gradient-to-r from-cyan-600 to-blue-600"
+                  >
+                    {isSending ? (
+                      <>
+                        <ButtonLoader />
+                        送信中...
+                      </>
+                    ) : (
+                      <>
+                        <Send className="w-4 h-4 mr-2" />
+                        送信する
+                      </>
+                    )}
+                  </Button>
                 </div>
-              </div>
-
-              {/* メッセージ入力 */}
-              <div>
-                <label className="block text-sm font-bold mb-3 text-slate-300">
-                  通知メッセージ
-                </label>
-                <textarea
-                  value={broadcastMessage}
-                  onChange={(e) => setBroadcastMessage(e.target.value)}
-                  placeholder="例: 今週の報告がまだの方は、本日中に提出をお願いします！"
-                  className="w-full h-32 px-4 py-3 rounded-lg bg-white/5 border border-white/10 text-white placeholder-slate-500 focus:border-cyan-500 focus:outline-none resize-none"
-                />
-                <p className="text-xs text-slate-500 mt-2">
-                  {broadcastMessage.length} / 500文字
-                </p>
-              </div>
-
-              {/* プレビュー */}
-              <div className="bg-cyan-500/10 border border-cyan-500/30 rounded-lg p-4">
-                <p className="text-xs text-cyan-400 font-bold mb-2">送信プレビュー</p>
-                <div className="text-sm text-slate-300 whitespace-pre-wrap">
-                  {broadcastMessage || "(メッセージを入力してください)"}
-                </div>
-                <p className="text-xs text-slate-500 mt-3">
-                  対象: {broadcastTarget === "all" ? "全メンバー" :
-                    broadcastTarget === "danger" ? "離脱リスク" :
-                    broadcastTarget === "warning" ? "要注意" : "注意"}
-                  （{(broadcastTarget === "all" ? members : members.filter(m => m.alertLevel === broadcastTarget)).length}人）
-                </p>
-              </div>
-
-              {/* 送信ボタン */}
-              <div className="flex gap-3">
-                <Button
-                  onClick={() => setShowBroadcast(false)}
-                  variant="outline"
-                  className="flex-1 border-slate-700"
-                  disabled={isSending}
-                >
-                  キャンセル
-                </Button>
-                <Button
-                  onClick={sendBroadcastNotification}
-                  disabled={isSending || !broadcastMessage.trim()}
-                  className="flex-1 bg-gradient-to-r from-cyan-600 to-blue-600"
-                >
-                  {isSending ? (
-                    <>
-                      <ButtonLoader />
-                      送信中...
-                    </>
-                  ) : (
-                    <>
-                      <Send className="w-4 h-4 mr-2" />
-                      送信する
-                    </>
-                  )}
-                </Button>
               </div>
             </div>
           </div>
-          </div>
         </div>
+      )}
+
+      {/* ユーザー詳細クイックビューモーダル */}
+      {selectedUserForModal && (
+        <UserQuickViewModal
+          userId={selectedUserForModal.userId}
+          userName={selectedUserForModal.userName}
+          onClose={() => setSelectedUserForModal(null)}
+        />
       )}
     </div>
   );

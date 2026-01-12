@@ -5,6 +5,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/lib/auth-context";
+import { GlobalSearch } from "@/components/global-search";
 import {
   LayoutDashboard,
   Briefcase,
@@ -200,6 +201,13 @@ export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
             CC Insight
           </h1>
         </div>
+
+        {/* Global Search (Admin Only) */}
+        {userProfile?.role === "admin" && (
+          <div className="border-b border-white/10 p-3">
+            <GlobalSearch />
+          </div>
+        )}
 
         {/* User Info */}
         {userProfile && (
