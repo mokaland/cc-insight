@@ -1181,7 +1181,7 @@ export default function ReportPage() {
       {/* 🚀 固定送信ボタン */}
       {selectedTeam && userProfile && selectedTeamData && (
         <div
-          className="fixed bottom-16 md:bottom-4 left-0 right-0 px-3 py-2 z-40"
+          className="fixed bottom-24 md:bottom-4 left-0 right-0 px-3 py-2 z-40"
           style={{
             background: 'linear-gradient(to top, rgba(10, 10, 30, 0.98) 80%, transparent)',
             paddingBottom: 'env(safe-area-inset-bottom)',
