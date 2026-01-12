@@ -107,6 +107,9 @@ export default function MyPage() {
   // SNS設定の折りたたみ状態
   const [snsExpanded, setSnsExpanded] = useState(false);
 
+  // エナジー内訳の折りたたみ状態
+  const [energyBreakdownExpanded, setEnergyBreakdownExpanded] = useState(false);
+
   useEffect(() => {
     const loadData = async () => {
       if (!user) return;
@@ -737,44 +740,31 @@ export default function MyPage() {
         </div >
       </GlassCard >
 
-      {/* エナジー＆ストリーク - 3列横並び統一 */}
-      <div className="grid gap-3 grid-cols-3">
+      {/* 📊 6カード統合グリッド（3x2） - PWAモバイル対応 */}
+      <div className="grid gap-2 grid-cols-3" style={{ gridTemplateColumns: 'repeat(3, 1fr)' }}>
         {/* 保有エナジー */}
         <motion.div
           initial={{ scale: 0, rotateY: -180 }}
           animate={{ scale: 1, rotateY: 0 }}
-          transition={{ duration: 0.6, delay: 0 }}
+          transition={{ duration: 0.4, delay: 0 }}
           onClick={() => setEnergyModalOpen(true)}
-          className="jewel-card glass-premium p-3 rounded-xl border border-white/20 cursor-pointer hover:scale-105 transition-transform"
+          className="jewel-card glass-premium p-2 rounded-lg border border-white/20 cursor-pointer active:scale-95 transition-transform"
         >
-          <div className="text-center relative">
-            {/* 神聖アセット: エナジーオーブ */}
-            <div className="mx-auto mb-2 relative w-10 h-10">
+          <div className="text-center">
+            <div className="mx-auto mb-1 relative w-8 h-8">
               <Image
                 src="/images/ui/energy-orb.png"
                 alt="Energy"
-                width={40}
-                height={40}
-                className="relative z-10 guardian-floating"
-                style={{
-                  filter: 'drop-shadow(0 0 12px rgba(250, 204, 21, 0.8))'
-                }}
+                width={32}
+                height={32}
+                className="relative z-10"
+                style={{ filter: 'drop-shadow(0 0 8px rgba(250, 204, 21, 0.8))' }}
               />
-              <div className="neon-glow absolute inset-0 bg-yellow-400/50 rounded-full" />
             </div>
-
-            {/* ラベル */}
-            <p className="text-[10px] mb-0.5 text-gray-400">保有エナジー</p>
-
-            {/* カウントアップ数値 */}
-            <motion.p
-              className="text-2xl font-bold text-yellow-400"
-              initial={{ scale: 0 }}
-              animate={{ scale: 1 }}
-              transition={{ type: "spring", stiffness: 200, damping: 10, delay: 0.2 }}
-            >
+            <p className="text-[9px] text-gray-400">保有</p>
+            <p className="text-lg font-bold text-yellow-400">
               <AnimatedNumber value={profile.energy.current} />
-            </motion.p>
+            </p>
           </div>
         </motion.div>
 
@@ -782,38 +772,25 @@ export default function MyPage() {
         <motion.div
           initial={{ scale: 0, rotateY: -180 }}
           animate={{ scale: 1, rotateY: 0 }}
-          transition={{ duration: 0.6, delay: 0.1 }}
+          transition={{ duration: 0.4, delay: 0.05 }}
           onClick={() => setTotalModalOpen(true)}
-          className="jewel-card glass-premium p-3 rounded-xl border border-white/20 cursor-pointer hover:scale-105 transition-transform"
+          className="jewel-card glass-premium p-2 rounded-lg border border-white/20 cursor-pointer active:scale-95 transition-transform"
         >
-          <div className="text-center relative">
-            {/* 神聖アセット: ジェム */}
-            <div className="mx-auto mb-2 relative w-10 h-10">
+          <div className="text-center">
+            <div className="mx-auto mb-1 relative w-8 h-8">
               <Image
                 src="/images/ui/gem.png"
                 alt="Gem"
-                width={40}
-                height={40}
-                className="relative z-10 guardian-floating"
-                style={{
-                  filter: 'drop-shadow(0 0 12px rgba(168, 85, 247, 0.8))'
-                }}
+                width={32}
+                height={32}
+                className="relative z-10"
+                style={{ filter: 'drop-shadow(0 0 8px rgba(168, 85, 247, 0.8))' }}
               />
-              <div className="neon-glow absolute inset-0 bg-purple-400/50 rounded-full" />
             </div>
-
-            {/* ラベル */}
-            <p className="text-[10px] mb-0.5 text-gray-400">累計獲得</p>
-
-            {/* カウントアップ数値 */}
-            <motion.p
-              className="text-2xl font-bold text-purple-400"
-              initial={{ scale: 0 }}
-              animate={{ scale: 1 }}
-              transition={{ type: "spring", stiffness: 200, damping: 10, delay: 0.3 }}
-            >
+            <p className="text-[9px] text-gray-400">累計</p>
+            <p className="text-lg font-bold text-purple-400">
               <AnimatedNumber value={profile.energy.totalEarned} />
-            </motion.p>
+            </p>
           </div>
         </motion.div>
 
@@ -821,116 +798,131 @@ export default function MyPage() {
         <motion.div
           initial={{ scale: 0, rotateY: -180 }}
           animate={{ scale: 1, rotateY: 0 }}
-          transition={{ duration: 0.6, delay: 0.2 }}
+          transition={{ duration: 0.4, delay: 0.1 }}
           onClick={() => setStreakModalOpen(true)}
-          className="jewel-card glass-premium p-3 rounded-xl border border-white/20 cursor-pointer hover:scale-105 transition-transform"
+          className="jewel-card glass-premium p-2 rounded-lg border border-white/20 cursor-pointer active:scale-95 transition-transform"
         >
-          <div className="text-center relative">
-            {/* 神聖アセット: ストリーク炎 */}
-            <div className="mx-auto mb-2 relative w-10 h-10">
+          <div className="text-center">
+            <div className="mx-auto mb-1 relative w-8 h-8">
               <Image
                 src="/images/ui/streak-1.png"
                 alt="Streak"
-                width={40}
-                height={40}
-                className="relative z-10 guardian-floating"
-                style={{
-                  filter: 'drop-shadow(0 0 12px rgba(251, 146, 60, 0.8))'
-                }}
+                width={32}
+                height={32}
+                className="relative z-10"
+                style={{ filter: 'drop-shadow(0 0 8px rgba(251, 146, 60, 0.8))' }}
               />
-              <div className="neon-glow absolute inset-0 bg-orange-400/50 rounded-full" />
             </div>
-
-            {/* ラベル */}
-            <p className="text-[10px] mb-0.5 text-gray-400">ストリーク</p>
-
-            {/* カウントアップ数値 */}
-            <motion.div
-              initial={{ scale: 0 }}
-              animate={{ scale: 1 }}
-              transition={{ type: "spring", stiffness: 200, damping: 10, delay: 0.4 }}
-            >
-              <p className="text-2xl font-bold text-orange-400">
-                <AnimatedNumber value={profile.streak.current} />
-                <span className="text-sm">日</span>
-              </p>
-            </motion.div>
+            <p className="text-[9px] text-gray-400">連続</p>
+            <p className="text-lg font-bold text-orange-400">
+              <AnimatedNumber value={profile.streak.current} /><span className="text-xs">日</span>
+            </p>
           </div>
         </motion.div>
-      </div>
 
-      {/* 💎 エナジー獲得の内訳 - コンパクト */}
-      <div className="glass-bg rounded-xl p-3 border border-yellow-500/20">
-        <div className="flex items-center gap-2 mb-3">
-          <Sparkles className="w-4 h-4 text-yellow-400" />
-          <h3 className="text-sm font-bold text-white">エナジー獲得の内訳</h3>
-        </div>
-        <div className="grid grid-cols-2 gap-2">
-          {/* 日報提出 */}
-          <div className="flex items-center justify-between p-2 rounded-lg bg-green-500/10 border border-green-500/20">
-            <div className="flex items-center gap-2">
-              <span className="text-lg">📝</span>
-              <span className="text-xs text-white">日報提出</span>
-            </div>
-            <span className="text-sm font-bold text-green-400">+10E</span>
-          </div>
-          {/* ストリーク */}
-          <div className="flex items-center justify-between p-2 rounded-lg bg-orange-500/10 border border-orange-500/20">
-            <div className="flex items-center gap-2">
-              <span className="text-lg">🔥</span>
-              <span className="text-xs text-white">ストリーク</span>
-            </div>
-            <span className="text-sm font-bold text-orange-400">+{Math.min((profile.streak.current || 0) * 2, 20)}E</span>
-          </div>
-          {/* 成果 */}
-          <div className="flex items-center justify-between p-2 rounded-lg bg-purple-500/10 border border-purple-500/20">
-            <div className="flex items-center gap-2">
-              <span className="text-lg">💎</span>
-              <span className="text-xs text-white">成果</span>
-            </div>
-            <span className="text-sm font-bold text-purple-400">変動</span>
-          </div>
-          {/* 週次 */}
-          <div className="flex items-center justify-between p-2 rounded-lg bg-blue-500/10 border border-blue-500/20">
-            <div className="flex items-center gap-2">
-              <span className="text-lg">🏆</span>
-              <span className="text-xs text-white">週次目標</span>
-            </div>
-            <span className="text-sm font-bold text-blue-400">+50E</span>
-          </div>
-        </div>
-      </div>
-
-      {/* クイックアクション - スタイリッシュ */}
-      <div className="grid gap-3 grid-cols-3">
-        <Link href="/report">
-          <div className="glass-premium p-3 rounded-xl border border-green-500/30 cursor-pointer hover:scale-[1.03] transition-all hover:border-green-500/60 group">
+        {/* 今日の報告 */}
+        <Link href="/report" className="block">
+          <motion.div
+            initial={{ scale: 0, rotateY: -180 }}
+            animate={{ scale: 1, rotateY: 0 }}
+            transition={{ duration: 0.4, delay: 0.15 }}
+            className="glass-premium p-2 rounded-lg border border-green-500/30 cursor-pointer active:scale-95 transition-all h-full"
+          >
             <div className="text-center">
-              <div className="text-3xl mb-1 group-hover:scale-110 transition-transform">📝</div>
-              <h3 className="text-xs font-bold text-white">今日の報告</h3>
+              <div className="text-2xl mb-1">📝</div>
+              <p className="text-[9px] text-gray-400">今日の</p>
+              <p className="text-xs font-bold text-white">報告</p>
             </div>
-          </div>
+          </motion.div>
         </Link>
 
-        <Link href="/guardians">
-          <div className="glass-premium p-3 rounded-xl border border-purple-500/30 cursor-pointer hover:scale-[1.03] transition-all hover:border-purple-500/60 group">
+        {/* 守護神 */}
+        <Link href="/guardians" className="block">
+          <motion.div
+            initial={{ scale: 0, rotateY: -180 }}
+            animate={{ scale: 1, rotateY: 0 }}
+            transition={{ duration: 0.4, delay: 0.2 }}
+            className="glass-premium p-2 rounded-lg border border-purple-500/30 cursor-pointer active:scale-95 transition-all h-full"
+          >
             <div className="text-center">
-              <div className="text-3xl mb-1 group-hover:scale-110 transition-transform">🛡️</div>
-              <h3 className="text-xs font-bold text-white">守護神</h3>
+              <div className="text-2xl mb-1">🛡️</div>
+              <p className="text-[9px] text-gray-400">守護神</p>
+              <p className="text-xs font-bold text-white">進化</p>
             </div>
-          </div>
+          </motion.div>
         </Link>
 
-        <Link href="/ranking">
-          <div className="glass-premium p-3 rounded-xl border border-yellow-500/30 cursor-pointer hover:scale-[1.03] transition-all hover:border-yellow-500/60 group">
+        {/* ランキング */}
+        <Link href="/ranking" className="block">
+          <motion.div
+            initial={{ scale: 0, rotateY: -180 }}
+            animate={{ scale: 1, rotateY: 0 }}
+            transition={{ duration: 0.4, delay: 0.25 }}
+            className="glass-premium p-2 rounded-lg border border-yellow-500/30 cursor-pointer active:scale-95 transition-all h-full"
+          >
             <div className="text-center">
-              <div className="text-3xl mb-1 group-hover:scale-110 transition-transform">🏆</div>
-              <h3 className="text-xs font-bold text-white">ランキング</h3>
+              <div className="text-2xl mb-1">🏆</div>
+              <p className="text-[9px] text-gray-400">ランキング</p>
+              <p className="text-xs font-bold text-white">確認</p>
             </div>
-          </div>
+          </motion.div>
         </Link>
       </div>
 
+      {/* 💎 エナジー獲得の内訳 - 折りたたみ式 */}
+      <div className="glass-bg rounded-xl border border-yellow-500/20 overflow-hidden">
+        <button
+          onClick={() => setEnergyBreakdownExpanded(!energyBreakdownExpanded)}
+          className="w-full p-3 flex items-center justify-between hover:bg-white/5 transition-colors"
+        >
+          <div className="flex items-center gap-2">
+            <Sparkles className="w-4 h-4 text-yellow-400" />
+            <h3 className="text-sm font-bold text-white">エナジー獲得の内訳</h3>
+          </div>
+          <ChevronDown
+            className={`w-4 h-4 text-gray-400 transition-transform ${energyBreakdownExpanded ? 'rotate-180' : ''}`}
+          />
+        </button>
+
+        {energyBreakdownExpanded && (
+          <div className="p-3 pt-0 border-t border-white/10">
+            <div className="grid grid-cols-2 gap-2">
+              {/* 日報提出 */}
+              <div className="flex items-center justify-between p-2 rounded-lg bg-green-500/10 border border-green-500/20">
+                <div className="flex items-center gap-2">
+                  <span className="text-lg">📝</span>
+                  <span className="text-xs text-white">日報提出</span>
+                </div>
+                <span className="text-sm font-bold text-green-400">+10E</span>
+              </div>
+              {/* ストリーク */}
+              <div className="flex items-center justify-between p-2 rounded-lg bg-orange-500/10 border border-orange-500/20">
+                <div className="flex items-center gap-2">
+                  <span className="text-lg">🔥</span>
+                  <span className="text-xs text-white">ストリーク</span>
+                </div>
+                <span className="text-sm font-bold text-orange-400">+{Math.min((profile.streak.current || 0) * 2, 20)}E</span>
+              </div>
+              {/* 成果 */}
+              <div className="flex items-center justify-between p-2 rounded-lg bg-purple-500/10 border border-purple-500/20">
+                <div className="flex items-center gap-2">
+                  <span className="text-lg">💎</span>
+                  <span className="text-xs text-white">成果</span>
+                </div>
+                <span className="text-sm font-bold text-purple-400">変動</span>
+              </div>
+              {/* 週次 */}
+              <div className="flex items-center justify-between p-2 rounded-lg bg-blue-500/10 border border-blue-500/20">
+                <div className="flex items-center gap-2">
+                  <span className="text-lg">🏆</span>
+                  <span className="text-xs text-white">週次目標</span>
+                </div>
+                <span className="text-sm font-bold text-blue-400">+50E</span>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
 
 
       {/* 📱 SNSアカウント設定 - 折りたたみ式 */}
