@@ -321,28 +321,47 @@ export function calculateEnergyEarned(
 // =====================================
 
 /**
+ * チームタイプに応じたストリークモードを取得
+ * shorts = 副業・退職チーム（週1報告でOK）
+ * x = スマホ物販チーム（毎日報告）
+ */
+export type StreakMode = 'daily' | 'weekly';
+
+export function getStreakMode(teamType?: 'shorts' | 'x'): StreakMode {
+  // 副業・退職チーム（Shorts系）は週次ストリーク
+  if (teamType === 'shorts') return 'weekly';
+  // スマホ物販チーム（X系）は日次ストリーク
+  return 'daily';
+}
+
+/**
  * ストリーク猶予時間を取得
  */
-export function getStreakGraceHours(userProfile: UserGuardianProfile): number {
+export function getStreakGraceHours(
+  userProfile: UserGuardianProfile,
+  streakMode: StreakMode = 'daily'
+): number {
   const hasHanase = Object.values(userProfile.guardians)
     .some(g => g?.guardianId === 'hanase' && g.unlocked && g.stage >= 3);
 
-  let graceHours = 24; // デフォルト24時間
+  // 週次モードの場合は7日（168時間）
+  let graceHours = streakMode === 'weekly' ? 168 : 24;
 
-  // 花精の特性: +12時間
+  // 花精の特性: +12時間（日次）/ +24時間（週次）
   if (hasHanase) {
-    graceHours += 12;
+    graceHours += streakMode === 'weekly' ? 24 : 12;
   }
 
   return graceHours;
 }
 
 /**
- * ストリークを更新
+ * ストリークを更新（週次/日次対応）
  */
 export function updateStreak(
   currentStreak: UserStreakData,
-  now: Date = new Date()
+  now: Date = new Date(),
+  streakMode: StreakMode = 'daily'
 ): UserStreakData {
   const lastReport = currentStreak.lastReportAt?.toDate();
 
@@ -358,15 +377,18 @@ export function updateStreak(
   }
 
   const hoursSinceLastReport = (now.getTime() - lastReport.getTime()) / (1000 * 60 * 60);
-  const graceHours = currentStreak.graceHours || 24;
+  const graceHours = currentStreak.graceHours || (streakMode === 'weekly' ? 168 : 24);
+
+  // 週次モードと日次モードで期間を分ける
+  const periodHours = streakMode === 'weekly' ? 168 : 24; // 7日 or 1日
 
   let newCurrent = currentStreak.current;
 
-  if (hoursSinceLastReport < 24) {
-    // 24時間以内: 同日扱い（連続日数変わらず）
+  if (hoursSinceLastReport < periodHours) {
+    // 期間内: 同期間扱い（連続数変わらず）
     newCurrent = currentStreak.current;
-  } else if (hoursSinceLastReport < 24 + graceHours) {
-    // 猶予時間内: ストリーク継続
+  } else if (hoursSinceLastReport < periodHours + graceHours) {
+    // 猶予時間内: ストリーク継続・インクリメント
     newCurrent = currentStreak.current + 1;
   } else {
     // 猶予超過: リセット
