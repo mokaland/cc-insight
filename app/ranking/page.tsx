@@ -222,18 +222,27 @@ export default function AllTeamsRankingPage() {
     });
 
     // 👑 エナジー王: 累計獲得E 1位
-    const energyKing = [...memberData].sort((a, b) => b.totalEarned - a.totalEarned)[0];
+    const sortedByEnergy = [...memberData].sort((a, b) => b.totalEarned - a.totalEarned);
+    const energyKing = sortedByEnergy.length > 0 ? sortedByEnergy[0] : null;
 
     // 🔥 継続の鬼: ストリーク日数 1位
-    const streakMaster = [...memberData].sort((a, b) => b.streak - a.streak)[0];
+    const sortedByStreak = [...memberData].sort((a, b) => b.streak - a.streak);
+    const streakMaster = sortedByStreak.length > 0 ? sortedByStreak[0] : null;
 
     // 📈 成長株: 報告回数が多い（先週比は複雑なので報告回数で代用）
-    const growthStar = [...memberData].sort((a, b) => b.reports - a.reports)[0];
+    const sortedByReports = [...memberData].sort((a, b) => b.reports - a.reports);
+    const growthStar = sortedByReports.length > 0 ? sortedByReports[0] : null;
 
     return {
-      energyKing: energyKing?.totalEarned > 0 ? { name: energyKing.name, value: energyKing.totalEarned, label: 'エナジー王', emoji: '👑' } : null,
-      streakMaster: streakMaster?.streak > 0 ? { name: streakMaster.name, value: streakMaster.streak, label: '継続の鬼', emoji: '🔥' } : null,
-      growthStar: growthStar?.reports > 1 ? { name: growthStar.name, value: growthStar.reports, label: '成長株', emoji: '📈' } : null
+      energyKing: energyKing && energyKing.name && energyKing.totalEarned > 0
+        ? { name: energyKing.name, value: energyKing.totalEarned, label: 'エナジー王', emoji: '👑' }
+        : null,
+      streakMaster: streakMaster && streakMaster.name && streakMaster.streak > 0
+        ? { name: streakMaster.name, value: streakMaster.streak, label: '継続の鬼', emoji: '🔥' }
+        : null,
+      growthStar: growthStar && growthStar.name && growthStar.reports > 1
+        ? { name: growthStar.name, value: growthStar.reports, label: '成長株', emoji: '📈' }
+        : null
     };
   }, [activeTeamData, filteredReports, activeTeamId, guardianProfiles]);
 
