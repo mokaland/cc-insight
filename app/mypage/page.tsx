@@ -414,7 +414,17 @@ export default function MyPage() {
 
   const stage = activeInstance.stage;
   const stageInfo = EVOLUTION_STAGES[stage];
-  const attr = ATTRIBUTES[activeGuardian.attribute];
+  const attr = activeGuardian?.attribute ? ATTRIBUTES[activeGuardian.attribute] : null;
+
+  // stageInfoやattrがない場合は早期リターン
+  if (!stageInfo || !attr) {
+    return (
+      <div className="min-h-[50vh] flex items-center justify-center">
+        <p className="text-slate-400">データ読み込み中...</p>
+      </div>
+    );
+  }
+
   const placeholder = getPlaceholderStyle(activeGuardianId as GuardianId);
   const investedEnergy = activeInstance.investedEnergy;
   const auraLevel = getAuraLevel(investedEnergy, stage);
@@ -524,7 +534,7 @@ export default function MyPage() {
               >
                 <img
                   src={getGuardianImagePath(activeGuardianId as GuardianId, stage)}
-                  alt={activeGuardian.name}
+                  alt={activeGuardian?.name || '守護神'}
                   className="w-full h-full object-contain"
                   onError={(e) => {
                     e.currentTarget.style.display = 'none';
@@ -552,7 +562,7 @@ export default function MyPage() {
               <div className="flex items-center gap-1.5 mb-1">
                 <span className="text-xl">{attr.emoji}</span>
                 <h2 className="text-lg sm:text-xl font-bold truncate" style={{ color: attr.color }}>
-                  {activeGuardian.name}
+                  {activeGuardian?.name || '守護神'}
                 </h2>
               </div>
               <p className="text-[11px] text-slate-400 mb-2">
@@ -600,6 +610,7 @@ export default function MyPage() {
             if (!evolutionInfo) return null; // 究極体は進化不可
 
             const nextStage = EVOLUTION_STAGES[stage + 1];
+            if (!nextStage) return null; // 次のステージがない場合
             const progressPercent = Math.round((evolutionInfo.current / evolutionInfo.required) * 100);
 
             return (
@@ -724,10 +735,10 @@ export default function MyPage() {
                 <Sparkles className="w-4 h-4" style={{ color: attr.color }} />
                 <div className="flex-1">
                   <p className="text-sm font-semibold" style={{ color: attr.color }}>
-                    特性: {activeGuardian.ability.name}
+                    特性: {activeGuardian?.ability?.name || '特性'}
                   </p>
                   <p className="text-xs text-slate-400">
-                    {activeGuardian.ability.description}
+                    {activeGuardian?.ability?.description || ''}
                   </p>
                 </div>
                 <div className="text-green-400 font-bold text-xs">
