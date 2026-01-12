@@ -187,6 +187,11 @@ export default function ReportPage() {
     }
   }, [user, date, existingReport, isXTeam, justSubmitted]);
 
+  // 🔝 ページ遷移時にスクロールをトップにリセット
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, []);
+
   // 🔒 既存レポートチェック（デイリーロック）
   useEffect(() => {
     const checkExistingReport = async () => {

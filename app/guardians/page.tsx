@@ -97,6 +97,9 @@ export default function GuardiansPage() {
       return;
     }
 
+    // ページ遷移時にスクロールをトップにリセット
+    window.scrollTo(0, 0);
+
     loadProfile();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user?.uid]);
@@ -117,7 +120,7 @@ export default function GuardiansPage() {
 
   async function loadProfile() {
     if (!user) return;
-    
+
     try {
       const data = await getUserGuardianProfile(user.uid);
       if (data) {
@@ -154,7 +157,7 @@ export default function GuardiansPage() {
   }
 
   const allGuardians = Object.values(GUARDIANS);
-  
+
   // 進捗計算：各守護神のstage 1-4 を含めて計算（stage 0は卵なので除外）
   // 6体 × 4段階 = 24コレクション
   const unlockedStagesCount = Object.values(profile.guardians)
@@ -490,12 +493,12 @@ function GuardianGridItem({ guardian, instance, isUnlocked, isActive, onClick }:
       className="relative cursor-pointer group"
     >
       {/* 円形フレーム */}
-      <div 
+      <div
         className={`
           aspect-square rounded-full overflow-hidden relative
           border-4 transition-all duration-300
-          ${isUnlocked 
-            ? `border-${attr.color} shadow-lg group-hover:scale-110` 
+          ${isUnlocked
+            ? `border-${attr.color} shadow-lg group-hover:scale-110`
             : 'border-slate-600 group-hover:scale-105'
           }
           ${isActive ? 'ring-4 ring-purple-400 ring-offset-4 ring-offset-slate-900' : ''}
@@ -506,7 +509,7 @@ function GuardianGridItem({ guardian, instance, isUnlocked, isActive, onClick }:
         }}
       >
         {/* 背景 */}
-        <div 
+        <div
           className="absolute inset-0"
           style={{ background: placeholder.background }}
         />
@@ -581,13 +584,13 @@ interface GuardianDetailModalProps {
   onInvestEnergy: () => void;
 }
 
-function GuardianDetailModal({ 
-  guardianId, 
-  profile, 
-  onClose, 
-  onUnlock, 
+function GuardianDetailModal({
+  guardianId,
+  profile,
+  onClose,
+  onUnlock,
   onSetActive,
-  onInvestEnergy 
+  onInvestEnergy
 }: GuardianDetailModalProps) {
   const guardian = GUARDIANS[guardianId];
   const instance = profile.guardians[guardianId];
@@ -596,7 +599,7 @@ function GuardianDetailModal({
   const attr = ATTRIBUTES[guardian.attribute];
   const personality = GUARDIAN_PERSONALITIES[guardianId];
   const canUnlock = canUnlockGuardian(guardianId, profile);
-  
+
   const stage = instance?.stage || 0;
   const stageName = EVOLUTION_STAGES[stage]?.name || "未解放";
   const investedEnergy = instance?.investedEnergy || 0;
@@ -627,7 +630,7 @@ function GuardianDetailModal({
 
         <div className="p-6 space-y-6">
           {/* 守護神画像 */}
-          <div 
+          <div
             className="w-64 h-64 mx-auto rounded-2xl overflow-hidden relative"
             style={{ background: getPlaceholderStyle(guardianId).background }}
           >
