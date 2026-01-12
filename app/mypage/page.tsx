@@ -815,12 +815,12 @@ export default function MyPage() {
         </motion.div>
 
         {/* 日報 */}
-        <Link href="/report" className="block">
+        <Link href="/report" className="block aspect-square">
           <motion.div
             initial={{ scale: 0.8, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
             transition={{ duration: 0.3, delay: 0.15 }}
-            className="glass-premium p-3 rounded-xl border border-green-500/30 cursor-pointer active:scale-95 transition-all aspect-square flex flex-col items-center justify-center"
+            className="glass-premium p-3 rounded-xl border border-green-500/30 cursor-pointer active:scale-95 transition-all h-full w-full flex flex-col items-center justify-center"
           >
             <div className="text-3xl mb-1">📝</div>
             <p className="text-[10px] text-gray-400 text-center leading-tight">日報</p>
@@ -829,12 +829,12 @@ export default function MyPage() {
         </Link>
 
         {/* 守護神図鑑 */}
-        <Link href="/guardians" className="block">
+        <Link href="/guardians" className="block aspect-square">
           <motion.div
             initial={{ scale: 0.8, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
             transition={{ duration: 0.3, delay: 0.2 }}
-            className="glass-premium p-3 rounded-xl border border-purple-500/30 cursor-pointer active:scale-95 transition-all aspect-square flex flex-col items-center justify-center"
+            className="glass-premium p-3 rounded-xl border border-purple-500/30 cursor-pointer active:scale-95 transition-all h-full w-full flex flex-col items-center justify-center"
           >
             <div className="text-3xl mb-1">🛡️</div>
             <p className="text-[10px] text-gray-400 text-center leading-tight">守護神図鑑</p>
@@ -843,12 +843,12 @@ export default function MyPage() {
         </Link>
 
         {/* ランキング */}
-        <Link href="/ranking" className="block">
+        <Link href="/ranking" className="block aspect-square">
           <motion.div
             initial={{ scale: 0.8, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
             transition={{ duration: 0.3, delay: 0.25 }}
-            className="glass-premium p-3 rounded-xl border border-yellow-500/30 cursor-pointer active:scale-95 transition-all aspect-square flex flex-col items-center justify-center"
+            className="glass-premium p-3 rounded-xl border border-yellow-500/30 cursor-pointer active:scale-95 transition-all h-full w-full flex flex-col items-center justify-center"
           >
             <div className="text-3xl mb-1">🏆</div>
             <p className="text-[10px] text-gray-400 text-center leading-tight">ランキング</p>
