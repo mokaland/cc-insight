@@ -740,131 +740,119 @@ export default function MyPage() {
         </div >
       </GlassCard >
 
-      {/* 📊 6カード統合グリッド（3x2） - PWAモバイル対応 */}
-      <div className="grid gap-2 grid-cols-3" style={{ gridTemplateColumns: 'repeat(3, 1fr)' }}>
+      {/* 📊 6カード統合グリッド（3x2） - PWAモバイル対応・同サイズ統一 */}
+      <div className="grid gap-2" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)' }}>
         {/* 保有エナジー */}
         <motion.div
-          initial={{ scale: 0, rotateY: -180 }}
-          animate={{ scale: 1, rotateY: 0 }}
-          transition={{ duration: 0.4, delay: 0 }}
+          initial={{ scale: 0.8, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
+          transition={{ duration: 0.3, delay: 0 }}
           onClick={() => setEnergyModalOpen(true)}
-          className="jewel-card glass-premium p-2 rounded-lg border border-white/20 cursor-pointer active:scale-95 transition-transform"
+          className="glass-premium p-3 rounded-xl border border-yellow-500/30 cursor-pointer active:scale-95 transition-transform aspect-square flex flex-col items-center justify-center"
         >
-          <div className="text-center">
-            <div className="mx-auto mb-1 relative w-8 h-8">
-              <Image
-                src="/images/ui/energy-orb.png"
-                alt="Energy"
-                width={32}
-                height={32}
-                className="relative z-10"
-                style={{ filter: 'drop-shadow(0 0 8px rgba(250, 204, 21, 0.8))' }}
-              />
-            </div>
-            <p className="text-[9px] text-gray-400">保有</p>
-            <p className="text-lg font-bold text-yellow-400">
-              <AnimatedNumber value={profile.energy.current} />
-            </p>
+          <div className="w-8 h-8 mb-1">
+            <Image
+              src="/images/ui/energy-orb.png"
+              alt="Energy"
+              width={32}
+              height={32}
+              className="w-full h-full object-contain"
+              style={{ filter: 'drop-shadow(0 0 6px rgba(250, 204, 21, 0.8))' }}
+            />
           </div>
+          <p className="text-[10px] text-gray-400 text-center leading-tight">保有エナジー</p>
+          <p className="text-lg font-bold text-yellow-400">
+            <AnimatedNumber value={profile.energy.current} />
+          </p>
         </motion.div>
 
         {/* 累計獲得 */}
         <motion.div
-          initial={{ scale: 0, rotateY: -180 }}
-          animate={{ scale: 1, rotateY: 0 }}
-          transition={{ duration: 0.4, delay: 0.05 }}
+          initial={{ scale: 0.8, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
+          transition={{ duration: 0.3, delay: 0.05 }}
           onClick={() => setTotalModalOpen(true)}
-          className="jewel-card glass-premium p-2 rounded-lg border border-white/20 cursor-pointer active:scale-95 transition-transform"
+          className="glass-premium p-3 rounded-xl border border-purple-500/30 cursor-pointer active:scale-95 transition-transform aspect-square flex flex-col items-center justify-center"
         >
-          <div className="text-center">
-            <div className="mx-auto mb-1 relative w-8 h-8">
-              <Image
-                src="/images/ui/gem.png"
-                alt="Gem"
-                width={32}
-                height={32}
-                className="relative z-10"
-                style={{ filter: 'drop-shadow(0 0 8px rgba(168, 85, 247, 0.8))' }}
-              />
-            </div>
-            <p className="text-[9px] text-gray-400">累計</p>
-            <p className="text-lg font-bold text-purple-400">
-              <AnimatedNumber value={profile.energy.totalEarned} />
-            </p>
+          <div className="w-8 h-8 mb-1">
+            <Image
+              src="/images/ui/gem.png"
+              alt="Gem"
+              width={32}
+              height={32}
+              className="w-full h-full object-contain"
+              style={{ filter: 'drop-shadow(0 0 6px rgba(168, 85, 247, 0.8))' }}
+            />
           </div>
+          <p className="text-[10px] text-gray-400 text-center leading-tight">累計獲得</p>
+          <p className="text-lg font-bold text-purple-400">
+            <AnimatedNumber value={profile.energy.totalEarned} />
+          </p>
         </motion.div>
 
-        {/* ストリーク */}
+        {/* 連続報告 */}
         <motion.div
-          initial={{ scale: 0, rotateY: -180 }}
-          animate={{ scale: 1, rotateY: 0 }}
-          transition={{ duration: 0.4, delay: 0.1 }}
+          initial={{ scale: 0.8, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
+          transition={{ duration: 0.3, delay: 0.1 }}
           onClick={() => setStreakModalOpen(true)}
-          className="jewel-card glass-premium p-2 rounded-lg border border-white/20 cursor-pointer active:scale-95 transition-transform"
+          className="glass-premium p-3 rounded-xl border border-orange-500/30 cursor-pointer active:scale-95 transition-transform aspect-square flex flex-col items-center justify-center"
         >
-          <div className="text-center">
-            <div className="mx-auto mb-1 relative w-8 h-8">
-              <Image
-                src="/images/ui/streak-1.png"
-                alt="Streak"
-                width={32}
-                height={32}
-                className="relative z-10"
-                style={{ filter: 'drop-shadow(0 0 8px rgba(251, 146, 60, 0.8))' }}
-              />
-            </div>
-            <p className="text-[9px] text-gray-400">連続</p>
-            <p className="text-lg font-bold text-orange-400">
-              <AnimatedNumber value={profile.streak.current} /><span className="text-xs">日</span>
-            </p>
+          <div className="w-8 h-8 mb-1">
+            <Image
+              src="/images/ui/streak-1.png"
+              alt="Streak"
+              width={32}
+              height={32}
+              className="w-full h-full object-contain"
+              style={{ filter: 'drop-shadow(0 0 6px rgba(251, 146, 60, 0.8))' }}
+            />
           </div>
+          <p className="text-[10px] text-gray-400 text-center leading-tight">連続報告</p>
+          <p className="text-lg font-bold text-orange-400">
+            <AnimatedNumber value={profile.streak.current} /><span className="text-xs">日</span>
+          </p>
         </motion.div>
 
-        {/* 今日の報告 */}
+        {/* 日報 */}
         <Link href="/report" className="block">
           <motion.div
-            initial={{ scale: 0, rotateY: -180 }}
-            animate={{ scale: 1, rotateY: 0 }}
-            transition={{ duration: 0.4, delay: 0.15 }}
-            className="glass-premium p-2 rounded-lg border border-green-500/30 cursor-pointer active:scale-95 transition-all h-full"
+            initial={{ scale: 0.8, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            transition={{ duration: 0.3, delay: 0.15 }}
+            className="glass-premium p-3 rounded-xl border border-green-500/30 cursor-pointer active:scale-95 transition-all aspect-square flex flex-col items-center justify-center"
           >
-            <div className="text-center">
-              <div className="text-2xl mb-1">📝</div>
-              <p className="text-[9px] text-gray-400">今日の</p>
-              <p className="text-xs font-bold text-white">報告</p>
-            </div>
+            <div className="text-3xl mb-1">📝</div>
+            <p className="text-[10px] text-gray-400 text-center leading-tight">日報</p>
+            <p className="text-xs font-bold text-green-400">入力する</p>
           </motion.div>
         </Link>
 
-        {/* 守護神 */}
+        {/* 守護神図鑑 */}
         <Link href="/guardians" className="block">
           <motion.div
-            initial={{ scale: 0, rotateY: -180 }}
-            animate={{ scale: 1, rotateY: 0 }}
-            transition={{ duration: 0.4, delay: 0.2 }}
-            className="glass-premium p-2 rounded-lg border border-purple-500/30 cursor-pointer active:scale-95 transition-all h-full"
+            initial={{ scale: 0.8, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            transition={{ duration: 0.3, delay: 0.2 }}
+            className="glass-premium p-3 rounded-xl border border-purple-500/30 cursor-pointer active:scale-95 transition-all aspect-square flex flex-col items-center justify-center"
           >
-            <div className="text-center">
-              <div className="text-2xl mb-1">🛡️</div>
-              <p className="text-[9px] text-gray-400">守護神</p>
-              <p className="text-xs font-bold text-white">進化</p>
-            </div>
+            <div className="text-3xl mb-1">🛡️</div>
+            <p className="text-[10px] text-gray-400 text-center leading-tight">守護神図鑑</p>
+            <p className="text-xs font-bold text-purple-400">見る</p>
           </motion.div>
         </Link>
 
         {/* ランキング */}
         <Link href="/ranking" className="block">
           <motion.div
-            initial={{ scale: 0, rotateY: -180 }}
-            animate={{ scale: 1, rotateY: 0 }}
-            transition={{ duration: 0.4, delay: 0.25 }}
-            className="glass-premium p-2 rounded-lg border border-yellow-500/30 cursor-pointer active:scale-95 transition-all h-full"
+            initial={{ scale: 0.8, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            transition={{ duration: 0.3, delay: 0.25 }}
+            className="glass-premium p-3 rounded-xl border border-yellow-500/30 cursor-pointer active:scale-95 transition-all aspect-square flex flex-col items-center justify-center"
           >
-            <div className="text-center">
-              <div className="text-2xl mb-1">🏆</div>
-              <p className="text-[9px] text-gray-400">ランキング</p>
-              <p className="text-xs font-bold text-white">確認</p>
-            </div>
+            <div className="text-3xl mb-1">🏆</div>
+            <p className="text-[10px] text-gray-400 text-center leading-tight">ランキング</p>
+            <p className="text-xs font-bold text-yellow-400">確認</p>
           </motion.div>
         </Link>
       </div>
