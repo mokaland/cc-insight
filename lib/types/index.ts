@@ -19,3 +19,6 @@ export * from "./guardian";
 
 // エナジー型
 export * from "./energy";
+
+// Firestore Timestamp型（UI層はここからimportすること）
+export { Timestamp } from "firebase/firestore";

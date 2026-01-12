@@ -1,8 +1,9 @@
 # CC Insight アーキテクチャ仕様書
 
-> **ドキュメント生成日**: 2026-01-12  
+> **ドキュメント更新日**: 2026-01-12  
 > **生成方法**: ソースコードからの逆生成（リバースエンジニアリング）  
-> **対象バージョン**: 0.1.3 (package.json より)
+> **対象バージョン**: 0.1.3 (package.json より)  
+> **最終更新**: Phase 2 Service Layer リファクタリング完了後
 
 ---
 
@@ -33,27 +34,70 @@
 | **アイコン** | lucide-react | 0.562.0 | |
 | **UIプリミティブ** | @radix-ui | 各種 | Label, Slot, Tabs |
 
-### ビルド / 開発
+---
 
-| カテゴリ | ライブラリ | バージョン |
-|---------|-----------|-----------|
-| **PostCSS** | @tailwindcss/postcss | ^4 |
-| **TypeScript実行** | tsx | 4.21.0 |
-| **CSSアニメーション** | tw-animate-css | 1.4.0 |
+## 2. アーキテクチャ概要
+
+### 2.1 レイヤー構成
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                        UI Layer                              │
+│  (app/, components/)                                         │
+│  - ページコンポーネント                                       │
+│  - 表示ロジック・状態管理（useState, useEffect）              │
+│  - ユーザー操作のハンドリング                                 │
+└────────────────────────────┬────────────────────────────────┘
+                             │ imports
+                             ▼
+┌─────────────────────────────────────────────────────────────┐
+│                     Service Layer (NEW)                      │
+│  (lib/services/)                                             │
+│  - データアクセスロジック（Firestore CRUD）                   │
+│  - リアルタイムリスナー管理                                   │
+│  - ビジネスロジックの抽象化                                   │
+└────────────────────────────┬────────────────────────────────┘
+                             │ imports
+                             ▼
+┌─────────────────────────────────────────────────────────────┐
+│                      Type Layer                              │
+│  (lib/types/)                                                │
+│  - 統合型定義（User, DMMessage, Report等）                   │
+│  - インターフェース・型エイリアス                             │
+└────────────────────────────┬────────────────────────────────┘
+                             │ imports
+                             ▼
+┌─────────────────────────────────────────────────────────────┐
+│                    Firebase Layer                            │
+│  (lib/firebase.ts, lib/firestore.ts)                         │
+│  - Firebase SDKの初期化                                       │
+│  - 低レベルCRUD操作                                           │
+└─────────────────────────────────────────────────────────────┘
+```
+
+### 2.2 UI層とデータ層の分離ルール
+
+> **重要**: UIコンポーネントは直接 `firebase/firestore` をインポートしてはならない
+
+| レイヤー | 許可されるインポート | 禁止されるインポート |
+|---------|---------------------|---------------------|
+| UI (app/, components/) | `@/lib/services/*`, `@/lib/types/*` | `firebase/firestore` (直接) |
+| Service (lib/services/) | `firebase/firestore`, `@/lib/types/*`, `@/lib/firebase` | - |
+| Type (lib/types/) | `firebase/firestore` (Timestamp型のみ) | - |
 
 ---
 
-## 2. Directory Map
+## 3. Directory Map
 
 ```
 cc-insight/
-├── app/                    # Next.js App Router（ページ・API）
+├── app/                    # UI Layer - ページ・API
 │   ├── admin/              # 管理者専用ページ群
 │   ├── api/                # API Routes（バックエンド処理）
 │   ├── dashboard/          # チーム別ダッシュボード
 │   ├── dm/                 # ダイレクトメッセージ
-│   ├── guardian/           # ガーディアン詳細（単数）
-│   ├── guardians/          # ガーディアン一覧（複数）
+│   ├── guardian/           # ガーディアン詳細
+│   ├── guardians/          # ガーディアン一覧
 │   ├── history/            # 履歴閲覧
 │   ├── login/              # ログイン
 │   ├── mypage/             # マイページ
@@ -63,57 +107,110 @@ cc-insight/
 │   ├── report/             # 日報投稿
 │   ├── team/               # チーム別ページ
 │   ├── verify-email/       # メール認証
-│   ├── layout.tsx          # ルートレイアウト
-│   ├── page.tsx            # トップページ（リダイレクト）
-│   └── globals.css         # グローバルスタイル（39KB）
+│   └── globals.css         # グローバルスタイル
 │
-├── components/             # UIコンポーネント群
-│   ├── ui/                 # 汎用UIプリミティブ（6件）
-│   └── *.tsx               # ドメイン固有コンポーネント（17件）
+├── components/             # UI Layer - 再利用可能コンポーネント
+│   ├── ui/                 # 汎用UIプリミティブ（Button, Input等）
+│   ├── client-layout.tsx   # メインレイアウト・認証Guard
+│   └── *.tsx               # ドメイン固有コンポーネント
 │
-├── lib/                    # ビジネスロジック・ユーティリティ（29ファイル）
+├── lib/
+│   ├── services/           # ★ Service Layer (NEW)
+│   │   ├── dm.ts           # DM操作（送信・受信・既読・監視）
+│   │   ├── report.ts       # レポート操作
+│   │   ├── user.ts         # ユーザー操作
+│   │   └── index.ts        # 統合エクスポート
+│   │
+│   ├── types/              # ★ Type Layer (NEW)
+│   │   ├── user.ts         # User型定義
+│   │   ├── dm.ts           # DMMessage型定義
+│   │   ├── report.ts       # Report型定義
+│   │   ├── guardian.ts     # Guardian型定義
+│   │   ├── energy.ts       # Energy型定義
+│   │   └── index.ts        # 統合エクスポート
+│   │
 │   ├── firebase.ts         # Firebase初期化
-│   ├── firestore.ts        # Firestore CRUD操作（63KB・巨大）
+│   ├── firestore.ts        # 低レベルCRUD操作
 │   ├── auth-context.tsx    # 認証コンテキスト
-│   ├── guardian-*.ts       # ガーディアンシステム関連（4件）
-│   ├── energy-*.ts         # エナジー経済システム関連（4件）
-│   ├── gamification.ts     # ゲーミフィケーション
-│   ├── streak-*.ts         # 連続投稿システム関連（2件）
-│   ├── daily-*.ts          # 日次処理関連（2件）
-│   ├── ai-service.ts       # AI連携
-│   ├── slack-notifier.ts   # Slack通知
+│   ├── guardian-*.ts       # ガーディアンシステム関連
+│   ├── energy-*.ts         # エナジー経済システム関連
 │   └── ...                 # その他ユーティリティ
 │
 ├── public/                 # 静的アセット
-│   ├── manifest.json       # PWA設定
-│   ├── icon-*.png          # PWAアイコン
-│   └── ...
-│
-├── scripts/                # 運用スクリプト（8件）
-├── docs/                   # ドキュメント（17件）
-├── firestore.rules         # セキュリティルール（10KB）
+├── scripts/                # 運用スクリプト
+├── docs/                   # ドキュメント
+├── firestore.rules         # セキュリティルール
 ├── firestore.indexes.json  # Firestoreインデックス定義
-├── firebase.json           # Firebase設定
-├── next.config.ts          # Next.js設定
 └── vercel.json             # Vercelデプロイ設定
 ```
 
-### フォルダ役割定義
+---
 
-| フォルダ | 役割 | ファイル数 |
-|---------|-----|-----------|
-| `app/` | ページルーティング・API定義 | 42件 |
-| `components/` | 再利用可能UIコンポーネント | 23件 |
-| `lib/` | ビジネスロジック・Firebase操作・ゲーミフィケーション | 29件 |
-| `public/` | PWA設定・アイコン・静的ファイル | 13件 |
-| `scripts/` | データ移行・バックアップ運用スクリプト | 8件 |
-| `docs/` | プロジェクトドキュメント | 17件 |
+## 4. Service Layer 詳細
+
+### 4.1 lib/services/dm.ts
+
+**責務**: DMメッセージに関する全てのデータ操作
+
+| 関数 | 説明 |
+|------|------|
+| `sendDMMessage(params)` | メッセージ送信 |
+| `sendDMToAdmins(userId, name, message)` | メンバー → 運営へDM送信（全管理者に配信） |
+| `sendAdminDMToUser(...)` | 管理者 → メンバーへDM送信 |
+| `subscribeToDMMessages(userId, callback)` | ユーザーのDMをリアルタイム監視 |
+| `subscribeToAdminDMWithUser(adminUid, targetUserId, callback)` | 管理者が特定ユーザーとのDMを監視 |
+| `subscribeToUnreadCount(userId, callback)` | 未読数をリアルタイム監視（バッジ用） |
+| `markMessagesAsRead(userId)` | 未読メッセージを既読にする |
+| `getAdminUIDs()` | 全管理者のUID取得 |
+
+### 4.2 lib/services/report.ts
+
+**責務**: 日報レポートに関するデータ操作
+
+| 関数 | 説明 |
+|------|------|
+| `createReport(params)` | 新規レポート作成 |
+| `subscribeToReports(callback, teamId?)` | レポートリアルタイム監視（re-export） |
+| `getReportsByPeriod(period, teamId?)` | 期間指定でレポート取得（re-export） |
+| `calculateTeamStats(reports, teamId)` | チーム統計計算（re-export） |
+| その他 | lib/firestore.ts から re-export |
+
+### 4.3 lib/services/user.ts
+
+**責務**: ユーザー情報に関するデータ操作
+
+| 関数 | 説明 |
+|------|------|
+| `getAllUsers()` | 全ユーザー取得（re-export） |
+| `updateUserStatus(userId, status, adminUid)` | ステータス更新（re-export） |
+| `updateUserRole(userId, role)` | 役割更新（re-export） |
+| `getUserGuardianProfile(userId)` | ガーディアンプロファイル取得（re-export） |
+| その他 | lib/firestore.ts から re-export |
 
 ---
 
-## 3. Routing Structure
+## 5. Type Layer 詳細
 
-### 3.1 ユーザー向けページ
+### 5.1 lib/types/index.ts
+
+**使用方法**:
+```typescript
+import { User, DMMessage, Report } from "@/lib/types";
+```
+
+| ファイル | 定義されている型 |
+|---------|-----------------|
+| `user.ts` | `User`, `UserProfile`, `Gender`, `AgeGroup`, `TeamId`, `UserRole`, `UserStatus`, `UserBadge` |
+| `dm.ts` | `DMMessage`, `CreateDMMessagePayload` |
+| `report.ts` | `Report`, `TeamType`, `TeamInfo`, `TEAMS` |
+| `guardian.ts` | `GuardianId`, `GuardianInstance`, `UserGuardianProfile` 等（re-export） |
+| `energy.ts` | `EnergyHistoryRecord`, `EnergyBreakdown`, `EnergyHistorySummary` |
+
+---
+
+## 6. Routing Structure
+
+### 6.1 ユーザー向けページ
 
 | URL | ページ | 認証 | 説明 |
 |-----|-------|-----|------|
@@ -130,19 +227,7 @@ cc-insight/
 | `/guardian` | ガーディアン | 必要 | ガーディアン詳細 |
 | `/guardians` | ガーディアン一覧 | 必要 | 所持ガーディアン |
 
-### 3.2 チーム別ダッシュボード
-
-| URL | チーム |
-|-----|-------|
-| `/team/buppan` | 物販チーム |
-| `/team/fukugyou` | 副業チーム |
-| `/team/taishoku` | 退職チーム |
-| `/dashboard` | ダッシュボードTOP |
-| `/dashboard/smartphone` | スマホチーム |
-| `/dashboard/side-job` | サイドジョブ |
-| `/dashboard/resignation` | 退職代行 |
-
-### 3.3 管理者専用ページ (`/admin/*`)
+### 6.2 管理者専用ページ (`/admin/*`)
 
 | URL | 機能 |
 |-----|------|
@@ -158,7 +243,7 @@ cc-insight/
 | `/admin/monitor` | モニタリング |
 | `/admin/url-opener` | URL一括オープン |
 
-### 3.4 API Routes (`/api/*`)
+### 6.3 API Routes (`/api/*`)
 
 | エンドポイント | メソッド | 機能 |
 |--------------|---------|------|
@@ -172,70 +257,46 @@ cc-insight/
 
 ---
 
-## 4. 設定ファイル詳細
+## 7. 設定ファイル詳細
 
-### 4.1 next.config.ts
+### 7.1 next.config.ts
 
 ```typescript
-// 主要設定
 {
   images: {
-    formats: ['image/webp'],          // WebP優先
-    minimumCacheTTL: 31536000,        // 1年キャッシュ
+    formats: ['image/webp'],
+    minimumCacheTTL: 31536000,
   },
-  productionBrowserSourceMaps: false,  // 本番ソースマップ無効
+  productionBrowserSourceMaps: false,
   experimental: {
     optimizePackageImports: ['lucide-react', '@radix-ui/react-tabs'],
   },
 }
 ```
 
-### 4.2 tsconfig.json
+### 7.2 tsconfig.json
 
 ```json
 {
   "compilerOptions": {
     "target": "ES2017",
     "strict": true,
-    "moduleResolution": "bundler",
-    "jsx": "react-jsx",
-    "paths": { "@/*": ["./*"] }  // @/エイリアス
+    "paths": { "@/*": ["./*"] }
   }
 }
 ```
 
-### 4.3 firebase.json
+---
 
-```json
-{
-  "firestore": {
-    "rules": "firestore.rules"
-  }
-}
-```
+## 8. アーキテクチャ上の特徴
 
-> **注意**: Hosting, Functions等の設定は含まれていない。Firestoreルールのみ管理。
+1. **レイヤー分離**: UI → Service → Type → Firebase の明確な階層構造
+2. **ゲーミフィケーション重視**: ガーディアン、エナジー、ストリーク、レベルシステム
+3. **PWA対応**: manifest.json, アイコン群が配置済み
+4. **マルチチーム構成**: 物販/副業/退職の3チーム
+5. **Cron API**: Vercel Cronによる定期処理
+6. **外部連携**: Slack通知、Google Sheets連携
 
 ---
 
-## 5. 検出された特記事項
-
-### 5.1 巨大ファイル警告
-
-| ファイル | サイズ | 推奨アクション |
-|---------|-------|--------------|
-| `lib/firestore.ts` | 63KB | 分割を強く推奨 |
-| `components/energy-investment-modal.tsx` | 61KB | 分割を検討 |
-| `app/globals.css` | 39KB | Tailwindのpurge確認 |
-
-### 5.2 アーキテクチャ上の特徴
-
-1. **ゲーミフィケーション重視**: ガーディアン、エナジー、ストリーク、レベルシステム等の複雑なゲーム要素
-2. **PWA対応**: manifest.json, アイコン群が配置済み
-3. **マルチチーム構成**: 物販/副業/退職の3チーム
-4. **Cron API**: Vercel Cronによる定期処理（バックアップ、サマリー、判定）
-5. **外部連携**: Slack通知、Google Sheets連携
-
----
-
-*このドキュメントはソースコードから自動生成されました。*
+*このドキュメントは2026-01-12にPhase 2リファクタリング完了後に更新されました。*

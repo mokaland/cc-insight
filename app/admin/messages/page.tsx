@@ -7,20 +7,11 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { MessageCircle, Clock, User, Users, Send } from "lucide-react";
-import { collection, query, where, orderBy, getDocs, limit, addDoc, serverTimestamp, onSnapshot } from "firebase/firestore";
-import { db } from "@/lib/firebase";
-import { teams } from "@/lib/firestore";
+import { getReportsWithTodayComment, MessageReport as ServiceMessageReport, teams } from "@/lib/services/report";
 
-interface MessageReport {
-  id: string;
-  userId: string;
-  name: string;
-  team: string;
+interface MessageReport extends ServiceMessageReport {
   teamName: string;
   teamColor: string;
-  date: string;
-  todayComment: string;
-  createdAt: Date;
 }
 
 export default function AdminMessagesPage() {
@@ -34,42 +25,18 @@ export default function AdminMessagesPage() {
   const loadMessages = useCallback(async () => {
     try {
       setLoading(true);
-      
-      // 過去30日間の「今日の一言」がある日報を取得
-      const thirtyDaysAgo = new Date();
-      thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-      const dateStr = thirtyDaysAgo.toISOString().split("T")[0];
-      
-      const q = query(
-        collection(db, "reports"),
-        where("date", ">=", dateStr),
-        where("todayComment", "!=", ""),
-        orderBy("todayComment"),
-        orderBy("createdAt", "desc"),
-        limit(100)
-      );
-      
-      const snapshot = await getDocs(q);
-      const msgs: MessageReport[] = [];
-      
-      snapshot.forEach((doc) => {
-        const data = doc.data();
-        if (data.todayComment && data.todayComment.trim() !== "") {
-          const team = teams.find(t => t.id === data.team);
-          msgs.push({
-            id: doc.id,
-            userId: data.userId || "",
-            name: data.name,
-            team: data.team,
-            teamName: team?.name || data.team,
-            teamColor: team?.color || "#ec4899",
-            date: data.date,
-            todayComment: data.todayComment,
-            createdAt: data.createdAt?.toDate() || new Date(data.date),
-          });
-        }
+
+      // Service層を使用してメッセージ取得
+      const rawMessages = await getReportsWithTodayComment(30, 100);
+      const msgs: MessageReport[] = rawMessages.map(msg => {
+        const team = teams.find(t => t.id === msg.team);
+        return {
+          ...msg,
+          teamName: team?.name || msg.team,
+          teamColor: team?.color || "#ec4899",
+        };
       });
-      
+
       setMessages(msgs);
     } catch (error) {
       console.error("メッセージ取得エラー:", error);
@@ -86,8 +53,8 @@ export default function AdminMessagesPage() {
     loadMessages();
   }, [user, router, loadMessages]);
 
-  const filteredMessages = selectedTeam === "all" 
-    ? messages 
+  const filteredMessages = selectedTeam === "all"
+    ? messages
     : messages.filter(m => m.team === selectedTeam);
 
   // メンバーごとにグループ化
@@ -110,7 +77,7 @@ export default function AdminMessagesPage() {
     return acc;
   }, {} as Record<string, any>);
 
-  const memberList = Object.values(memberGroups).sort((a: any, b: any) => 
+  const memberList = Object.values(memberGroups).sort((a: any, b: any) =>
     b.latestDate.getTime() - a.latestDate.getTime()
   );
 
@@ -175,19 +142,18 @@ export default function AdminMessagesPage() {
                     <button
                       key={`${member.team}-${member.name}`}
                       onClick={() => setSelectedMember(member.messages[0])}
-                      className={`w-full text-left px-4 py-3 hover:bg-muted/50 transition-colors border-l-4 ${
-                        selectedMember?.name === member.name && selectedMember?.team === member.team
+                      className={`w-full text-left px-4 py-3 hover:bg-muted/50 transition-colors border-l-4 ${selectedMember?.name === member.name && selectedMember?.team === member.team
                           ? 'bg-muted border-l-purple-500'
                           : 'border-l-transparent'
-                      }`}
+                        }`}
                     >
                       <div className="flex items-center justify-between mb-1">
                         <p className="font-semibold">{member.name}</p>
-                        <span 
+                        <span
                           className="text-xs px-2 py-0.5 rounded-full"
-                          style={{ 
+                          style={{
                             backgroundColor: `${member.teamColor}20`,
-                            color: member.teamColor 
+                            color: member.teamColor
                           }}
                         >
                           {member.teamName}
@@ -218,11 +184,11 @@ export default function AdminMessagesPage() {
             </CardTitle>
             {selectedMember && (
               <CardDescription>
-                <span 
+                <span
                   className="inline-block px-2 py-0.5 rounded-full text-xs"
-                  style={{ 
+                  style={{
                     backgroundColor: `${selectedMember.teamColor}20`,
-                    color: selectedMember.teamColor 
+                    color: selectedMember.teamColor
                   }}
                 >
                   {selectedMember.teamName}
@@ -239,7 +205,7 @@ export default function AdminMessagesPage() {
             ) : (
               <div className="space-y-4 max-h-[600px] overflow-y-auto">
                 {memberGroups[`${selectedMember.team}-${selectedMember.name}`].messages.map((msg: MessageReport) => (
-                  <div 
+                  <div
                     key={msg.id}
                     className="p-4 rounded-lg border border-border bg-card hover:bg-muted/50 transition-colors"
                   >

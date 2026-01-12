@@ -13,7 +13,7 @@ import {
   type PendingSnsItem,
 } from "@/lib/firestore";
 import { SNS_LABELS, PROFILE_COMPLETION_BONUS, SnsAccountApproval } from "@/lib/guardian-collection";
-import { Timestamp } from "firebase/firestore";
+import { Timestamp } from "@/lib/types";
 import {
   Check,
   X,
@@ -188,11 +188,10 @@ export default function SnsApprovalsPage() {
 
       {/* メッセージ */}
       {message && (
-        <div className={`p-4 rounded-xl ${
-          message.type === 'success'
+        <div className={`p-4 rounded-xl ${message.type === 'success'
             ? 'bg-green-500/20 border border-green-500/30 text-green-300'
             : 'bg-red-500/20 border border-red-500/30 text-red-300'
-        }`}>
+          }`}>
           {message.text}
         </div>
       )}

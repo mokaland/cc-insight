@@ -10,8 +10,7 @@ import { NextResponse } from "next/server";
 import { executeDecadeJudgment } from "@/lib/adapt-cycle";
 import { getCurrentDecade } from "@/lib/team-config";
 import { notifyDecadeJudgmentToCEO, notifyDecadeJudgmentToAdminChannel } from "@/lib/slack-notifier";
-import { collection, addDoc, serverTimestamp } from "firebase/firestore";
-import { db } from "@/lib/firebase";
+import { saveJudgmentHistory } from "@/lib/services/report";
 
 export async function GET(request: Request) {
   try {
@@ -52,13 +51,9 @@ export async function GET(request: Request) {
 
     console.log("🎯 Slack通知送信完了");
 
-    // Firestoreに判定結果を保存
-    const historyRef = collection(db, "judgment_history");
+    // Service層を使用して判定結果を保存
     await Promise.all(judgments.map(async (judgment) => {
-      await addDoc(historyRef, {
-        ...judgment,
-        createdAt: serverTimestamp()
-      });
+      await saveJudgmentHistory(judgment as unknown as Record<string, unknown>);
     }));
 
     return NextResponse.json({

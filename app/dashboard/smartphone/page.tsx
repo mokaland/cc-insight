@@ -5,7 +5,8 @@ import { Button } from "@/components/ui/button";
 import { CircularProgress } from "@/components/circular-progress";
 import { GlassCard, TodayProgress, NeonGauge } from "@/components/glass-card";
 import { FileText, Heart, MessageCircle, Users, Target, Calendar, TrendingUp, Twitter, ExternalLink, ChevronDown, ChevronUp, Copy, CheckCircle, Play } from "lucide-react";
-import { getReportsByPeriod, calculateTeamStats, teams, Report } from "@/lib/firestore";
+import { getReportsByPeriod, calculateTeamStats, getReportsByCustomPeriod, teams } from "@/lib/services/report";
+import { Report } from "@/lib/types";
 
 const team = teams.find((t) => t.id === "buppan")!;
 
@@ -46,19 +47,7 @@ export default function SmartphoneTeamPage() {
         let fetchedReports: Report[];
 
         if (period === "custom" && customStartDate && customEndDate) {
-          const { collection: dbCollection, query, where, orderBy, getDocs } = await import("firebase/firestore");
-          const { db } = await import("@/lib/firebase");
-
-          const q = query(
-            dbCollection(db, "reports"),
-            where("date", ">=", customStartDate),
-            where("date", "<=", customEndDate),
-            where("team", "==", "buppan"),
-            orderBy("date", "desc")
-          );
-
-          const snapshot = await getDocs(q);
-          fetchedReports = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Report));
+          fetchedReports = await getReportsByCustomPeriod(customStartDate, customEndDate, "buppan");
         } else if (period === "custom") {
           fetchedReports = await getReportsByPeriod("week", "buppan");
         } else {

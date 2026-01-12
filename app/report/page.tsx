@@ -3,8 +3,8 @@
 import { useState, useEffect } from "react";
 import { useAuth } from "@/lib/auth-context";
 import { useRouter } from "next/navigation";
-import { collection, addDoc, serverTimestamp } from "firebase/firestore";
-import { db } from "@/lib/firebase";
+import { createReport } from "@/lib/services/report";
+import { sendDMToAdmins } from "@/lib/services/dm";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -49,7 +49,12 @@ export default function ReportPage() {
   const [earnedXP, setEarnedXP] = useState(0);
   const [showEnergyToast, setShowEnergyToast] = useState(false);
   const [showCelebration, setShowCelebration] = useState(false);
-  const [guardianData, setGuardianData] = useState<any>(null);
+  const [guardianData, setGuardianData] = useState<{
+    emoji: string;
+    name: string;
+    color: string;
+    stageName: string;
+  } | undefined>(undefined);
 
   // レベルアップ演出用
   const [showLevelUp, setShowLevelUp] = useState(false);
@@ -364,7 +369,7 @@ export default function ReportPage() {
         }
         console.log('✅ レポート更新完了:', result.message, `修正回数: ${modifyCount + 1}`);
       } else {
-        // 新規作成用のデータ
+        // 新規作成用のデータ - Service層を使用
         const reportData = {
           userId: user.uid,
           userEmail: safeEmail,
@@ -374,12 +379,11 @@ export default function ReportPage() {
           teamType: isXTeam ? ("x" as const) : ("shorts" as const),
           date: date,
           ...baseData,
-          modifyCount: 0, // 🔒 新規作成時は修正回数0
-          createdAt: serverTimestamp(),
+          modifyCount: 0,
         };
 
         await Promise.race([
-          addDoc(collection(db, "reports"), reportData),
+          createReport(reportData),
           timeout
         ]);
       }
@@ -446,32 +450,17 @@ export default function ReportPage() {
         localStorage.removeItem(draftKey);
       }
 
-      // 🆕 Phase 13: 「今日の一言」をDMに自動送信
+      // 🆕 Phase 13: 「今日の一言」をDMに自動送信 - Service層を使用
       try {
         const commentToSend = isXTeam ? xTodayComment : todayComment;
         if (commentToSend && commentToSend.trim() !== "" && !isEditMode) {
           console.log('💬 今日の一言をDMに自動送信中...');
-
-          // 全ユーザー取得 → 管理者のみフィルター
-          const allUsers = await getAllUsers();
-          const admins = allUsers.filter(u => u.role === "admin");
-
-          if (admins.length > 0) {
-            // 各管理者にDM送信
-            for (const admin of admins) {
-              await addDoc(collection(db, "dm_messages"), {
-                fromUserId: user.uid,
-                fromUserName: userProfile.displayName,
-                toUserId: admin.uid,
-                toUserName: admin.displayName,
-                message: `【日報 - 今日の一言】\n${commentToSend}`,
-                isAdmin: false,
-                participants: [user.uid, admin.uid],
-                createdAt: serverTimestamp(),
-              });
-            }
-            console.log(`✅ ${admins.length}人の管理者にDM送信完了`);
-          }
+          await sendDMToAdmins(
+            user.uid,
+            userProfile.displayName,
+            `【日報 - 今日の一言】\n${commentToSend}`
+          );
+          console.log('✅ 管理者にDM送信完了');
         }
       } catch (dmError) {
         console.error("DM自動送信エラー:", dmError);

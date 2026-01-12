@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { CircularProgress } from "@/components/circular-progress";
 import { GlassCard, TodayProgress, NeonGauge } from "@/components/glass-card";
 import { Eye, TrendingUp, Video, Users, Target, Calendar, Bookmark, Heart, Instagram, Youtube } from "lucide-react";
-import { getReportsByPeriod, calculateTeamStats, teams } from "@/lib/firestore";
+import { getReportsByPeriod, calculateTeamStats, getReportsByCustomPeriod, teams } from "@/lib/services/report";
 
 const team = teams.find((t) => t.id === "taishoku")!;
 
@@ -37,19 +37,7 @@ export default function ResignationTeamPage() {
         let reports;
 
         if (period === "custom" && customStartDate && customEndDate) {
-          const { collection: dbCollection, query, where, orderBy, getDocs } = await import("firebase/firestore");
-          const { db } = await import("@/lib/firebase");
-
-          const q = query(
-            dbCollection(db, "reports"),
-            where("date", ">=", customStartDate),
-            where("date", "<=", customEndDate),
-            where("team", "==", "taishoku"),
-            orderBy("date", "desc")
-          );
-
-          const snapshot = await getDocs(q);
-          reports = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as any));
+          reports = await getReportsByCustomPeriod(customStartDate, customEndDate, "taishoku");
         } else if (period === "custom") {
           reports = await getReportsByPeriod("week", "taishoku");
         } else {
@@ -111,7 +99,7 @@ export default function ResignationTeamPage() {
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div>
           <h1 className="text-3xl font-bold flex items-center gap-3">
-            <span 
+            <span
               className="w-4 h-4 rounded-full animate-pulse"
               style={{ backgroundColor: team.color, boxShadow: `0 0 20px ${team.color}` }}
             />
@@ -263,11 +251,11 @@ export default function ResignationTeamPage() {
           <p className="text-sm text-muted-foreground mb-6">
             目標: 1日{team.dailyPostGoal}投稿（Shorts）× 7日 = 週{team.dailyPostGoal * 7}投稿/人
           </p>
-          
+
           <div className="flex flex-col items-center">
-            <CircularProgress 
-              value={Math.min(teamStats.achievementRate, 100)} 
-              color="#06b6d4" 
+            <CircularProgress
+              value={Math.min(teamStats.achievementRate, 100)}
+              color="#06b6d4"
               size={180}
               strokeWidth={15}
             />

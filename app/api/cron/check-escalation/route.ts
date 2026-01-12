@@ -1,6 +1,5 @@
 import { NextResponse } from 'next/server';
-import { db } from '@/lib/firebase';
-import { collection, getDocs, query, where, orderBy } from 'firebase/firestore';
+import { getAllUsersSnapshot } from '@/lib/services/report';
 import { notifyDangerMembers } from '@/lib/slack-notifier';
 import { getTeamConfig } from '@/lib/team-config';
 
@@ -16,9 +15,9 @@ async function sendCriticalAlertToSlack(
 ): Promise<void> {
   const webhookUrl = process.env.SLACK_WEBHOOK_CEO || '';
   if (!webhookUrl) return;
-  
+
   const projectId = process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID || 'cc-insight';
-  
+
   const message = {
     text: `🔴 【最重要アラート】72時間以上放置されているメンバーが${members.length}名います`,
     blocks: [
@@ -87,7 +86,7 @@ async function sendCriticalAlertToSlack(
       },
     ],
   };
-  
+
   try {
     await fetch(webhookUrl, {
       method: 'POST',
@@ -117,24 +116,23 @@ export async function GET(request: Request) {
     }
 
     console.log('🔍 エスカレーション確認Cron実行開始...');
-    
-    // Firestoreから全ユーザーを取得
-    const usersRef = collection(db, 'users');
-    const usersSnapshot = await getDocs(usersRef);
-    
+
+    // Service層を使用して全ユーザーを取得
+    const users = await getAllUsersSnapshot();
+
     const now = Date.now();
     const fourDaysAgo = now - (4 * 24 * 60 * 60 * 1000);
-    
+
     // 段階的警告レベルの定義
     const LEVELS = {
       YELLOW: 24,  // 24時間（🟡）
       ORANGE: 48,  // 48時間（🟠）
       RED: 72,     // 72時間（🔴）最重要
     };
-    
+
     // 2日以上未報告のメンバーを抽出（48時間 = 🟡イエロー基準）
     const twoDaysAgo = now - (2 * 24 * 60 * 60 * 1000);
-    
+
     const riskyMembers: Array<{
       displayName: string;
       team: string;
@@ -145,19 +143,19 @@ export async function GET(request: Request) {
       alertLevelText: string;
       userId: string;
     }> = [];
-    
-    for (const userDoc of usersSnapshot.docs) {
-      const userData = userDoc.data();
-      const lastReportAt = userData.lastReportAt?.toMillis() || 0;
-      
+
+    for (const user of users) {
+      const userData = user.data;
+      const lastReportAt = (userData.lastReportAt as any)?.toMillis?.() || 0;
+
       if (lastReportAt > 0 && lastReportAt < twoDaysAgo) {
         const hoursSinceLastReport = Math.floor((now - lastReportAt) / (1000 * 60 * 60));
         const daysSinceLastReport = Math.floor(hoursSinceLastReport / 24);
-        
+
         // 段階的警告レベルの判定
         let alertLevel: '🟡' | '🟠' | '🔴';
         let alertLevelText: string;
-        
+
         if (hoursSinceLastReport >= LEVELS.RED) {
           alertLevel = '🔴';
           alertLevelText = '【最重要アラート】';
@@ -168,33 +166,33 @@ export async function GET(request: Request) {
           alertLevel = '🟡';
           alertLevelText = '【通常警告】';
         }
-        
+
         riskyMembers.push({
-          displayName: userData.displayName || 'Unknown',
-          team: userData.team || 'unknown',
+          displayName: (userData.displayName as string) || 'Unknown',
+          team: (userData.team as string) || 'unknown',
           lastReportDaysAgo: daysSinceLastReport,
-          totalReports: userData.totalReports || 0,
+          totalReports: (userData.totalReports as number) || 0,
           hoursUnresponsive: hoursSinceLastReport,
           alertLevel,
           alertLevelText,
-          userId: userDoc.id,
+          userId: user.id,
         });
       }
     }
-    
+
     // 放置時間が長い順にソート（優先度付け）
     riskyMembers.sort((a, b) => b.hoursUnresponsive - a.hoursUnresponsive);
-    
+
     // 各警告レベルの集計
     const redCount = riskyMembers.filter(m => m.alertLevel === '🔴').length;
     const orangeCount = riskyMembers.filter(m => m.alertLevel === '🟠').length;
     const yellowCount = riskyMembers.filter(m => m.alertLevel === '🟡').length;
-    
+
     console.log(`🚨 リスクメンバー検出: ${riskyMembers.length}名`);
     console.log(`   🔴 最重要(72h+): ${redCount}名`);
     console.log(`   🟠 重要(48h+): ${orangeCount}名`);
     console.log(`   🟡 通常(24h+): ${yellowCount}名`);
-    
+
     // 最も放置されているTOP5をログ出力
     if (riskyMembers.length > 0) {
       console.log('📊 TOP5 最も放置されているメンバー:');
@@ -202,7 +200,7 @@ export async function GET(request: Request) {
         console.log(`  ${i + 1}. ${m.alertLevel} ${m.displayName}: ${m.hoursUnresponsive}時間 (${m.lastReportDaysAgo}日)`);
       });
     }
-    
+
     // 段階的Slack通知（レベル別に送信）
     if (redCount > 0) {
       // 🔴 最重要アラート（72時間以上）- 強力な警告文言
@@ -210,7 +208,7 @@ export async function GET(request: Request) {
       await sendCriticalAlertToSlack(redMembers);
       console.log(`🔴 最重要アラート送信: ${redCount}名`);
     }
-    
+
     if (riskyMembers.length >= 3) {
       // 全体サマリー（3名以上の場合）
       await notifyDangerMembers(riskyMembers);
@@ -220,9 +218,9 @@ export async function GET(request: Request) {
     } else {
       console.log('✅ リスクメンバーなし');
     }
-    
+
     console.log('✅ エスカレーション確認完了');
-    
+
     return NextResponse.json({
       success: true,
       message: 'エスカレーション確認完了',
@@ -243,7 +241,7 @@ export async function GET(request: Request) {
     });
   } catch (error) {
     console.error('❌ エスカレーション確認Cronエラー:', error);
-    
+
     return NextResponse.json({
       success: false,
       error: error instanceof Error ? error.message : String(error),
