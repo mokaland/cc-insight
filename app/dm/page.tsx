@@ -214,7 +214,7 @@ export default function MemberDMPage() {
                       </div>
 
                       <div className={`flex flex-col text-[10px] text-slate-600 flex-shrink-0 ${!msg.isAdmin ? 'items-end' : 'items-start'}`}>
-                        {!msg.isAdmin && (
+                        {!msg.isAdmin && msg.read && (
                           <span>既読</span>
                         )}
                         <span>

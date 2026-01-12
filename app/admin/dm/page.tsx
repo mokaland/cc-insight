@@ -10,6 +10,7 @@ import { MessageSquare, Send, Clock, User, Users } from "lucide-react";
 import {
   subscribeToAdminDMWithUser,
   sendAdminDMToUser,
+  markMessagesFromUserAsRead,
 } from "@/lib/services/dm";
 import { getAllUsers } from "@/lib/firestore";
 
@@ -87,7 +88,21 @@ export default function AdminDMPage() {
       }
     );
 
-    return () => unsubscribe();
+    // 🆕 ユーザーからのメッセージを既読にする
+    const markAsRead = async () => {
+      try {
+        await markMessagesFromUserAsRead(selectedUser.uid);
+      } catch (error) {
+        console.error("既読処理エラー:", error);
+      }
+    };
+    // 少し遅延して既読処理（UIが落ち着いてから）
+    const timer = setTimeout(markAsRead, 500);
+
+    return () => {
+      unsubscribe();
+      clearTimeout(timer);
+    };
   }, [selectedUser, user]);
 
   async function sendMessage() {

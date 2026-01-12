@@ -238,6 +238,36 @@ export async function markMessagesAsRead(userId: string): Promise<number> {
     return snapshot.size;
 }
 
+/**
+ * 管理者が特定ユーザーからのメッセージを既読にする
+ * fromUserId（送信者）がtargetUserIdのメッセージを既読にする
+ */
+export async function markMessagesFromUserAsRead(targetUserId: string): Promise<number> {
+    const q = query(
+        collection(db, "dm_messages"),
+        where("fromUserId", "==", targetUserId),
+        where("read", "==", false)
+    );
+
+    const snapshot = await getDocs(q);
+
+    if (snapshot.empty) {
+        return 0;
+    }
+
+    const batch = writeBatch(db);
+    snapshot.docs.forEach((document) => {
+        batch.update(doc(db, "dm_messages", document.id), {
+            read: true,
+            readAt: serverTimestamp(),
+        });
+    });
+
+    await batch.commit();
+    console.log(`📬 [DM Service] ${targetUserId}からのメッセージ${snapshot.size}件を既読に設定`);
+    return snapshot.size;
+}
+
 // =====================================
 // 管理者用：特定ユーザーとのDM監視
 // =====================================
