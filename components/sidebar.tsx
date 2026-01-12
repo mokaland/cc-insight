@@ -22,6 +22,7 @@ import {
   CheckSquare,
   Sparkles,
   ClipboardList,
+  Target,
 } from "lucide-react";
 import { getUserGuardianProfile } from "@/lib/firestore";
 import { GUARDIANS, ATTRIBUTES, EVOLUTION_STAGES, getGuardianImagePath, GuardianId } from "@/lib/guardian-collection";
@@ -39,6 +40,12 @@ const memberNavItems = [
     subtitle: "今日の活動報告",
     href: "/report",
     icon: ClipboardList,
+  },
+  {
+    title: "今月の目標",
+    subtitle: "進捗を確認",
+    href: "/goals",
+    icon: Target,
   },
   {
     title: "運営とのDM",
