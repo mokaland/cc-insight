@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import { GlassCard } from "@/components/glass-card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { MessageSquare, Send, Shield, User, Sparkles, Clock, ArrowDown } from "lucide-react";
+import { Shield, Send, ArrowDown } from "lucide-react";
 import { DMMessage } from "@/lib/types";
 import {
   subscribeToDMMessages,
@@ -15,8 +15,9 @@ import {
 } from "@/lib/services/dm";
 import { motion, AnimatePresence } from "framer-motion";
 import { PageLoader } from "@/components/ui/loading-spinner";
+import Image from "next/image";
 
-// 日付をグループ化するためのヘルパー
+// 日付ラベル（LINE風: 1/11(日)）
 function getDateLabel(date: Date): string {
   const today = new Date();
   const yesterday = new Date(today);
@@ -28,7 +29,12 @@ function getDateLabel(date: Date): string {
   if (isToday) return '今日';
   if (isYesterday) return '昨日';
 
-  return date.toLocaleDateString('ja-JP', { month: 'long', day: 'numeric' });
+  const dayNames = ['日', '月', '火', '水', '木', '金', '土'];
+  const month = date.getMonth() + 1;
+  const day = date.getDate();
+  const dayOfWeek = dayNames[date.getDay()];
+
+  return `${month}/${day}(${dayOfWeek})`;
 }
 
 // メッセージを日付でグループ化
@@ -77,10 +83,8 @@ export default function MemberDMPage() {
     return () => unsubscribe();
   }, [user, userProfile, router]);
 
-  // 既読処理
   useEffect(() => {
     if (!user?.uid) return;
-
     const timer = setTimeout(async () => {
       try {
         await markMessagesAsRead(user.uid);
@@ -88,11 +92,9 @@ export default function MemberDMPage() {
         console.error("既読処理エラー:", error);
       }
     }, 1000);
-
     return () => clearTimeout(timer);
   }, [user?.uid]);
 
-  // スクロール監視
   useEffect(() => {
     const container = scrollContainerRef.current;
     if (!container) return;
@@ -135,137 +137,82 @@ export default function MemberDMPage() {
   const groupedMessages = groupMessagesByDate(messages);
 
   return (
-    <div className="space-y-4 md:space-y-6 pb-20 md:pb-8">
-      {/* ヘッダー */}
-      <div className="relative overflow-hidden rounded-xl bg-gradient-to-r from-purple-600/90 via-violet-600/90 to-indigo-600/90 p-5 md:p-6">
-        <div className="absolute inset-0 bg-[url('/grid.svg')] opacity-10"></div>
-        <div className="relative z-10">
-          <div className="flex items-center gap-3 mb-2">
-            <div className="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center">
-              <MessageSquare className="w-5 h-5 text-white" />
-            </div>
-            <div>
-              <h1 className="text-xl md:text-2xl font-bold text-white">
-                運営とのDM
-              </h1>
-              <p className="text-sm text-purple-100">
-                質問・相談・報告なんでもOK
-              </p>
-            </div>
+    <div className="flex flex-col h-[calc(100vh-140px)] md:h-[calc(100vh-180px)]">
+      {/* メッセージエリア - LINE風の背景 */}
+      <div
+        ref={scrollContainerRef}
+        className="flex-1 overflow-y-auto px-3 py-4 relative"
+        style={{
+          background: 'linear-gradient(180deg, #7ec8e3 0%, #a8d8ea 50%, #c8e6f0 100%)',
+          scrollBehavior: 'smooth'
+        }}
+      >
+        {messages.length === 0 ? (
+          <div className="text-center py-16">
+            <p className="text-slate-600/70 text-sm">
+              運営に質問や相談を送ってみましょう！
+            </p>
           </div>
-        </div>
-        <Sparkles className="absolute top-4 right-4 w-6 h-6 text-purple-200 opacity-50" />
-      </div>
+        ) : (
+          <AnimatePresence>
+            {Array.from(groupedMessages.entries()).map(([dateKey, msgs]) => (
+              <div key={dateKey}>
+                {/* 日付ヘッダー（LINE風） */}
+                <div className="flex justify-center my-4">
+                  <span className="px-4 py-1.5 rounded-full bg-slate-500/30 text-xs text-white font-medium shadow-sm">
+                    {getDateLabel(new Date(dateKey))}
+                  </span>
+                </div>
 
-      {/* チャットエリア */}
-      <GlassCard className="p-0 overflow-hidden">
-        {/* チャットヘッダー */}
-        <div className="px-4 py-3 border-b border-white/10 bg-gradient-to-r from-purple-500/10 to-violet-500/10">
-          <div className="flex items-center gap-3">
-            <div className="relative">
-              <div className="w-10 h-10 rounded-full bg-gradient-to-br from-purple-500 to-violet-600 flex items-center justify-center">
-                <Shield className="w-5 h-5 text-white" />
-              </div>
-              <div className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 bg-green-500 rounded-full border-2 border-slate-900"></div>
-            </div>
-            <div>
-              <p className="font-semibold text-white">運営チーム</p>
-              <p className="text-xs text-green-400">オンライン</p>
-            </div>
-          </div>
-        </div>
+                {msgs.map((msg, idx) => (
+                  <motion.div
+                    key={msg.id}
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: idx * 0.03 }}
+                    className={`flex items-end gap-2 mb-2 ${msg.isAdmin ? 'justify-start' : 'justify-end'}`}
+                  >
+                    {/* 運営アバター（左側のみ） */}
+                    {msg.isAdmin && (
+                      <div className="w-10 h-10 rounded-full bg-gradient-to-br from-purple-500 to-violet-600 flex-shrink-0 flex items-center justify-center shadow-md">
+                        <Shield className="w-5 h-5 text-white" />
+                      </div>
+                    )}
 
-        {/* メッセージエリア */}
-        <div
-          ref={scrollContainerRef}
-          className="h-[50vh] md:h-[400px] overflow-y-auto p-4 space-y-4 relative"
-          style={{ scrollBehavior: 'smooth' }}
-        >
-          {messages.length === 0 ? (
-            // 空状態
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="text-center py-16"
-            >
-              <div className="w-20 h-20 mx-auto mb-4 rounded-full bg-gradient-to-br from-purple-500/20 to-violet-500/20 flex items-center justify-center">
-                <MessageSquare className="w-10 h-10 text-purple-400 opacity-60" />
-              </div>
-              <p className="text-slate-300 font-medium">まだメッセージがありません</p>
-              <p className="text-sm text-slate-500 mt-2">
-                運営に質問や相談を送ってみましょう！<br />
-                24時間以内に返信します 💬
-              </p>
-            </motion.div>
-          ) : (
-            // メッセージ一覧
-            <AnimatePresence>
-              {Array.from(groupedMessages.entries()).map(([dateKey, msgs]) => (
-                <div key={dateKey}>
-                  {/* 日付ヘッダー */}
-                  <div className="flex justify-center my-4">
-                    <span className="px-3 py-1 rounded-full bg-slate-700/50 text-xs text-slate-400">
-                      {getDateLabel(new Date(dateKey))}
-                    </span>
-                  </div>
-
-                  {/* その日のメッセージ */}
-                  {msgs.map((msg, idx) => (
-                    <motion.div
-                      key={msg.id}
-                      initial={{ opacity: 0, y: 10, scale: 0.95 }}
-                      animate={{ opacity: 1, y: 0, scale: 1 }}
-                      transition={{ delay: idx * 0.05 }}
-                      className={`flex items-end gap-2 mb-3 ${msg.isAdmin ? 'justify-start' : 'justify-end'}`}
-                    >
-                      {/* 運営アバター */}
-                      {msg.isAdmin && (
-                        <div className="w-8 h-8 rounded-full bg-gradient-to-br from-purple-500 to-violet-600 flex-shrink-0 flex items-center justify-center">
-                          <Shield className="w-4 h-4 text-white" />
-                        </div>
-                      )}
-
-                      {/* メッセージバブル */}
+                    {/* メッセージバブル + 時刻 */}
+                    <div className={`flex items-end gap-1.5 max-w-[75%] ${!msg.isAdmin ? 'flex-row-reverse' : ''}`}>
+                      {/* バブル */}
                       <div
-                        className={`max-w-[75%] rounded-2xl px-4 py-2.5 ${msg.isAdmin
-                            ? 'bg-slate-700/60 text-white rounded-bl-md'
-                            : 'bg-gradient-to-r from-purple-500 to-violet-500 text-white rounded-br-md'
+                        className={`rounded-2xl px-3 py-2 shadow-sm ${msg.isAdmin
+                            ? 'bg-white text-slate-800 rounded-tl-md'
+                            : 'bg-[#5ac463] text-white rounded-tr-md'
                           }`}
                       >
-                        {msg.isAdmin && (
-                          <p className="text-xs text-purple-300 mb-1 font-medium">
-                            運営チーム
-                          </p>
-                        )}
-                        <p className="text-sm whitespace-pre-wrap leading-relaxed">
+                        <p className="text-[15px] leading-relaxed whitespace-pre-wrap break-words">
                           {msg.message}
                         </p>
-                        <div className={`flex items-center gap-1 mt-1.5 ${msg.isAdmin ? 'justify-start' : 'justify-end'
-                          }`}>
-                          <Clock className="w-3 h-3 opacity-50" />
-                          <span className="text-[10px] opacity-50">
-                            {msg.createdAt?.toDate?.()?.toLocaleTimeString('ja-JP', {
-                              hour: '2-digit',
-                              minute: '2-digit'
-                            }) || '送信中...'}
-                          </span>
-                        </div>
                       </div>
 
-                      {/* ユーザーアバター */}
-                      {!msg.isAdmin && (
-                        <div className="w-8 h-8 rounded-full bg-gradient-to-br from-pink-500 to-rose-500 flex-shrink-0 flex items-center justify-center">
-                          <User className="w-4 h-4 text-white" />
-                        </div>
-                      )}
-                    </motion.div>
-                  ))}
-                </div>
-              ))}
-            </AnimatePresence>
-          )}
-          <div ref={messagesEndRef} />
-        </div>
+                      {/* 時刻・既読 */}
+                      <div className={`flex flex-col text-[10px] text-slate-500/80 flex-shrink-0 ${!msg.isAdmin ? 'items-end' : 'items-start'}`}>
+                        {!msg.isAdmin && (
+                          <span className="text-slate-500/70">既読</span>
+                        )}
+                        <span>
+                          {msg.createdAt?.toDate?.()?.toLocaleTimeString('ja-JP', {
+                            hour: '2-digit',
+                            minute: '2-digit'
+                          }) || '...'}
+                        </span>
+                      </div>
+                    </div>
+                  </motion.div>
+                ))}
+              </div>
+            ))}
+          </AnimatePresence>
+        )}
+        <div ref={messagesEndRef} />
 
         {/* スクロールボタン */}
         <AnimatePresence>
@@ -275,50 +222,51 @@ export default function MemberDMPage() {
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.8 }}
               onClick={scrollToBottom}
-              className="absolute bottom-20 right-4 w-10 h-10 rounded-full bg-purple-500 shadow-lg flex items-center justify-center text-white hover:bg-purple-600 transition-colors"
+              className="fixed bottom-24 right-4 w-10 h-10 rounded-full bg-white/80 shadow-lg flex items-center justify-center text-slate-600 hover:bg-white transition-colors z-10"
             >
               <ArrowDown className="w-5 h-5" />
             </motion.button>
           )}
         </AnimatePresence>
+      </div>
 
-        {/* 入力エリア */}
-        <div className="p-4 border-t border-white/10 bg-slate-800/50">
-          <div className="flex gap-2">
-            <Input
-              value={newMessage}
-              onChange={(e) => setNewMessage(e.target.value)}
-              onKeyPress={(e) => {
-                if (e.key === 'Enter' && !e.shiftKey) {
-                  e.preventDefault();
-                  sendMessage();
-                }
-              }}
-              placeholder="メッセージを入力..."
-              disabled={sending}
-              className="flex-1 bg-slate-700/50 border-slate-600 focus:border-purple-500 placeholder:text-slate-500"
+      {/* 入力エリア（LINE風） */}
+      <div className="bg-slate-100 border-t border-slate-200 px-2 py-2 flex items-center gap-2">
+        <button className="w-10 h-10 flex items-center justify-center text-slate-500 hover:text-slate-700">
+          <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+          </svg>
+        </button>
+        <Input
+          value={newMessage}
+          onChange={(e) => setNewMessage(e.target.value)}
+          onKeyPress={(e) => {
+            if (e.key === 'Enter' && !e.shiftKey) {
+              e.preventDefault();
+              sendMessage();
+            }
+          }}
+          placeholder="Aa"
+          disabled={sending}
+          className="flex-1 bg-white border-slate-300 rounded-full px-4 py-2 text-[15px] focus:border-slate-400 focus:ring-0"
+        />
+        <Button
+          onClick={sendMessage}
+          disabled={!newMessage.trim() || sending}
+          size="icon"
+          className="w-10 h-10 rounded-full bg-[#5ac463] hover:bg-[#4db356] text-white disabled:opacity-50"
+        >
+          {sending ? (
+            <motion.div
+              animate={{ rotate: 360 }}
+              transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+              className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full"
             />
-            <Button
-              onClick={sendMessage}
-              disabled={!newMessage.trim() || sending}
-              className="bg-gradient-to-r from-purple-500 to-violet-500 hover:from-purple-600 hover:to-violet-600 text-white px-4"
-            >
-              {sending ? (
-                <motion.div
-                  animate={{ rotate: 360 }}
-                  transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
-                  className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full"
-                />
-              ) : (
-                <Send className="w-4 h-4" />
-              )}
-            </Button>
-          </div>
-          <p className="text-xs text-slate-500 mt-2 text-center">
-            Enterで送信 • 24時間以内に返信します
-          </p>
-        </div>
-      </GlassCard>
+          ) : (
+            <Send className="w-4 h-4" />
+          )}
+        </Button>
+      </div>
     </div>
   );
 }
