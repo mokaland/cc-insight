@@ -204,8 +204,8 @@ export default function MemberDMPage() {
                     <div className={`flex items-end gap-1.5 max-w-[75%] ${!msg.isAdmin ? 'flex-row-reverse' : ''}`}>
                       <div
                         className={`rounded-2xl px-3 py-2 shadow-sm ${msg.isAdmin
-                            ? 'bg-white text-slate-800 rounded-tl-md'
-                            : 'bg-[#5ac463] text-white rounded-tr-md'
+                          ? 'bg-white text-slate-800 rounded-tl-md'
+                          : 'bg-[#5ac463] text-white rounded-tr-md'
                           }`}
                       >
                         <p className="text-[15px] leading-relaxed whitespace-pre-wrap break-words">
@@ -251,8 +251,8 @@ export default function MemberDMPage() {
 
       {/* 入力エリア（固定） */}
       <footer
-        className="flex-shrink-0 bg-slate-100 border-t border-slate-300 px-2 py-2 flex items-center gap-2"
-        style={{ paddingBottom: 'max(env(safe-area-inset-bottom, 0px), 8px)' }}
+        className="flex-shrink-0 bg-slate-100 border-t border-slate-300 px-2 pt-2 pb-1 flex items-center gap-2"
+        style={{ paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 4px)' }}
       >
         <button className="w-10 h-10 flex items-center justify-center text-slate-500 hover:text-slate-700 flex-shrink-0">
           <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -272,7 +272,7 @@ export default function MemberDMPage() {
           }}
           placeholder="メッセージを入力"
           disabled={sending}
-          className="flex-1 bg-white border border-slate-300 rounded-full px-4 py-2.5 text-[15px] text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-slate-400"
+          className="flex-1 bg-white border border-slate-300 rounded-full px-4 py-2 text-[15px] text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-slate-400"
           style={{ WebkitAppearance: 'none' }}
         />
         <Button
