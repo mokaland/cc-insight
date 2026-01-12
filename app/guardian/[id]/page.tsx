@@ -173,7 +173,7 @@ export default function GuardianDetailPage() {
   const displayStages = unlockedStages.filter(s => s >= 1 && s <= 4) as EvolutionStage[];
 
   return (
-    <div className="space-y-6 pb-8">
+    <div className="space-y-6 pb-8 overflow-x-hidden">
       {/* 戻るボタン */}
       <button
         onClick={() => router.push("/guardians")}
@@ -293,10 +293,10 @@ export default function GuardianDetailPage() {
                     }}
                     disabled={!isThisUnlocked}
                     className={`w-10 h-10 rounded-full font-bold transition-all ${selectedStage === stage
-                        ? "text-white scale-110"
-                        : isThisUnlocked
-                          ? "bg-slate-700 text-slate-300 hover:bg-slate-600"
-                          : "bg-slate-800 text-slate-600 cursor-not-allowed"
+                      ? "text-white scale-110"
+                      : isThisUnlocked
+                        ? "bg-slate-700 text-slate-300 hover:bg-slate-600"
+                        : "bg-slate-800 text-slate-600 cursor-not-allowed"
                       }`}
                     style={{
                       backgroundColor:
@@ -491,8 +491,8 @@ export default function GuardianDetailPage() {
               <div
                 key={storyData.stage}
                 className={`p-4 rounded-lg border-l-4 ${selectedStage === storyData.stage
-                    ? "bg-white/10"
-                    : "bg-slate-800/30"
+                  ? "bg-white/10"
+                  : "bg-slate-800/30"
                   }`}
                 style={{
                   borderColor:
