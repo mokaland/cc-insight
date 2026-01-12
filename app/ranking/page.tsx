@@ -61,7 +61,7 @@ export default function AllTeamsRankingPage() {
   const [guardianProfiles, setGuardianProfiles] = useState<{ [userId: string]: any }>({});
   const [selectedMember, setSelectedMember] = useState<any>(null);
   const [selectedTeam, setSelectedTeam] = useState<any>(null);
-  const [period, setPeriod] = useState<"week" | "month">("week");
+  const [period, setPeriod] = useState<"week" | "month" | "all">("week");
   const userRowRef = useRef<HTMLDivElement>(null);
 
   // 🆕 チームタブ（ユーザーの所属チームをデフォルト）
@@ -78,6 +78,9 @@ export default function AllTeamsRankingPage() {
 
   // 📅 期間でフィルタリング
   const filteredReports = useMemo(() => {
+    if (period === "all") {
+      return reports; // 全期間
+    }
     return reports.filter(report => {
       const reportDate = new Date(report.date);
       const now = new Date();
@@ -133,7 +136,7 @@ export default function AllTeamsRankingPage() {
     return { ...team, stats };
   }, [filteredReports, activeTeamId]);
 
-  // 🎯 自分の順位を計算
+  // 🎯 自分の順位を計算（追いつけ追い越せ情報込み）
   const userRankInfo = useMemo(() => {
     if (!user || !activeTeamData) return null;
 
@@ -148,11 +151,40 @@ export default function AllTeamsRankingPage() {
 
     const userRank = sortedMembers.findIndex((m: any) => m.name === userReport.name) + 1;
     if (userRank > 0) {
+      // ユーザーのエナジー取得
+      const userEnergy = guardianProfiles[user.uid]?.energy?.totalEarned || 0;
+
+      // 上位者との差分
+      let aheadDiff = null;
+      let aheadName = null;
+      if (userRank > 1) {
+        const aheadMember = sortedMembers[userRank - 2];
+        const aheadReport = filteredReports.find(r => r.name === aheadMember.name && r.team === activeTeamId);
+        const aheadEnergy = aheadReport?.userId && guardianProfiles[aheadReport.userId]?.energy?.totalEarned || 0;
+        aheadDiff = aheadEnergy - userEnergy;
+        aheadName = aheadMember.name;
+      }
+
+      // 下位者との差分
+      let behindDiff = null;
+      let behindName = null;
+      if (userRank < sortedMembers.length) {
+        const behindMember = sortedMembers[userRank];
+        const behindReport = filteredReports.find(r => r.name === behindMember.name && r.team === activeTeamId);
+        const behindEnergy = behindReport?.userId && guardianProfiles[behindReport.userId]?.energy?.totalEarned || 0;
+        behindDiff = userEnergy - behindEnergy;
+        behindName = behindMember.name;
+      }
+
       return {
         teamName: activeTeamData.name,
         rank: userRank,
         totalMembers: sortedMembers.length,
-        color: activeTeamData.color
+        color: activeTeamData.color,
+        aheadDiff,
+        aheadName,
+        behindDiff,
+        behindName
       };
     }
     return null;
@@ -203,13 +235,16 @@ export default function AllTeamsRankingPage() {
         </h1>
 
         {/* 期間切り替え */}
-        <Tabs value={period} onValueChange={(v) => setPeriod(v as "week" | "month")}>
+        <Tabs value={period} onValueChange={(v) => setPeriod(v as "week" | "month" | "all")}>
           <TabsList className="h-8 p-0.5 bg-white/5 border border-white/10">
-            <TabsTrigger value="week" className="h-7 px-3 text-xs data-[state=active]:bg-gradient-to-r data-[state=active]:from-pink-500 data-[state=active]:to-purple-600">
+            <TabsTrigger value="week" className="h-7 px-2 text-xs data-[state=active]:bg-gradient-to-r data-[state=active]:from-pink-500 data-[state=active]:to-purple-600">
               週間
             </TabsTrigger>
-            <TabsTrigger value="month" className="h-7 px-3 text-xs data-[state=active]:bg-gradient-to-r data-[state=active]:from-pink-500 data-[state=active]:to-purple-600">
+            <TabsTrigger value="month" className="h-7 px-2 text-xs data-[state=active]:bg-gradient-to-r data-[state=active]:from-pink-500 data-[state=active]:to-purple-600">
               月間
+            </TabsTrigger>
+            <TabsTrigger value="all" className="h-7 px-2 text-xs data-[state=active]:bg-gradient-to-r data-[state=active]:from-pink-500 data-[state=active]:to-purple-600">
+              全期間
             </TabsTrigger>
           </TabsList>
         </Tabs>
@@ -247,34 +282,62 @@ export default function AllTeamsRankingPage() {
       {userRankInfo && userRankInfo.teamName === teamData.name && (
         <div className="sticky top-0 z-50">
           <div
-            className="rounded-lg p-2.5 border backdrop-blur-xl flex items-center justify-between"
+            className="rounded-lg p-2.5 border backdrop-blur-xl"
             style={{
               borderColor: `${userRankInfo.color}40`,
               background: `linear-gradient(135deg, ${userRankInfo.color}10 0%, rgba(15, 23, 42, 0.95) 50%)`,
             }}
           >
-            <div className="flex items-center gap-2.5">
-              <div
-                className="w-9 h-9 rounded-full flex items-center justify-center font-bold text-base"
+            <div className="flex items-center justify-between mb-2">
+              <div className="flex items-center gap-2.5">
+                <div
+                  className="w-9 h-9 rounded-full flex items-center justify-center font-bold text-base"
+                  style={{ backgroundColor: `${userRankInfo.color}15`, color: userRankInfo.color }}
+                >
+                  #{userRankInfo.rank}
+                </div>
+                <div>
+                  <p className="text-[10px] text-slate-400">あなたの順位</p>
+                  <p className="text-sm font-semibold text-slate-100">
+                    {userRankInfo.rank}/{userRankInfo.totalMembers}位
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={scrollToMyRank}
+                className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-all active:scale-95"
                 style={{ backgroundColor: `${userRankInfo.color}15`, color: userRankInfo.color }}
               >
-                #{userRankInfo.rank}
-              </div>
-              <div>
-                <p className="text-[10px] text-slate-400">あなたの順位</p>
-                <p className="text-sm font-semibold text-slate-100">
-                  {userRankInfo.rank}/{userRankInfo.totalMembers}位
-                </p>
-              </div>
+                <Target className="w-3.5 h-3.5" />
+                移動
+              </button>
             </div>
-            <button
-              onClick={scrollToMyRank}
-              className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-all active:scale-95"
-              style={{ backgroundColor: `${userRankInfo.color}15`, color: userRankInfo.color }}
-            >
-              <Target className="w-3.5 h-3.5" />
-              移動
-            </button>
+
+            {/* 🎯 追いつけ追い越せ表示 */}
+            <div className="flex gap-2 text-[10px]">
+              {userRankInfo.aheadDiff !== null && (
+                <div className="flex-1 bg-emerald-500/10 border border-emerald-500/30 rounded-lg px-2 py-1.5">
+                  <div className="flex items-center gap-1 text-emerald-400">
+                    <TrendingUp className="w-3 h-3" />
+                    <span>上を追え!</span>
+                  </div>
+                  <p className="text-slate-300 font-medium">
+                    あと <span className="text-emerald-400 font-bold">{userRankInfo.aheadDiff}E</span> で{userRankInfo.rank - 1}位
+                  </p>
+                </div>
+              )}
+              {userRankInfo.behindDiff !== null && (
+                <div className="flex-1 bg-amber-500/10 border border-amber-500/30 rounded-lg px-2 py-1.5">
+                  <div className="flex items-center gap-1 text-amber-400">
+                    <AlertTriangle className="w-3 h-3" />
+                    <span>追われてる!</span>
+                  </div>
+                  <p className="text-slate-300 font-medium">
+                    <span className="text-amber-400 font-bold">{userRankInfo.behindDiff}E</span> 差で{userRankInfo.rank + 1}位
+                  </p>
+                </div>
+              )}
+            </div>
           </div>
         </div>
       )}
@@ -551,11 +614,11 @@ export default function AllTeamsRankingPage() {
                   </div>
                 </div>
 
-                {/* エナジー表示 */}
+                {/* エナジー表示（累計獲得） */}
                 <div className="text-right flex-shrink-0">
                   <p className={`font-bold ${isTop1 ? 'text-xl text-yellow-400' : isTop2 ? 'text-lg text-slate-300' : isTop3 ? 'text-lg text-amber-600' : 'text-base'}`}
                     style={!isTop1 && !isTop2 && !isTop3 ? { color } : undefined}>
-                    {energy}E
+                    {totalEarned >= 1000 ? `${(totalEarned / 1000).toFixed(1)}k` : totalEarned}E
                   </p>
                 </div>
 
