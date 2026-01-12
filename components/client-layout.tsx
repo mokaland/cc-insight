@@ -280,6 +280,12 @@ function BottomNavigation() {
       href: "/admin/sns-approvals",
     },
     {
+      label: "SNS検索",
+      subtitle: "メンバーのSNS確認",
+      icon: Smartphone,
+      href: "/admin/sns-search",
+    },
+    {
       label: "ユーザー管理",
       subtitle: "承認・検索",
       icon: Users,

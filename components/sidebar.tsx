@@ -133,6 +133,12 @@ const adminNavItems = [
     icon: CheckSquare,
   },
   {
+    title: "SNS検索",
+    subtitle: "メンバーのSNS確認",
+    href: "/admin/sns-search",
+    icon: Smartphone,
+  },
+  {
     title: "AIフィードバック設定",
     subtitle: "プロンプト編集",
     href: "/admin/prompts",
