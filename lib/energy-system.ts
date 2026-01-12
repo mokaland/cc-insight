@@ -130,6 +130,56 @@ export function calculateContinuityBonus(currentStreak: number, previousStreak: 
 }
 
 /**
+ * 復帰ボーナス計算（離脱→復帰時に付与）
+ * 離脱期間に応じて温かい復帰ボーナスを与える
+ * 
+ * 設計思想：
+ * - 長く離れても戻ってくれたら歓迎する
+ * - ペナルティではなくインセンティブ
+ * - 守護神が「待っていた」感を演出
+ */
+export function calculateReturnBonus(daysSinceLastReport: number): {
+  bonus: number;
+  message: string | null;
+  guardianReaction: string;
+} {
+  // 1週間以内は通常報告
+  if (daysSinceLastReport <= 7) {
+    return {
+      bonus: 0,
+      message: null,
+      guardianReaction: ''
+    };
+  }
+
+  // 復帰ボーナステーブル
+  const returnBonuses: [number, number, string, string][] = [
+    // [日数下限, ボーナスE, メッセージ, 守護神の反応]
+    [7, 100, 'おかえりなさい！', '🎉 1週間ぶり！待ってたよ'],
+    [14, 200, '2週間ぶりの復帰！', '✨ ずっと待ってた！一緒にまた頑張ろう'],
+    [30, 500, '1ヶ月ぶりの復帰！', '🔥 おかえり！また一緒に走れて嬉しい'],
+    [60, 800, '2ヶ月ぶりの復帰！', '💪 長い旅だったね。また冒険を始めよう'],
+    [90, 1200, '3ヶ月ぶりの復帰！', '🌟 帰ってきてくれて本当に嬉しい！'],
+    [180, 2000, '半年ぶりの復帰！', '👑 ずっと信じてた。さあ、再出発だ！'],
+    [365, 3000, '1年ぶりの復帰！', '🎊 奇跡の復活！伝説の再開だ！'],
+  ];
+
+  // 該当する最大の離脱期間を探す
+  for (let i = returnBonuses.length - 1; i >= 0; i--) {
+    const [minDays, bonus, message, reaction] = returnBonuses[i];
+    if (daysSinceLastReport >= minDays) {
+      return {
+        bonus,
+        message,
+        guardianReaction: reaction
+      };
+    }
+  }
+
+  return { bonus: 0, message: null, guardianReaction: '' };
+}
+
+/**
  * ストリーク日数に応じたボーナス倍率
  */
 export function getStreakMultiplier(streakDays: number, hasShishimaru: boolean = false): number {
