@@ -159,10 +159,12 @@ export default function AllTeamsRankingPage() {
       let aheadName = null;
       if (userRank > 1) {
         const aheadMember = sortedMembers[userRank - 2];
-        const aheadReport = filteredReports.find(r => r.name === aheadMember.name && r.team === activeTeamId);
-        const aheadEnergy = aheadReport?.userId && guardianProfiles[aheadReport.userId]?.energy?.totalEarned || 0;
-        aheadDiff = aheadEnergy - userEnergy;
-        aheadName = aheadMember.name;
+        if (aheadMember && aheadMember.name) {
+          const aheadReport = filteredReports.find(r => r.name === aheadMember.name && r.team === activeTeamId);
+          const aheadEnergy = aheadReport?.userId && guardianProfiles[aheadReport.userId]?.energy?.totalEarned || 0;
+          aheadDiff = aheadEnergy - userEnergy;
+          aheadName = aheadMember.name;
+        }
       }
 
       // 下位者との差分
@@ -170,10 +172,12 @@ export default function AllTeamsRankingPage() {
       let behindName = null;
       if (userRank < sortedMembers.length) {
         const behindMember = sortedMembers[userRank];
-        const behindReport = filteredReports.find(r => r.name === behindMember.name && r.team === activeTeamId);
-        const behindEnergy = behindReport?.userId && guardianProfiles[behindReport.userId]?.energy?.totalEarned || 0;
-        behindDiff = userEnergy - behindEnergy;
-        behindName = behindMember.name;
+        if (behindMember && behindMember.name) {
+          const behindReport = filteredReports.find(r => r.name === behindMember.name && r.team === activeTeamId);
+          const behindEnergy = behindReport?.userId && guardianProfiles[behindReport.userId]?.energy?.totalEarned || 0;
+          behindDiff = userEnergy - behindEnergy;
+          behindName = behindMember.name;
+        }
       }
 
       return {
@@ -539,7 +543,7 @@ export default function AllTeamsRankingPage() {
             const isTop3 = rank === 3;
             const isBottom30 = rank > bottom30Threshold && totalMembers >= 4;
 
-            const memberReport = reports.find(r => r.name === member.name && r.team === id);
+            const memberReport = reports.find(r => r.name === member?.name && r.team === id);
             const userId = memberReport?.userId;
             const isCurrentUser = user && userId === user.uid;
 
@@ -611,7 +615,7 @@ export default function AllTeamsRankingPage() {
 
             return (
               <div
-                key={userId || member.name}
+                key={userId || member?.name || `member-${index}`}
                 ref={isCurrentUser ? userRowRef : null}
                 onClick={() => {
                   setSelectedMember({ ...member, energy, totalEarned, guardianData });
@@ -684,7 +688,7 @@ export default function AllTeamsRankingPage() {
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-1.5">
                     <p className={`font-semibold text-slate-100 truncate ${isTop1 ? 'text-base' : 'text-sm'}`}>
-                      {member.name}
+                      {member?.name || '匿名'}
                     </p>
                     {isCurrentUser && (
                       <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full flex-shrink-0"
