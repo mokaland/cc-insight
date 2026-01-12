@@ -23,6 +23,7 @@ export default function RegisterPage() {
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [realName, setRealName] = useState("");
+  const [furigana, setFurigana] = useState("");
   const [displayName, setDisplayName] = useState("");
   const [selectedTeam, setSelectedTeam] = useState<TeamType | null>(null);
   const [invitationCode, setInvitationCode] = useState("");
@@ -37,6 +38,10 @@ export default function RegisterPage() {
     // バリデーション
     if (!realName.trim()) {
       setError("漢字フルネームを入力してください");
+      return;
+    }
+    if (!furigana.trim()) {
+      setError("読み仮名を入力してください");
       return;
     }
     if (!displayName.trim()) {
@@ -64,7 +69,7 @@ export default function RegisterPage() {
     setIsLoading(true);
 
     try {
-      await register(email, password, displayName, selectedTeam, realName, invitationCode);
+      await register(email, password, displayName, selectedTeam, realName, furigana, invitationCode);
     } catch (err: any) {
       console.error("Registration error:", err);
       if (err.code === "auth/email-already-in-use") {
@@ -158,6 +163,26 @@ export default function RegisterPage() {
                 />
               </div>
               <p className="text-xs text-slate-500">※管理者のみ閲覧可能</p>
+            </div>
+
+            {/* 読み仮名 */}
+            <div className="space-y-2">
+              <Label htmlFor="furigana" className="text-sky-200">
+                読み仮名（ひらがな）
+              </Label>
+              <div className="relative">
+                <User className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-sky-400" />
+                <Input
+                  id="furigana"
+                  type="text"
+                  placeholder="やまだ たろう"
+                  value={furigana}
+                  onChange={(e) => setFurigana(e.target.value)}
+                  className="pl-10 bg-white/5 border-2 border-indigo-500/30 text-white placeholder:text-slate-500 focus:border-sky-500 focus:ring-sky-500/20"
+                  required
+                />
+              </div>
+              <p className="text-xs text-slate-500">※検索に使用します</p>
             </div>
 
             {/* ニックネーム */}

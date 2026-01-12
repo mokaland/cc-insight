@@ -21,6 +21,7 @@ export interface UserProfile {
   uid: string;
   email: string;
   realName: string; // 漢字フルネーム（管理者のみ閲覧）
+  furigana?: string; // 読み仮名（ひらがな）- 検索用
   displayName: string; // ニックネーム（公開）
   team: "fukugyou" | "taishoku" | "buppan";
   role: "member" | "admin";
@@ -37,7 +38,7 @@ interface AuthContextType {
   user: User | null;
   userProfile: UserProfile | null;
   loading: boolean;
-  register: (email: string, password: string, displayName: string, team: UserProfile["team"], realName: string, invitationCode: string) => Promise<void>;
+  register: (email: string, password: string, displayName: string, team: UserProfile["team"], realName: string, furigana: string, invitationCode: string) => Promise<void>;
   login: (email: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
   resendVerificationEmail: () => Promise<void>;
@@ -142,6 +143,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     displayName: string,
     team: UserProfile["team"],
     realName: string,
+    furigana: string,
     invitationCode: string
   ) => {
     try {
@@ -165,6 +167,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         uid: newUser.uid,
         email: email,
         realName: realName, // 漢字フルネーム
+        furigana: furigana, // 読み仮名
         displayName: displayName, // ニックネーム
         team: team,
         // role は含めない（セキュリティルール制約: ユーザー自身がroleを設定することを禁止）

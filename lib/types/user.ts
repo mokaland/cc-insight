@@ -45,6 +45,7 @@ export interface User {
     uid: string;
     email: string;
     realName: string;           // 漢字フルネーム（管理者のみ閲覧）
+    furigana?: string;          // 読み仮名（ひらがな）- 検索用
     displayName: string;        // ニックネーム（公開）
     team: TeamId;
     role?: UserRole;            // 承認時に付与されるため optional
