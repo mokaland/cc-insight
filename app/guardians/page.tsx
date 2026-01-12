@@ -167,8 +167,8 @@ export default function GuardiansPage() {
               >
                 <div
                   className={`w-3 h-3 rounded-full border-2 ${completionPercentage >= milestone
-                      ? 'bg-yellow-400 border-yellow-300'
-                      : 'bg-slate-600 border-slate-500'
+                    ? 'bg-yellow-400 border-yellow-300'
+                    : 'bg-slate-600 border-slate-500'
                     }`}
                 />
               </div>
@@ -343,7 +343,8 @@ export default function GuardiansPage() {
           <div className="grid grid-cols-2 gap-3">
             {lockedGuardians.map((guardian) => {
               const attr = ATTRIBUTES[guardian.attribute];
-              const canUnlock = canUnlockGuardian(guardian.id, profile);
+              const unlockCheck = canUnlockGuardian(guardian.id, profile);
+              const canUnlock = unlockCheck.canUnlock;
               const energyCost = guardian.unlockCondition.energyCost || 0;
 
               return (
