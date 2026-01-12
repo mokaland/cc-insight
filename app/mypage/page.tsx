@@ -25,7 +25,7 @@ import {
   PROFILE_COMPLETION_BONUS
 } from "@/lib/guardian-collection";
 import { getUserSnsAccounts, saveSnsAccount, saveSnsAccounts } from "@/lib/firestore";
-import { Sparkles, Crown, Settings, Check, Gift, Clock, AlertCircle, Zap, ArrowRight } from "lucide-react";
+import { Sparkles, Crown, Settings, Check, Gift, Clock, AlertCircle, Zap, ArrowRight, ChevronDown } from "lucide-react";
 import EnergyInvestmentModal from "@/components/energy-investment-modal";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -103,6 +103,9 @@ export default function MyPage() {
 
   // エナジー投資モーダル
   const [showEnergyModal, setShowEnergyModal] = useState(false);
+
+  // SNS設定の折りたたみ状態
+  const [snsExpanded, setSnsExpanded] = useState(false);
 
   useEffect(() => {
     const loadData = async () => {
@@ -472,6 +475,36 @@ export default function MyPage() {
         </div>
       )}
 
+      {/* 🎯 レベル & 称号 - コンパクト */}
+      <div className="bg-gradient-to-r from-yellow-500/10 via-amber-500/10 to-orange-500/10 border border-yellow-500/30 rounded-xl p-3">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="w-12 h-12 rounded-full bg-gradient-to-br from-yellow-500 to-amber-500 flex items-center justify-center">
+              <span className="text-xl font-bold text-white">{currentLevel}</span>
+            </div>
+            <div>
+              <p className="text-sm font-bold text-yellow-400">Lv.{currentLevel}</p>
+              <p className="text-xs text-purple-400 font-medium">{levelTitle}</p>
+            </div>
+          </div>
+          {levelProgress && (
+            <div className="flex-1 max-w-[120px] ml-4">
+              <div className="h-2 bg-slate-700 rounded-full overflow-hidden">
+                <motion.div
+                  initial={{ width: 0 }}
+                  animate={{ width: `${levelProgress.progress}%` }}
+                  transition={{ duration: 1, ease: "easeOut" }}
+                  className="h-full bg-gradient-to-r from-yellow-500 to-amber-500 rounded-full"
+                />
+              </div>
+              <p className="text-[10px] text-slate-400 mt-1 text-right">
+                次まで {levelProgress.remaining}E
+              </p>
+            </div>
+          )}
+        </div>
+      </div>
+
       {/* 守護神エリア - コンパクト */}
       <GlassCard glowColor={attr.color} className="p-3 sm:p-4">
         <div className="flex flex-col gap-3">
@@ -704,125 +737,112 @@ export default function MyPage() {
         </div >
       </GlassCard >
 
-      {/* エナジー＆ストリーク - コンパクト */}
-      < div className="grid gap-2 grid-cols-3" >
+      {/* エナジー＆ストリーク - 3列横並び統一 */}
+      <div className="grid gap-3 grid-cols-3">
         {/* 保有エナジー */}
-        < motion.div
-          initial={{ scale: 0, rotateY: -180 }
-          }
+        <motion.div
+          initial={{ scale: 0, rotateY: -180 }}
           animate={{ scale: 1, rotateY: 0 }}
           transition={{ duration: 0.6, delay: 0 }}
           onClick={() => setEnergyModalOpen(true)}
-          className="jewel-card glass-premium p-2.5 rounded-lg border border-white/20 cursor-pointer hover:scale-105 transition-transform"
+          className="jewel-card glass-premium p-3 rounded-xl border border-white/20 cursor-pointer hover:scale-105 transition-transform"
         >
           <div className="text-center relative">
             {/* 神聖アセット: エナジーオーブ */}
-            <div className="mx-auto mb-1 relative w-8 h-8">
+            <div className="mx-auto mb-2 relative w-10 h-10">
               <Image
                 src="/images/ui/energy-orb.png"
                 alt="Energy"
-                width={32}
-                height={32}
-                className="relative z-10"
+                width={40}
+                height={40}
+                className="relative z-10 guardian-floating"
                 style={{
-                  filter: 'drop-shadow(0 0 15px rgba(250, 204, 21, 0.8))'
+                  filter: 'drop-shadow(0 0 12px rgba(250, 204, 21, 0.8))'
                 }}
               />
               <div className="neon-glow absolute inset-0 bg-yellow-400/50 rounded-full" />
             </div>
 
             {/* ラベル */}
-            <p className="stat-label text-xs mb-1 text-gray-300 whitespace-nowrap">保有<br className="sm:hidden" />エナジー</p>
-            {/* 世界観テキスト */}
-            <p className="text-[9px] text-gray-500 mb-2 leading-tight">進化の力</p>
+            <p className="text-[10px] mb-0.5 text-gray-400">保有エナジー</p>
 
             {/* カウントアップ数値 */}
             <motion.p
-              className="stat-value text-5xl font-extrabold text-yellow-400"
+              className="text-2xl font-bold text-yellow-400"
               initial={{ scale: 0 }}
               animate={{ scale: 1 }}
               transition={{ type: "spring", stiffness: 200, damping: 10, delay: 0.2 }}
             >
               <AnimatedNumber value={profile.energy.current} />
             </motion.p>
-
-            {/* 宝石のハイライト */}
-            <div className="absolute top-0 left-1/4 w-1/2 h-1/2 bg-yellow-400/10 rounded-full blur-2xl" />
           </div>
-        </motion.div >
+        </motion.div>
 
         {/* 累計獲得 */}
-        < motion.div
+        <motion.div
           initial={{ scale: 0, rotateY: -180 }}
           animate={{ scale: 1, rotateY: 0 }}
           transition={{ duration: 0.6, delay: 0.1 }}
           onClick={() => setTotalModalOpen(true)}
-          className="jewel-card glass-premium p-4 rounded-2xl border border-white/20 cursor-pointer hover:scale-105 transition-transform"
+          className="jewel-card glass-premium p-3 rounded-xl border border-white/20 cursor-pointer hover:scale-105 transition-transform"
         >
           <div className="text-center relative">
             {/* 神聖アセット: ジェム */}
-            <div className="neon-icon-wrapper mx-auto mb-2 relative w-12 h-12">
+            <div className="mx-auto mb-2 relative w-10 h-10">
               <Image
                 src="/images/ui/gem.png"
                 alt="Gem"
-                width={48}
-                height={48}
+                width={40}
+                height={40}
                 className="relative z-10 guardian-floating"
                 style={{
-                  filter: 'drop-shadow(0 0 15px rgba(168, 85, 247, 0.8))'
+                  filter: 'drop-shadow(0 0 12px rgba(168, 85, 247, 0.8))'
                 }}
               />
               <div className="neon-glow absolute inset-0 bg-purple-400/50 rounded-full" />
             </div>
 
             {/* ラベル */}
-            <p className="stat-label text-xs mb-1 text-gray-300 whitespace-nowrap">累計<br className="sm:hidden" />獲得</p>
-            {/* 世界観テキスト */}
-            <p className="text-[9px] text-gray-500 mb-2 leading-tight">冒険の証</p>
+            <p className="text-[10px] mb-0.5 text-gray-400">累計獲得</p>
 
             {/* カウントアップ数値 */}
             <motion.p
-              className="stat-value text-5xl font-extrabold text-purple-400"
+              className="text-2xl font-bold text-purple-400"
               initial={{ scale: 0 }}
               animate={{ scale: 1 }}
               transition={{ type: "spring", stiffness: 200, damping: 10, delay: 0.3 }}
             >
               <AnimatedNumber value={profile.energy.totalEarned} />
             </motion.p>
-
-            {/* 宝石のハイライト */}
-            <div className="absolute top-0 left-1/4 w-1/2 h-1/2 bg-purple-400/10 rounded-full blur-2xl" />
           </div>
-        </motion.div >
+        </motion.div>
 
         {/* ストリーク */}
-        < motion.div
+        <motion.div
           initial={{ scale: 0, rotateY: -180 }}
           animate={{ scale: 1, rotateY: 0 }}
           transition={{ duration: 0.6, delay: 0.2 }}
           onClick={() => setStreakModalOpen(true)}
-          className="jewel-card glass-premium p-4 rounded-2xl border border-white/20 cursor-pointer hover:scale-105 transition-transform"
+          className="jewel-card glass-premium p-3 rounded-xl border border-white/20 cursor-pointer hover:scale-105 transition-transform"
         >
           <div className="text-center relative">
             {/* 神聖アセット: ストリーク炎 */}
-            <div className="neon-icon-wrapper mx-auto mb-2 relative w-12 h-12">
+            <div className="mx-auto mb-2 relative w-10 h-10">
               <Image
                 src="/images/ui/streak-1.png"
                 alt="Streak"
-                width={48}
-                height={48}
+                width={40}
+                height={40}
                 className="relative z-10 guardian-floating"
                 style={{
-                  filter: 'drop-shadow(0 0 15px rgba(251, 146, 60, 0.8))'
+                  filter: 'drop-shadow(0 0 12px rgba(251, 146, 60, 0.8))'
                 }}
               />
               <div className="neon-glow absolute inset-0 bg-orange-400/50 rounded-full" />
             </div>
 
             {/* ラベル */}
-            <p className="stat-label text-xs mb-1 text-gray-300 whitespace-nowrap">ストリーク</p>
-            {/* 世界観テキスト */}
-            <p className="text-[9px] text-gray-500 mb-2 leading-tight">連続の絆</p>
+            <p className="text-[10px] mb-0.5 text-gray-400">ストリーク</p>
 
             {/* カウントアップ数値 */}
             <motion.div
@@ -830,323 +850,185 @@ export default function MyPage() {
               animate={{ scale: 1 }}
               transition={{ type: "spring", stiffness: 200, damping: 10, delay: 0.4 }}
             >
-              <p className="stat-value text-5xl font-extrabold text-orange-400">
+              <p className="text-2xl font-bold text-orange-400">
                 <AnimatedNumber value={profile.streak.current} />
-                <span className="text-2xl">日</span>
-              </p>
-              <p className="text-xs text-gray-400 mt-2">
-                最高記録: {profile.streak.max}日 🔥
+                <span className="text-sm">日</span>
               </p>
             </motion.div>
-
-            {/* 宝石のハイライト */}
-            <div className="absolute top-0 left-1/4 w-1/2 h-1/2 bg-orange-400/10 rounded-full blur-2xl" />
           </div>
-        </motion.div >
-      </div >
+        </motion.div>
+      </div>
 
-      {/* 💎 エナジー獲得の内訳 */}
-      < GlassCard glowColor="#F59E0B" className="p-6" >
-        <div className="flex items-center gap-3 mb-6">
-          <Sparkles className="w-6 h-6 text-yellow-400" />
-          <h2 className="text-2xl font-bold text-white">エナジー獲得の内訳</h2>
+      {/* 💎 エナジー獲得の内訳 - コンパクト */}
+      <div className="glass-bg rounded-xl p-3 border border-yellow-500/20">
+        <div className="flex items-center gap-2 mb-3">
+          <Sparkles className="w-4 h-4 text-yellow-400" />
+          <h3 className="text-sm font-bold text-white">エナジー獲得の内訳</h3>
         </div>
-
-        <div className="space-y-3">
-          {/* ベースエナジー */}
-          <div className="glass-bg p-4 rounded-xl border border-yellow-500/20">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-full bg-green-500/20 flex items-center justify-center">
-                  <span className="text-xl">📝</span>
-                </div>
-                <div>
-                  <p className="font-bold text-white">日報提出</p>
-                  <p className="text-xs text-gray-400">毎日の基本報酬</p>
-                </div>
-              </div>
-              <p className="text-2xl font-bold text-green-400">+10E</p>
+        <div className="grid grid-cols-2 gap-2">
+          {/* 日報提出 */}
+          <div className="flex items-center justify-between p-2 rounded-lg bg-green-500/10 border border-green-500/20">
+            <div className="flex items-center gap-2">
+              <span className="text-lg">📝</span>
+              <span className="text-xs text-white">日報提出</span>
             </div>
+            <span className="text-sm font-bold text-green-400">+10E</span>
           </div>
-
-          {/* ストリークボーナス */}
-          {profile.streak.current >= 3 && (
-            <div className="glass-bg p-4 rounded-xl border border-orange-500/20">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-full bg-orange-500/20 flex items-center justify-center">
-                    <Image src="/images/ui/streak-1.png" alt="Streak" width={20} height={20} className="opacity-80" />
-                  </div>
-                  <div>
-                    <p className="font-bold text-white">ストリークボーナス</p>
-                    <p className="text-xs text-gray-400">
-                      {profile.streak.current}日連続報告中 🔥
-                    </p>
-                  </div>
-                </div>
-                <p className="text-2xl font-bold text-orange-400">
-                  +{Math.min(profile.streak.current * 2, 20)}E
-                </p>
-              </div>
+          {/* ストリーク */}
+          <div className="flex items-center justify-between p-2 rounded-lg bg-orange-500/10 border border-orange-500/20">
+            <div className="flex items-center gap-2">
+              <span className="text-lg">🔥</span>
+              <span className="text-xs text-white">ストリーク</span>
             </div>
-          )}
-
-          {/* 成果ボーナス */}
-          <div className="glass-bg p-4 rounded-xl border border-purple-500/20">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-full bg-purple-500/20 flex items-center justify-center">
-                  <Image src="/images/ui/gem.png" alt="Performance" width={20} height={20} className="opacity-80" />
-                </div>
-                <div>
-                  <p className="font-bold text-white">成果ボーナス</p>
-                  <p className="text-xs text-gray-400">
-                    再生数・活動量に応じて変動
-                  </p>
-                </div>
-              </div>
-              <p className="text-2xl font-bold text-purple-400">変動</p>
-            </div>
+            <span className="text-sm font-bold text-orange-400">+{Math.min((profile.streak.current || 0) * 2, 20)}E</span>
           </div>
-
-          {/* 週次ボーナス */}
-          <div className="glass-bg p-4 rounded-xl border border-blue-500/20">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-full bg-blue-500/20 flex items-center justify-center">
-                  <Crown className="w-5 h-5 text-blue-400" />
-                </div>
-                <div>
-                  <p className="font-bold text-white">週次ボーナス</p>
-                  <p className="text-xs text-gray-400">
-                    週間目標達成時
-                  </p>
-                </div>
-              </div>
-              <p className="text-2xl font-bold text-blue-400">+50E</p>
+          {/* 成果 */}
+          <div className="flex items-center justify-between p-2 rounded-lg bg-purple-500/10 border border-purple-500/20">
+            <div className="flex items-center gap-2">
+              <span className="text-lg">💎</span>
+              <span className="text-xs text-white">成果</span>
             </div>
+            <span className="text-sm font-bold text-purple-400">変動</span>
+          </div>
+          {/* 週次 */}
+          <div className="flex items-center justify-between p-2 rounded-lg bg-blue-500/10 border border-blue-500/20">
+            <div className="flex items-center gap-2">
+              <span className="text-lg">🏆</span>
+              <span className="text-xs text-white">週次目標</span>
+            </div>
+            <span className="text-sm font-bold text-blue-400">+50E</span>
           </div>
         </div>
+      </div>
 
-        {/* エナジー獲得のヒント */}
-        <div className="mt-6 p-4 rounded-xl bg-gradient-to-r from-yellow-500/10 to-orange-500/10 border border-yellow-500/20">
-          <p className="text-sm text-gray-300 mb-2">
-            💡 <span className="font-bold">エナジーを効率よく獲得するコツ</span>
-          </p>
-          <ul className="text-xs text-gray-400 space-y-1 ml-4">
-            <li>• 毎日報告を続けてストリークボーナスを最大化</li>
-            <li>• 高い成果（再生数・活動量）で追加ボーナス獲得</li>
-            <li>• 週間目標を達成して大量エナジーを獲得</li>
-          </ul>
-        </div>
-      </GlassCard >
-
-      {/* クイックアクション */}
-      < div className="grid gap-4 grid-cols-3" >
+      {/* クイックアクション - スタイリッシュ */}
+      <div className="grid gap-3 grid-cols-3">
         <Link href="/report">
-          <GlassCard glowColor="#22C55E" className="p-4 cursor-pointer hover:scale-[1.02] transition-transform">
+          <div className="glass-premium p-3 rounded-xl border border-green-500/30 cursor-pointer hover:scale-[1.03] transition-all hover:border-green-500/60 group">
             <div className="text-center">
-              <div className="text-4xl mb-2">📝</div>
-              <h3 className="text-sm font-bold mb-1 whitespace-nowrap">今日の<br className="sm:hidden" />報告</h3>
-              <p className="text-xs text-muted-foreground leading-tight">
-                エナジー獲得
-              </p>
+              <div className="text-3xl mb-1 group-hover:scale-110 transition-transform">📝</div>
+              <h3 className="text-xs font-bold text-white">今日の報告</h3>
             </div>
-          </GlassCard>
+          </div>
         </Link>
 
         <Link href="/guardians">
-          <GlassCard glowColor="#8B5CF6" className="p-4 cursor-pointer hover:scale-[1.02] transition-transform">
+          <div className="glass-premium p-3 rounded-xl border border-purple-500/30 cursor-pointer hover:scale-[1.03] transition-all hover:border-purple-500/60 group">
             <div className="text-center">
-              <div className="text-4xl mb-2">🛡️</div>
-              <h3 className="text-sm font-bold mb-1 whitespace-nowrap">守護神</h3>
-              <p className="text-xs text-muted-foreground leading-tight">
-                進化させよう
-              </p>
+              <div className="text-3xl mb-1 group-hover:scale-110 transition-transform">🛡️</div>
+              <h3 className="text-xs font-bold text-white">守護神</h3>
             </div>
-          </GlassCard>
+          </div>
         </Link>
 
         <Link href="/ranking">
-          <GlassCard glowColor="#EAB308" className="p-4 cursor-pointer hover:scale-[1.02] transition-transform">
+          <div className="glass-premium p-3 rounded-xl border border-yellow-500/30 cursor-pointer hover:scale-[1.03] transition-all hover:border-yellow-500/60 group">
             <div className="text-center">
-              <div className="text-4xl mb-2">🏆</div>
-              <h3 className="text-sm font-bold mb-1 whitespace-nowrap">ランキング</h3>
-              <p className="text-xs text-muted-foreground leading-tight">
-                競い合おう
-              </p>
+              <div className="text-3xl mb-1 group-hover:scale-110 transition-transform">🏆</div>
+              <h3 className="text-xs font-bold text-white">ランキング</h3>
             </div>
-          </GlassCard>
-        </Link>
-      </div >
-
-      {/* 🎯 レベル & 称号 */}
-      < GlassCard glowColor="#F59E0B" className="p-6" >
-        <div className="flex items-center gap-3 mb-4">
-          <Crown className="w-6 h-6 text-yellow-400" />
-          <h2 className="text-2xl font-bold text-white">レベル & 称号</h2>
-        </div>
-
-        <div className="flex flex-col md:flex-row items-center gap-6">
-          {/* レベル表示 */}
-          <div className="text-center">
-            <p className="text-6xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-yellow-400 via-amber-400 to-orange-400">
-              Lv.{currentLevel}
-            </p>
-            <p className="text-xl font-bold text-purple-400 mt-2">
-              {levelTitle}
-            </p>
           </div>
+        </Link>
+      </div>
 
-          {/* レベル進捗バー */}
-          {levelProgress && (
-            <div className="flex-1 w-full">
-              <div className="flex justify-between text-sm text-slate-400 mb-2">
-                <span>Lv.{levelProgress.currentLevel}</span>
-                <span>Lv.{levelProgress.nextLevel}</span>
+
+
+      {/* 📱 SNSアカウント設定 - 折りたたみ式 */}
+      <div className="glass-bg rounded-xl border border-blue-500/20 overflow-hidden">
+        {/* ヘッダー（クリックで展開） */}
+        <button
+          onClick={() => setSnsExpanded(!snsExpanded)}
+          className="w-full p-3 flex items-center justify-between hover:bg-white/5 transition-colors"
+        >
+          <div className="flex items-center gap-2">
+            <Settings className="w-4 h-4 text-blue-400" />
+            <h3 className="text-sm font-bold text-white">SNSアカウント設定</h3>
+            {snsAccounts.completionBonusClaimed && (
+              <span className="text-xs bg-green-500/20 text-green-300 px-2 py-0.5 rounded-full">完了</span>
+            )}
+          </div>
+          <ChevronDown
+            className={`w-4 h-4 text-gray-400 transition-transform ${snsExpanded ? 'rotate-180' : ''}`}
+          />
+        </button>
+
+        {/* 展開コンテンツ */}
+        {snsExpanded && (
+          <div className="p-3 pt-0 border-t border-white/10">
+            {/* 全SNS承認完了時のボーナス表示 */}
+            {snsAccounts.completionBonusClaimed && (
+              <div className="p-2 rounded-lg border border-green-500/30 mb-3 flex items-center gap-2 bg-green-500/10">
+                <Check className="w-4 h-4 text-green-400 flex-shrink-0" />
+                <p className="text-xs text-green-300">全SNS承認済み・ボーナス{PROFILE_COMPLETION_BONUS}E受取済み</p>
               </div>
-              <div className="h-3 bg-slate-700 rounded-full overflow-hidden">
-                <motion.div
-                  initial={{ width: 0 }}
-                  animate={{ width: `${levelProgress.progress}%` }}
-                  transition={{ duration: 1, ease: "easeOut" }}
-                  className="h-full bg-gradient-to-r from-yellow-500 to-amber-500 rounded-full"
-                />
-              </div>
-              <p className="text-xs text-slate-400 mt-2 text-center">
-                次のレベルまで あと {levelProgress.remaining}E
-              </p>
-            </div>
-          )}
+            )}
 
-          {currentLevel >= 999 && (
-            <div className="flex-1 text-center">
-              <p className="text-xl text-yellow-400 font-bold">MAX LEVEL!</p>
-              <p className="text-sm text-slate-400 mt-1">最高レベルに到達しました</p>
-            </div>
-          )}
-        </div>
-      </GlassCard >
-
-      {/* 📱 SNSアカウント設定（個別承認対応） */}
-      < GlassCard glowColor="#3B82F6" className="p-6" >
-        <div className="flex items-center gap-3 mb-4">
-          <Settings className="w-6 h-6 text-blue-400" />
-          <h2 className="text-2xl font-bold text-white">SNSアカウント設定</h2>
-        </div>
-
-        {/* 全SNS承認完了時のボーナス表示 */}
-        {
-          snsAccounts.completionBonusClaimed && (
-            <div className="glass-bg p-3 rounded-xl border border-green-500/30 mb-4 flex items-center gap-3">
-              <Check className="w-5 h-5 text-green-400 flex-shrink-0" />
-              <p className="text-sm text-green-300">全SNS承認済み・ボーナス{PROFILE_COMPLETION_BONUS}E受取済み</p>
-            </div>
-          )
-        }
-
-        {/* ボーナス案内（ボーナス未受取の場合） */}
-        {
-          !snsAccounts.completionBonusClaimed && (
-            <div className="glass-bg p-3 rounded-xl border border-yellow-500/30 mb-4 flex items-center gap-3">
-              <Gift className="w-5 h-5 text-yellow-400 flex-shrink-0" />
-              <div>
-                <p className="text-sm text-yellow-300">
-                  全4つのSNSが承認されると <span className="font-bold">{PROFILE_COMPLETION_BONUS}エナジー</span> 獲得！
+            {/* ボーナス案内（ボーナス未受取の場合） */}
+            {!snsAccounts.completionBonusClaimed && (
+              <div className="p-2 rounded-lg border border-yellow-500/30 mb-3 flex items-center gap-2 bg-yellow-500/10">
+                <Gift className="w-4 h-4 text-yellow-400 flex-shrink-0" />
+                <p className="text-xs text-yellow-300">
+                  4SNS承認で <span className="font-bold">{PROFILE_COMPLETION_BONUS}E</span> 獲得！
                 </p>
-                <p className="text-xs text-yellow-300/70">※各SNSのプロフィールページURLを入力して「一括送信」を押してください</p>
               </div>
+            )}
+
+            {/* SNS入力フォーム（コンパクト） */}
+            <div className="space-y-2">
+              {snsOrder.map((snsKey) => {
+                const snsInfo = SNS_LABELS[snsKey];
+                const snsData = snsAccounts[snsKey] as SnsAccountApproval | undefined;
+                const status = snsData?.status || 'none';
+                const isApproved = status === 'approved';
+                const isPending = status === 'pending';
+                const isRejected = status === 'rejected';
+                const currentUrl = inputUrls[snsKey] || '';
+
+                return (
+                  <div key={snsKey} className="flex items-center gap-2">
+                    <span className="text-lg w-6 flex-shrink-0">{snsInfo.icon}</span>
+                    <Input
+                      placeholder={snsInfo.placeholder}
+                      value={currentUrl}
+                      onChange={(e) => setInputUrls(prev => ({
+                        ...prev,
+                        [snsKey]: e.target.value
+                      }))}
+                      disabled={isApproved || isPending}
+                      className={`flex-1 h-8 text-xs bg-white/5 border-slate-600 ${(isApproved || isPending) ? 'opacity-60' : ''}`}
+                    />
+                    {isApproved && <Check className="w-4 h-4 text-green-400 flex-shrink-0" />}
+                    {isPending && <Clock className="w-4 h-4 text-yellow-400 flex-shrink-0 animate-pulse" />}
+                    {isRejected && <AlertCircle className="w-4 h-4 text-red-400 flex-shrink-0" />}
+                  </div>
+                );
+              })}
             </div>
-          )
-        }
 
-        {/* SNS入力フォーム（一括送信対応） */}
-        <div className="space-y-4">
-          {snsOrder.map((snsKey) => {
-            const snsInfo = SNS_LABELS[snsKey];
-            const snsData = snsAccounts[snsKey] as SnsAccountApproval | undefined;
-            const status = snsData?.status || 'none';
-            const isApproved = status === 'approved';
-            const isPending = status === 'pending';
-            const isRejected = status === 'rejected';
-            const currentUrl = inputUrls[snsKey] || '';
+            {/* 一括送信ボタン */}
+            <Button
+              onClick={handleSaveAllSns}
+              disabled={savingKey === 'all' || !hasAnyChanges}
+              className={`w-full mt-3 h-9 text-sm font-bold ${hasAnyChanges
+                ? 'bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600'
+                : 'bg-slate-600 cursor-not-allowed'
+                }`}
+            >
+              {savingKey === 'all' ? '送信中...' : hasAnyChanges ? '一括送信' : '変更なし'}
+            </Button>
 
-            return (
-              <div key={snsKey} className="glass-bg p-4 rounded-xl">
-                {/* ヘッダー：SNS名とステータス */}
-                <div className="flex items-center justify-between mb-2">
-                  <Label className="flex items-center gap-2 text-white">
-                    <span className="text-lg">{snsInfo.icon}</span>
-                    {snsInfo.label}
-                  </Label>
-                  {/* ステータスバッジ */}
-                  {isApproved && (
-                    <span className="flex items-center gap-1 text-xs bg-green-500/20 text-green-300 px-2 py-1 rounded-full">
-                      <Check className="w-3 h-3" /> 承認済み
-                    </span>
-                  )}
-                  {isPending && (
-                    <span className="flex items-center gap-1 text-xs bg-yellow-500/20 text-yellow-300 px-2 py-1 rounded-full">
-                      <Clock className="w-3 h-3 animate-pulse" /> 審査中
-                    </span>
-                  )}
-                  {isRejected && (
-                    <span className="flex items-center gap-1 text-xs bg-red-500/20 text-red-300 px-2 py-1 rounded-full">
-                      <AlertCircle className="w-3 h-3" /> 却下
-                    </span>
-                  )}
-                </div>
-
-                {/* 却下理由 */}
-                {isRejected && snsData?.rejectionReason && (
-                  <p className="text-xs text-red-300/70 mb-2">却下理由: {snsData.rejectionReason}</p>
-                )}
-
-                {/* URL入力のみ（送信ボタンは下部に一括） */}
-                <Input
-                  placeholder={snsInfo.placeholder}
-                  value={currentUrl}
-                  onChange={(e) => setInputUrls(prev => ({
-                    ...prev,
-                    [snsKey]: e.target.value
-                  }))}
-                  disabled={isApproved || isPending}
-                  className={`bg-white/5 border-slate-600 ${(isApproved || isPending) ? 'opacity-60 cursor-not-allowed' : ''}`}
-                />
+            {/* メッセージ表示 */}
+            {snsMessage && (
+              <div className={`mt-2 p-2 rounded-lg text-xs ${snsMessage.type === 'success'
+                ? 'bg-green-500/20 border border-green-500/30 text-green-300'
+                : 'bg-red-500/20 border border-red-500/30 text-red-300'
+                }`}>
+                {snsMessage.text}
               </div>
-            );
-          })}
-        </div>
-
-        {/* 一括送信ボタン */}
-        <div className="mt-6">
-          <Button
-            onClick={handleSaveAllSns}
-            disabled={savingKey === 'all' || !hasAnyChanges}
-            className={`w-full py-3 text-lg font-bold ${hasAnyChanges
-              ? 'bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600'
-              : 'bg-slate-600 cursor-not-allowed'
-              }`}
-          >
-            {savingKey === 'all' ? '送信中...' : hasAnyChanges ? '入力したURLを一括送信' : '変更なし'}
-          </Button>
-          <p className="text-xs text-slate-400 text-center mt-2">
-            入力または変更されたURLのみが送信されます
-          </p>
-        </div>
-
-        {/* メッセージ表示 */}
-        {
-          snsMessage && (
-            <div className={`mt-4 p-3 rounded-xl ${snsMessage.type === 'success'
-              ? 'bg-green-500/20 border border-green-500/30 text-green-300'
-              : 'bg-red-500/20 border border-red-500/30 text-red-300'
-              }`}>
-              {snsMessage.text}
-            </div>
-          )
-        }
-      </GlassCard >
+            )}
+          </div>
+        )}
+      </div>
 
       {/* モーダル */}
       < EnergyHistoryModal
