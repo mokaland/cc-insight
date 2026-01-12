@@ -137,165 +137,161 @@ export default function MemberDMPage() {
   const groupedMessages = groupMessagesByDate(messages);
 
   return (
-    <>
-      {/* 全画面背景（紫を完全に隠す） */}
-      <div
-        className="fixed inset-0 z-[100]"
-        style={{
-          background: 'linear-gradient(180deg, #7ec8e3 0%, #a8d8ea 50%, #c8e6f0 100%)'
-        }}
-      />
-
-      {/* メインコンテナ */}
-      <div className="fixed inset-0 z-[101] flex flex-col">
-        {/* ヘッダー（固定） */}
-        <div
-          className="flex-shrink-0 flex items-center gap-3 px-4 py-3 bg-white/90 backdrop-blur-sm border-b border-slate-200"
-          style={{ paddingTop: 'calc(env(safe-area-inset-top, 0px) + 12px)' }}
-        >
-          <Link href="/mypage" className="p-1">
-            <ArrowLeft className="w-6 h-6 text-slate-600" />
-          </Link>
-          <div className="flex items-center gap-2 flex-1">
-            <div className="w-9 h-9 rounded-full bg-gradient-to-br from-purple-500 to-violet-600 flex items-center justify-center">
-              <Shield className="w-5 h-5 text-white" />
-            </div>
-            <div>
-              <p className="font-semibold text-slate-800 text-sm">運営チーム</p>
-              <p className="text-xs text-green-600">オンライン</p>
-            </div>
+    <div
+      className="fixed inset-0 flex flex-col"
+      style={{
+        background: 'linear-gradient(180deg, #7ec8e3 0%, #a8d8ea 50%, #c8e6f0 100%)',
+        // PWA safe-area対応
+        paddingTop: 'env(safe-area-inset-top, 0px)',
+        paddingLeft: 'env(safe-area-inset-left, 0px)',
+        paddingRight: 'env(safe-area-inset-right, 0px)',
+      }}
+    >
+      {/* ヘッダー（固定） */}
+      <header className="flex-shrink-0 flex items-center gap-3 px-4 py-3 bg-white/90 backdrop-blur-sm border-b border-slate-200">
+        <Link href="/mypage" className="p-1 -ml-1">
+          <ArrowLeft className="w-6 h-6 text-slate-600" />
+        </Link>
+        <div className="flex items-center gap-2 flex-1">
+          <div className="w-9 h-9 rounded-full bg-gradient-to-br from-purple-500 to-violet-600 flex items-center justify-center">
+            <Shield className="w-5 h-5 text-white" />
+          </div>
+          <div>
+            <p className="font-semibold text-slate-800 text-sm">運営チーム</p>
+            <p className="text-xs text-green-600">オンライン</p>
           </div>
         </div>
+      </header>
 
-        {/* メッセージエリア（スクロール可能） */}
-        <div
-          ref={scrollContainerRef}
-          className="flex-1 overflow-y-auto px-3 py-4"
-        >
-          {messages.length === 0 ? (
-            <div className="text-center py-16">
-              <p className="text-slate-600/70 text-sm">
-                運営に質問や相談を送ってみましょう！
-              </p>
-            </div>
-          ) : (
-            <AnimatePresence>
-              {Array.from(groupedMessages.entries()).map(([dateKey, msgs]) => (
-                <div key={dateKey}>
-                  {/* 日付ヘッダー */}
-                  <div className="flex justify-center my-4">
-                    <span className="px-4 py-1.5 rounded-full bg-slate-500/30 text-xs text-white font-medium shadow-sm">
-                      {getDateLabel(new Date(dateKey))}
-                    </span>
-                  </div>
-
-                  {msgs.map((msg, idx) => (
-                    <motion.div
-                      key={msg.id}
-                      initial={{ opacity: 0, y: 10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: idx * 0.03 }}
-                      className={`flex items-end gap-2 mb-2 ${msg.isAdmin ? 'justify-start' : 'justify-end'}`}
-                    >
-                      {/* 運営アバター */}
-                      {msg.isAdmin && (
-                        <div className="w-9 h-9 rounded-full bg-gradient-to-br from-purple-500 to-violet-600 flex-shrink-0 flex items-center justify-center shadow-md">
-                          <Shield className="w-4 h-4 text-white" />
-                        </div>
-                      )}
-
-                      {/* メッセージバブル + 時刻 */}
-                      <div className={`flex items-end gap-1.5 max-w-[75%] ${!msg.isAdmin ? 'flex-row-reverse' : ''}`}>
-                        <div
-                          className={`rounded-2xl px-3 py-2 shadow-sm ${msg.isAdmin
-                              ? 'bg-white text-slate-800 rounded-tl-md'
-                              : 'bg-[#5ac463] text-white rounded-tr-md'
-                            }`}
-                        >
-                          <p className="text-[15px] leading-relaxed whitespace-pre-wrap break-words">
-                            {msg.message}
-                          </p>
-                        </div>
-
-                        <div className={`flex flex-col text-[10px] text-slate-600 flex-shrink-0 ${!msg.isAdmin ? 'items-end' : 'items-start'}`}>
-                          {!msg.isAdmin && (
-                            <span>既読</span>
-                          )}
-                          <span>
-                            {msg.createdAt?.toDate?.()?.toLocaleTimeString('ja-JP', {
-                              hour: '2-digit',
-                              minute: '2-digit'
-                            }) || '...'}
-                          </span>
-                        </div>
-                      </div>
-                    </motion.div>
-                  ))}
+      {/* メッセージエリア（スクロール可能） */}
+      <main
+        ref={scrollContainerRef}
+        className="flex-1 overflow-y-auto px-3 py-4 relative"
+      >
+        {messages.length === 0 ? (
+          <div className="text-center py-16">
+            <p className="text-slate-600 text-sm">
+              運営に質問や相談を送ってみましょう！
+            </p>
+          </div>
+        ) : (
+          <AnimatePresence>
+            {Array.from(groupedMessages.entries()).map(([dateKey, msgs]) => (
+              <div key={dateKey}>
+                {/* 日付ヘッダー */}
+                <div className="flex justify-center my-4">
+                  <span className="px-4 py-1.5 rounded-full bg-slate-500/40 text-xs text-white font-medium shadow-sm">
+                    {getDateLabel(new Date(dateKey))}
+                  </span>
                 </div>
-              ))}
-            </AnimatePresence>
-          )}
-          <div ref={messagesEndRef} />
-        </div>
 
-        {/* スクロールボタン */}
-        <AnimatePresence>
-          {showScrollButton && (
-            <motion.button
-              initial={{ opacity: 0, scale: 0.8 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.8 }}
-              onClick={scrollToBottom}
-              className="absolute bottom-24 right-4 w-10 h-10 rounded-full bg-white/90 shadow-lg flex items-center justify-center text-slate-600 hover:bg-white transition-colors"
-            >
-              <ArrowDown className="w-5 h-5" />
-            </motion.button>
-          )}
-        </AnimatePresence>
+                {msgs.map((msg, idx) => (
+                  <motion.div
+                    key={msg.id}
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: idx * 0.03 }}
+                    className={`flex items-end gap-2 mb-2 ${msg.isAdmin ? 'justify-start' : 'justify-end'}`}
+                  >
+                    {/* 運営アバター */}
+                    {msg.isAdmin && (
+                      <div className="w-9 h-9 rounded-full bg-gradient-to-br from-purple-500 to-violet-600 flex-shrink-0 flex items-center justify-center shadow-md">
+                        <Shield className="w-4 h-4 text-white" />
+                      </div>
+                    )}
 
-        {/* 入力エリア（固定） */}
-        <div
-          className="flex-shrink-0 bg-slate-100 border-t border-slate-300 px-2 py-2 flex items-center gap-2"
-          style={{ paddingBottom: 'max(env(safe-area-inset-bottom, 0px), 8px)' }}
-        >
-          <button className="w-10 h-10 flex items-center justify-center text-slate-500 hover:text-slate-700 flex-shrink-0">
-            <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-            </svg>
-          </button>
-          <input
-            ref={inputRef}
-            type="text"
-            value={newMessage}
-            onChange={(e) => setNewMessage(e.target.value)}
-            onKeyPress={(e) => {
-              if (e.key === 'Enter' && !e.shiftKey) {
-                e.preventDefault();
-                sendMessage();
-              }
-            }}
-            placeholder="メッセージを入力"
-            disabled={sending}
-            className="flex-1 bg-white border border-slate-300 rounded-full px-4 py-2.5 text-[15px] text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-slate-400"
-          />
-          <Button
-            onClick={sendMessage}
-            disabled={!newMessage.trim() || sending}
-            size="icon"
-            className="w-10 h-10 rounded-full bg-[#5ac463] hover:bg-[#4db356] text-white disabled:opacity-50 flex-shrink-0"
+                    {/* メッセージバブル + 時刻 */}
+                    <div className={`flex items-end gap-1.5 max-w-[75%] ${!msg.isAdmin ? 'flex-row-reverse' : ''}`}>
+                      <div
+                        className={`rounded-2xl px-3 py-2 shadow-sm ${msg.isAdmin
+                            ? 'bg-white text-slate-800 rounded-tl-md'
+                            : 'bg-[#5ac463] text-white rounded-tr-md'
+                          }`}
+                      >
+                        <p className="text-[15px] leading-relaxed whitespace-pre-wrap break-words">
+                          {msg.message}
+                        </p>
+                      </div>
+
+                      <div className={`flex flex-col text-[10px] text-slate-600 flex-shrink-0 ${!msg.isAdmin ? 'items-end' : 'items-start'}`}>
+                        {!msg.isAdmin && (
+                          <span>既読</span>
+                        )}
+                        <span>
+                          {msg.createdAt?.toDate?.()?.toLocaleTimeString('ja-JP', {
+                            hour: '2-digit',
+                            minute: '2-digit'
+                          }) || '...'}
+                        </span>
+                      </div>
+                    </div>
+                  </motion.div>
+                ))}
+              </div>
+            ))}
+          </AnimatePresence>
+        )}
+        <div ref={messagesEndRef} className="h-4" />
+      </main>
+
+      {/* スクロールボタン */}
+      <AnimatePresence>
+        {showScrollButton && (
+          <motion.button
+            initial={{ opacity: 0, scale: 0.8 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.8 }}
+            onClick={scrollToBottom}
+            className="absolute bottom-24 right-4 w-10 h-10 rounded-full bg-white/90 shadow-lg flex items-center justify-center text-slate-600 hover:bg-white transition-colors z-10"
           >
-            {sending ? (
-              <motion.div
-                animate={{ rotate: 360 }}
-                transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
-                className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full"
-              />
-            ) : (
-              <Send className="w-4 h-4" />
-            )}
-          </Button>
-        </div>
-      </div>
-    </>
+            <ArrowDown className="w-5 h-5" />
+          </motion.button>
+        )}
+      </AnimatePresence>
+
+      {/* 入力エリア（固定） */}
+      <footer
+        className="flex-shrink-0 bg-slate-100 border-t border-slate-300 px-2 py-2 flex items-center gap-2"
+        style={{ paddingBottom: 'max(env(safe-area-inset-bottom, 0px), 8px)' }}
+      >
+        <button className="w-10 h-10 flex items-center justify-center text-slate-500 hover:text-slate-700 flex-shrink-0">
+          <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+          </svg>
+        </button>
+        <input
+          ref={inputRef}
+          type="text"
+          value={newMessage}
+          onChange={(e) => setNewMessage(e.target.value)}
+          onKeyPress={(e) => {
+            if (e.key === 'Enter' && !e.shiftKey) {
+              e.preventDefault();
+              sendMessage();
+            }
+          }}
+          placeholder="メッセージを入力"
+          disabled={sending}
+          className="flex-1 bg-white border border-slate-300 rounded-full px-4 py-2.5 text-[15px] text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-slate-400"
+          style={{ WebkitAppearance: 'none' }}
+        />
+        <Button
+          onClick={sendMessage}
+          disabled={!newMessage.trim() || sending}
+          size="icon"
+          className="w-10 h-10 rounded-full bg-[#5ac463] hover:bg-[#4db356] text-white disabled:opacity-50 flex-shrink-0"
+        >
+          {sending ? (
+            <motion.div
+              animate={{ rotate: 360 }}
+              transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+              className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full"
+            />
+          ) : (
+            <Send className="w-4 h-4" />
+          )}
+        </Button>
+      </footer>
+    </div>
   );
 }

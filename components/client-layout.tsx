@@ -104,7 +104,19 @@ function LayoutContent({ children }: { children: React.ReactNode }) {
     return <>{children}</>;
   }
 
-  // 保護されたページ（認証必須）
+  // フルスクリーンページ（認証必須だが独自レイアウト）
+  // DMページはLINE風UIで独自にレイアウトを管理するため、cosmic-bg等をスキップ
+  const isFullScreenPage = pathname === "/dm";
+
+  if (isFullScreenPage) {
+    return (
+      <AuthGuard>
+        {children}
+      </AuthGuard>
+    );
+  }
+
+  // 保護されたページ（認証必須・通常レイアウト）
   return (
     <AuthGuard>
       {/* PWA対応: セーフエリア外まで背景を拡張 */}
@@ -155,13 +167,10 @@ function LayoutContent({ children }: { children: React.ReactNode }) {
 
         {/* メインコンテンツ - ページトランジション付き */}
         <main
-          className={cn(
-            "flex-1 md:ml-64 md:pb-8 p-4 md:p-8 pt-10 w-full z-10",
-            pathname === "/dm" ? "pb-0" : "pb-[var(--bottom-nav-height)]"
-          )}
+          className="flex-1 md:ml-64 pb-[var(--bottom-nav-height)] md:pb-8 p-4 md:p-8 pt-10 w-full z-10"
           style={{
             paddingTop: 'calc(env(safe-area-inset-top, 0px) + 1rem)',
-            paddingBottom: pathname === "/dm" ? '0px' : 'calc(5.5rem + max(env(safe-area-inset-bottom, 0px), 20px))'
+            paddingBottom: 'calc(5.5rem + max(env(safe-area-inset-bottom, 0px), 20px))'
           }}
         >
           <LogoutButton />
@@ -172,8 +181,8 @@ function LayoutContent({ children }: { children: React.ReactNode }) {
           </AnimatePresence>
         </main>
 
-        {/* ボトムナビゲーション（モバイルのみ、DMページでは非表示） */}
-        {pathname !== "/dm" && <BottomNavigation />}
+        {/* ボトムナビゲーション（モバイルのみ） */}
+        <BottomNavigation />
 
         {/* 🎁 デイリーログインボーナスモーダル */}
         {loginBonus && (
