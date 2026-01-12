@@ -254,87 +254,73 @@ export default function AllTeamsRankingPage() {
   }
 
   return (
-    <div className="space-y-12 md:pb-12">
-      {/* Page Header */}
-      <div className="text-center">
-        <h1 className="text-4xl font-bold mb-3 bg-gradient-to-r from-pink-500 via-purple-500 to-cyan-500 bg-clip-text text-transparent">
-          🏆 全チームランキング
+    <div className="space-y-4 md:space-y-6 md:pb-12">
+      {/* Page Header - コンパクト */}
+      <div className="flex items-center justify-between">
+        <h1 className="text-xl sm:text-2xl font-bold bg-gradient-to-r from-pink-500 via-purple-500 to-cyan-500 bg-clip-text text-transparent">
+          🏆 ランキング
         </h1>
-        <p className="text-slate-300">タップで詳細を表示</p>
-      </div>
 
-      {/* 📅 期間切り替えタブ */}
-      <div className="flex justify-center">
-        <Tabs value={period} onValueChange={(v) => setPeriod(v as "week" | "month")} className="w-full max-w-md">
-          <TabsList className="grid w-full grid-cols-2 glass-bg border border-white/10">
+        {/* 📅 期間切り替えタブ - インライン */}
+        <Tabs value={period} onValueChange={(v) => setPeriod(v as "week" | "month")}>
+          <TabsList className="h-8 p-0.5 bg-white/5 border border-white/10">
             <TabsTrigger
               value="week"
-              className="bg-white/10 text-white data-[state=active]:bg-gradient-to-r data-[state=active]:from-pink-500 data-[state=active]:to-purple-600 data-[state=active]:text-white"
+              className="h-7 px-3 text-xs data-[state=active]:bg-gradient-to-r data-[state=active]:from-pink-500 data-[state=active]:to-purple-600"
             >
-              <Calendar className="w-4 h-4 sm:mr-2" />
-              <span className="hidden sm:inline">週間ランキング</span>
-              <span className="sm:hidden">週間</span>
+              週間
             </TabsTrigger>
             <TabsTrigger
               value="month"
-              className="bg-white/10 text-white data-[state=active]:bg-gradient-to-r data-[state=active]:from-pink-500 data-[state=active]:to-purple-600 data-[state=active]:text-white"
+              className="h-7 px-3 text-xs data-[state=active]:bg-gradient-to-r data-[state=active]:from-pink-500 data-[state=active]:to-purple-600"
             >
-              <Calendar className="w-4 h-4 sm:mr-2" />
-              <span className="hidden sm:inline">月間ランキング</span>
-              <span className="sm:hidden">月間</span>
+              月間
             </TabsTrigger>
           </TabsList>
         </Tabs>
       </div>
 
-      {/* 🎯 自分の順位表示（Sticky Header） */}
+      {/* 🎯 自分の順位表示（Sticky Header）- コンパクト */}
       {userRankInfo && (
-        <div className="sticky top-0 z-50 animate-in fade-in slide-in-from-top-4 duration-500">
+        <div className="sticky top-0 z-50">
           <div
-            className="glass-premium rounded-2xl p-4 border-2 shadow-2xl backdrop-blur-xl"
+            className="rounded-lg p-2.5 border backdrop-blur-xl flex items-center justify-between"
             style={{
-              borderColor: `${userRankInfo.color}60`,
-              background: `linear-gradient(135deg, ${userRankInfo.color}15 0%, rgba(15, 23, 42, 0.95) 50%)`,
-              boxShadow: `0 8px 32px ${userRankInfo.color}40, 0 0 0 1px ${userRankInfo.color}20`
+              borderColor: `${userRankInfo.color}40`,
+              background: `linear-gradient(135deg, ${userRankInfo.color}10 0%, rgba(15, 23, 42, 0.95) 50%)`,
             }}
           >
-            <div className="flex items-center justify-between">
-              {/* 左: ランク情報 */}
-              <div className="flex items-center gap-4">
-                <div
-                  className="w-12 h-12 rounded-full flex items-center justify-center font-bold text-xl border-2"
-                  style={{
-                    backgroundColor: `${userRankInfo.color}20`,
-                    borderColor: userRankInfo.color,
-                    color: userRankInfo.color,
-                    boxShadow: `0 0 20px ${userRankInfo.color}60`
-                  }}
-                >
-                  #{userRankInfo.rank}
-                </div>
-                <div>
-                  <p className="text-xs text-slate-400 mb-1">あなたの順位</p>
-                  <p className="font-bold text-slate-100">
-                    {userRankInfo.teamName} - {userRankInfo.rank}/{userRankInfo.totalMembers}位
-                  </p>
-                </div>
-              </div>
-
-              {/* 右: スクロールボタン */}
-              <button
-                onClick={scrollToMyRank}
-                className="flex items-center gap-2 px-4 py-2 rounded-xl font-medium transition-all duration-200 hover:scale-105 active:scale-95"
+            {/* 左: ランク情報 */}
+            <div className="flex items-center gap-2.5">
+              <div
+                className="w-9 h-9 rounded-full flex items-center justify-center font-bold text-base"
                 style={{
-                  backgroundColor: `${userRankInfo.color}20`,
+                  backgroundColor: `${userRankInfo.color}15`,
                   color: userRankInfo.color,
-                  border: `2px solid ${userRankInfo.color}40`
                 }}
               >
-                <Target className="w-4 h-4" />
-                <span className="hidden sm:inline">自分の位置へ</span>
-                <span className="sm:hidden">移動</span>
-              </button>
+                #{userRankInfo.rank}
+              </div>
+              <div>
+                <p className="text-[10px] text-slate-400">あなたの順位</p>
+                <p className="text-sm font-semibold text-slate-100">
+                  {userRankInfo.rank}/{userRankInfo.totalMembers}位
+                </p>
+              </div>
             </div>
+
+            {/* 右: スクロールボタン */}
+            <button
+              onClick={scrollToMyRank}
+              className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-all active:scale-95"
+              style={{
+                backgroundColor: `${userRankInfo.color}15`,
+                color: userRankInfo.color,
+              }}
+            >
+              <Target className="w-3.5 h-3.5" />
+              移動
+            </button>
           </div>
         </div>
       )}
@@ -349,7 +335,7 @@ export default function AllTeamsRankingPage() {
       {teamStats.map((teamData) => {
         const { id, name, color, type, stats } = teamData;
         const isShorts = type === "shorts";
-        
+
         // メンバーをソート（Shorts: 再生数、X: 活動量）
         const sortedMembers = [...stats.members].sort((a: any, b: any) => {
           if (isShorts) {
@@ -366,155 +352,128 @@ export default function AllTeamsRankingPage() {
         const totalMembers = sortedMembers.length;
         const avgViews = totalMembers > 0 ? Math.round(stats.totalViews / totalMembers) : 0;
         const avgPosts = totalMembers > 0 ? Math.round(stats.totalPosts / totalMembers) : 0;
-        const avgActivity = isShorts 
+        const avgActivity = isShorts
           ? totalMembers > 0 ? Math.round(stats.totalInteractions / totalMembers) : 0
           : totalMembers > 0 ? Math.round((stats.totalLikes + stats.totalReplies) / totalMembers) : 0;
 
         return (
-          <section key={id} className="space-y-6">
-            {/* チームヘッダー */}
-            <div 
-              className="rounded-2xl p-6 border-2"
+          <section key={id} className="space-y-3">
+            {/* チームヘッダー - コンパクト */}
+            <div
+              className="rounded-xl p-3 sm:p-4 border"
               style={{
-                backgroundColor: `${color}10`,
-                borderColor: `${color}40`,
-                boxShadow: `0 0 40px ${color}20`
+                backgroundColor: `${color}08`,
+                borderColor: `${color}30`,
               }}
             >
-              <div className="flex items-center justify-between mb-6">
-                <div className="flex items-center gap-3">
+              <div className="flex items-center justify-between mb-3">
+                <div className="flex items-center gap-2">
                   <div
-                    className="w-4 h-4 rounded-full animate-pulse"
-                    style={{ backgroundColor: color, boxShadow: `0 0 10px ${color}` }}
+                    className="w-3 h-3 rounded-full"
+                    style={{ backgroundColor: color }}
                   />
-                  <h2 className="text-2xl font-bold" style={{ color }}>
+                  <h2 className="text-lg sm:text-xl font-bold" style={{ color }}>
                     {name}
                   </h2>
+                  <span className="text-xs text-slate-400 ml-1">
+                    {totalMembers}人
+                  </span>
                 </div>
 
-                {/* CSV出力ボタン */}
-                <div className="flex items-center gap-3">
-                  <div className="text-sm text-slate-300 hidden sm:block">
-                    {totalMembers}人のメンバー
-                  </div>
-                  <button
-                    onClick={() => exportToCSV(name, sortedMembers, isShorts, period)}
-                    className="flex items-center gap-2 px-3 py-2 rounded-lg font-medium text-sm transition-all duration-200 hover:scale-105 active:scale-95 glass-bg border border-white/10 hover:border-white/30"
-                    style={{
-                      color: color
-                    }}
-                    title="CSVダウンロード"
-                  >
-                    <Download className="w-4 h-4" />
-                    <span className="hidden sm:inline">CSV出力</span>
-                  </button>
-                </div>
+                {/* CSV出力ボタン - コンパクト */}
+                <button
+                  onClick={() => exportToCSV(name, sortedMembers, isShorts, period)}
+                  className="p-2 rounded-lg transition-all hover:bg-white/10 active:scale-95"
+                  style={{ color: color }}
+                  title="CSVダウンロード"
+                >
+                  <Download className="w-4 h-4" />
+                </button>
               </div>
 
-              {/* チームサマリー */}
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              {/* チームサマリー - コンパクト */}
+              <div className="grid grid-cols-4 gap-2">
                 {isShorts ? (
                   <>
-                    {/* Shorts系KPI */}
-                    <div className="glass-bg rounded-xl p-4">
-                      <div className="flex items-center gap-2 mb-2">
-                        <Eye className="w-4 h-4" style={{ color }} />
-                        <p className="text-xs text-slate-300">総再生数</p>
-                      </div>
-                      <p className="text-2xl font-bold" style={{ color }}>
-                        {stats.totalViews.toLocaleString()}
+                    {/* Shorts系KPI - コンパクト */}
+                    <div className="bg-white/5 rounded-lg p-2 text-center">
+                      <Eye className="w-3 h-3 mx-auto mb-1" style={{ color }} />
+                      <p className="text-xs font-bold" style={{ color }}>
+                        {stats.totalViews >= 1000 ? `${(stats.totalViews / 1000).toFixed(1)}k` : stats.totalViews}
                       </p>
-                      <p className="text-xs text-slate-500 mt-1">平均: {avgViews.toLocaleString()}</p>
+                      <p className="text-[9px] text-slate-500">再生</p>
                     </div>
-                    <div className="glass-bg rounded-xl p-4">
-                      <div className="flex items-center gap-2 mb-2">
-                        <Users className="w-4 h-4" style={{ color }} />
-                        <p className="text-xs text-slate-300">プロフアクセス</p>
-                      </div>
-                      <p className="text-2xl font-bold" style={{ color }}>
-                        {stats.totalProfileAccess.toLocaleString()}
+                    <div className="bg-white/5 rounded-lg p-2 text-center">
+                      <Users className="w-3 h-3 mx-auto mb-1" style={{ color }} />
+                      <p className="text-xs font-bold" style={{ color }}>
+                        {stats.totalProfileAccess >= 1000 ? `${(stats.totalProfileAccess / 1000).toFixed(1)}k` : stats.totalProfileAccess}
                       </p>
+                      <p className="text-[9px] text-slate-500">プロフ</p>
                     </div>
-                    <div className="glass-bg rounded-xl p-4">
-                      <div className="flex items-center gap-2 mb-2">
-                        <TrendingUp className="w-4 h-4" style={{ color }} />
-                        <p className="text-xs text-slate-300">インタラクション</p>
-                      </div>
-                      <p className="text-2xl font-bold" style={{ color }}>
-                        {stats.totalInteractions.toLocaleString()}
+                    <div className="bg-white/5 rounded-lg p-2 text-center">
+                      <TrendingUp className="w-3 h-3 mx-auto mb-1" style={{ color }} />
+                      <p className="text-xs font-bold" style={{ color }}>
+                        {stats.totalInteractions >= 1000 ? `${(stats.totalInteractions / 1000).toFixed(1)}k` : stats.totalInteractions}
                       </p>
-                      <p className="text-xs text-slate-500 mt-1">平均: {avgActivity.toLocaleString()}</p>
+                      <p className="text-[9px] text-slate-500">交流</p>
                     </div>
-                    <div className="glass-bg rounded-xl p-4">
-                      <div className="flex items-center gap-2 mb-2">
-                        <Instagram className="w-4 h-4" style={{ color }} />
-                        <p className="text-xs text-slate-300">総フォロワー</p>
-                      </div>
-                      <p className="text-2xl font-bold" style={{ color }}>
-                        {(stats.totalIgFollowers + stats.totalYtFollowers + stats.totalTiktokFollowers).toLocaleString()}
+                    <div className="bg-white/5 rounded-lg p-2 text-center">
+                      <Instagram className="w-3 h-3 mx-auto mb-1" style={{ color }} />
+                      <p className="text-xs font-bold" style={{ color }}>
+                        {(stats.totalIgFollowers + stats.totalYtFollowers + stats.totalTiktokFollowers) >= 1000
+                          ? `${((stats.totalIgFollowers + stats.totalYtFollowers + stats.totalTiktokFollowers) / 1000).toFixed(1)}k`
+                          : (stats.totalIgFollowers + stats.totalYtFollowers + stats.totalTiktokFollowers)}
                       </p>
+                      <p className="text-[9px] text-slate-500">フォロワー</p>
                     </div>
                   </>
                 ) : (
                   <>
-                    {/* X系KPI */}
-                    <div className="glass-bg rounded-xl p-4">
-                      <div className="flex items-center gap-2 mb-2">
-                        <Heart className="w-4 h-4" style={{ color }} />
-                        <p className="text-xs text-slate-300">いいね回り</p>
-                      </div>
-                      <p className="text-2xl font-bold" style={{ color }}>
-                        {stats.totalLikes.toLocaleString()}
+                    {/* X系KPI - コンパクト */}
+                    <div className="bg-white/5 rounded-lg p-2 text-center">
+                      <Heart className="w-3 h-3 mx-auto mb-1" style={{ color }} />
+                      <p className="text-xs font-bold" style={{ color }}>
+                        {stats.totalLikes >= 1000 ? `${(stats.totalLikes / 1000).toFixed(1)}k` : stats.totalLikes}
                       </p>
+                      <p className="text-[9px] text-slate-500">いいね</p>
                     </div>
-                    <div className="glass-bg rounded-xl p-4">
-                      <div className="flex items-center gap-2 mb-2">
-                        <MessageCircle className="w-4 h-4" style={{ color }} />
-                        <p className="text-xs text-slate-300">リプライ回り</p>
-                      </div>
-                      <p className="text-2xl font-bold" style={{ color }}>
-                        {stats.totalReplies.toLocaleString()}
+                    <div className="bg-white/5 rounded-lg p-2 text-center">
+                      <MessageCircle className="w-3 h-3 mx-auto mb-1" style={{ color }} />
+                      <p className="text-xs font-bold" style={{ color }}>
+                        {stats.totalReplies >= 1000 ? `${(stats.totalReplies / 1000).toFixed(1)}k` : stats.totalReplies}
                       </p>
+                      <p className="text-[9px] text-slate-500">リプ</p>
                     </div>
-                    <div className="glass-bg rounded-xl p-4">
-                      <div className="flex items-center gap-2 mb-2">
-                        <Zap className="w-4 h-4" style={{ color }} />
-                        <p className="text-xs text-slate-300">総活動量</p>
-                      </div>
-                      <p className="text-2xl font-bold" style={{ color }}>
-                        {(stats.totalLikes + stats.totalReplies).toLocaleString()}
+                    <div className="bg-white/5 rounded-lg p-2 text-center">
+                      <Zap className="w-3 h-3 mx-auto mb-1" style={{ color }} />
+                      <p className="text-xs font-bold" style={{ color }}>
+                        {(stats.totalLikes + stats.totalReplies) >= 1000
+                          ? `${((stats.totalLikes + stats.totalReplies) / 1000).toFixed(1)}k`
+                          : (stats.totalLikes + stats.totalReplies)}
                       </p>
-                      <p className="text-xs text-slate-500 mt-1">平均: {avgActivity.toLocaleString()}</p>
+                      <p className="text-[9px] text-slate-500">活動量</p>
                     </div>
-                    <div className="glass-bg rounded-xl p-4">
-                      <div className="flex items-center gap-2 mb-2">
-                        <Trophy className="w-4 h-4" style={{ color }} />
-                        <p className="text-xs text-slate-300">総投稿数</p>
-                      </div>
-                      <p className="text-2xl font-bold" style={{ color }}>
+                    <div className="bg-white/5 rounded-lg p-2 text-center">
+                      <Trophy className="w-3 h-3 mx-auto mb-1" style={{ color }} />
+                      <p className="text-xs font-bold" style={{ color }}>
                         {stats.totalPosts}
                       </p>
-                      <p className="text-xs text-slate-500 mt-1">平均: {avgPosts}</p>
+                      <p className="text-[9px] text-slate-500">投稿</p>
                     </div>
                   </>
                 )}
               </div>
             </div>
 
-            {/* メンバーランキング */}
+            {/* メンバーランキング - コンパクト */}
             {sortedMembers.length === 0 ? (
-              <div className="glass-premium rounded-2xl p-12 text-center border border-white/20">
-                <div className="text-4xl mb-4">📊</div>
-                <p className="text-slate-300">まだレポートが送信されていません</p>
+              <div className="rounded-xl p-6 text-center border border-white/10 bg-white/5">
+                <p className="text-slate-400 text-sm">まだレポートがありません</p>
               </div>
             ) : (
-              <div className="glass-premium rounded-2xl border border-white/20 shadow-lg overflow-hidden">
-                <div className="p-6">
-                  <h3 className="text-lg font-bold text-slate-100 mb-4 flex items-center gap-2">
-                    <Trophy className="w-5 h-5" style={{ color }} />
-                    メンバーランキング
-                  </h3>
-                  <div className="space-y-3">
+              <div className="rounded-xl border border-white/10 bg-white/[0.02] overflow-hidden">
+                <div className="p-2 sm:p-3">
+                  <div className="space-y-1.5">
                     {/* メンバーデータ */}
                     {sortedMembers.map((member: any, index: number) => {
                       const rank = index + 1;
@@ -526,20 +485,20 @@ export default function AllTeamsRankingPage() {
 
                       // 🎯 現在のユーザーかどうかをチェック
                       const isCurrentUser = user && userId === user.uid;
-                      
+
                       // 守護神データ取得
                       let guardianData: any = null;
-                      
+
                       if (userId && guardianProfiles[userId]) {
                         const profile = guardianProfiles[userId];
                         const guardianId = profile.activeGuardianId;
-                        
+
                         if (guardianId && profile.guardians[guardianId]) {
                           const guardian = GUARDIANS[guardianId as GuardianId];
                           const instance = profile.guardians[guardianId];
                           const attr = ATTRIBUTES[guardian.attribute];
                           const stageInfo = EVOLUTION_STAGES[instance.stage];
-                          
+
                           guardianData = {
                             guardianId,
                             stage: instance.stage,
@@ -551,7 +510,7 @@ export default function AllTeamsRankingPage() {
                           };
                         }
                       }
-                      
+
                       // フォールバック（守護神未選択）
                       const fallbackGuardian = {
                         emoji: "🥚",
@@ -583,57 +542,47 @@ export default function AllTeamsRankingPage() {
                             });
                             setSelectedTeam({ name, color, type });
                           }}
-                          className={`flex items-center gap-4 p-4 rounded-xl transition-all duration-200 cursor-pointer hover:-translate-y-1 hover:shadow-xl ${
-                            isCurrentUser
-                              ? "border-3 animate-pulse"
-                              : isTop3
-                              ? "border-2"
-                              : "border border-slate-700"
-                          }`}
+                          className={`flex items-center gap-2 sm:gap-3 p-2 sm:p-3 rounded-lg transition-all duration-200 cursor-pointer hover:bg-white/5 active:scale-[0.98] ${isCurrentUser
+                            ? "border-2"
+                            : isTop3
+                              ? "border"
+                              : "border border-white/5"
+                            }`}
                           style={
                             isCurrentUser
                               ? {
-                                  borderColor: color,
-                                  borderWidth: '3px',
-                                  backgroundColor: `${color}15`,
-                                  boxShadow: `0 0 30px ${color}60, inset 0 0 20px ${color}20, 0 0 0 4px ${color}20`
-                                }
+                                borderColor: color,
+                                backgroundColor: `${color}10`,
+                                boxShadow: `0 0 12px ${color}40`
+                              }
                               : isTop3
-                              ? {
-                                  borderColor: `${color}40`,
+                                ? {
+                                  borderColor: `${color}30`,
                                   backgroundColor: `${color}05`,
-                                  boxShadow: `0 0 20px ${color}20`,
                                 }
-                              : undefined
+                                : undefined
                           }
                         >
-                          {/* ランク */}
-                          <div className="w-10 flex-shrink-0 flex justify-center">
+                          {/* ランク - コンパクト */}
+                          <div className="w-7 sm:w-8 flex-shrink-0 flex justify-center">
                             {getMedalIcon(rank)}
                           </div>
 
-                          {/* 守護神アバター - 新構造 */}
+                          {/* 守護神アバター - 小さく */}
                           {guardianData ? (
-                            <div className="guardian-avatar">
-                              <div 
-                                className="absolute inset-0 rounded-full animate-pulse"
+                            <div className="relative w-9 h-9 sm:w-10 sm:h-10 flex-shrink-0">
+                              <div
+                                className="absolute inset-0 rounded-full"
                                 style={{
-                                  border: `2px solid ${guardianData.color}`,
-                                  boxShadow: `0 0 15px ${guardianData.color}80`,
+                                  border: `2px solid ${guardianData.color}40`,
                                 }}
                               />
-                              <div 
-                                className="absolute inset-1 rounded-full opacity-20"
-                                style={{
-                                  background: `radial-gradient(circle, ${guardianData.color} 0%, transparent 70%)`
-                                }}
-                              />
-                              <div className="guardian-avatar-inner">
+                              <div className="absolute inset-0.5 rounded-full overflow-hidden">
                                 <Image
                                   src={guardianData.imagePath}
                                   alt={guardianData.name}
-                                  width={64}
-                                  height={64}
+                                  width={40}
+                                  height={40}
                                   className="w-full h-full object-cover"
                                   loading="lazy"
                                   placeholder="blur"
@@ -643,62 +592,56 @@ export default function AllTeamsRankingPage() {
                                     e.currentTarget.nextElementSibling?.classList.remove('hidden');
                                   }}
                                 />
-                                <div className="hidden absolute inset-0 flex items-center justify-center text-2xl">
+                                <div className="hidden absolute inset-0 flex items-center justify-center text-lg">
                                   {guardianData.emoji}
                                 </div>
                               </div>
                             </div>
                           ) : (
                             <div
-                              className="w-12 h-12 rounded-full flex items-center justify-center text-2xl flex-shrink-0"
+                              className="w-9 h-9 sm:w-10 sm:h-10 rounded-full flex items-center justify-center text-lg flex-shrink-0"
                               style={{
-                                backgroundColor: `${fallbackGuardian.color}20`,
-                                boxShadow: `0 0 15px ${fallbackGuardian.color}`,
-                                border: `2px solid ${fallbackGuardian.color}`,
+                                backgroundColor: `${fallbackGuardian.color}15`,
+                                border: `2px solid ${fallbackGuardian.color}40`,
                               }}
                             >
                               {fallbackGuardian.emoji}
                             </div>
                           )}
 
-                          {/* メンバー情報 */}
+                          {/* メンバー情報 - コンパクト */}
                           <div className="flex-1 min-w-0">
-                            <div className="flex items-center gap-2">
-                              <p className="font-bold text-slate-100 truncate">
+                            <div className="flex items-center gap-1.5">
+                              <p className="font-semibold text-sm text-slate-100 truncate">
                                 {member.name}
                               </p>
                               {isCurrentUser && (
                                 <span
-                                  className="text-xs font-bold px-2 py-0.5 rounded-full animate-pulse"
+                                  className="text-[10px] font-bold px-1.5 py-0.5 rounded-full flex-shrink-0"
                                   style={{
-                                    backgroundColor: `${color}30`,
+                                    backgroundColor: `${color}25`,
                                     color: color,
-                                    border: `1px solid ${color}`
                                   }}
                                 >
                                   YOU
                                 </span>
                               )}
                             </div>
-                            <div className="flex items-center gap-2 text-xs text-slate-400">
-                              <span className="text-yellow-400 font-bold">Lv.{memberLevel}</span>
-                              <span style={{ color: guardianData ? guardianData.color : fallbackGuardian.color }} className="font-medium">
-                                {guardianData ? guardianData.stageName : fallbackGuardian.name}
-                              </span>
-                              <span>•</span>
-                              <span>{member.reports}回報告</span>
+                            <div className="flex items-center gap-1.5 text-[11px] text-slate-400">
+                              <span className="text-yellow-400 font-medium">Lv.{memberLevel}</span>
+                              <span className="text-slate-500">•</span>
+                              <span>{member.reports}回</span>
                             </div>
                           </div>
 
-                          {/* エナジー表示（メインKPI） */}
-                          <div className="text-right">
-                            <p className="text-xs text-slate-400 mb-0.5">エナジー</p>
-                            <p className="text-xl font-bold" style={{ color }}>
+                          {/* エナジー表示 - コンパクト */}
+                          <div className="text-right flex-shrink-0">
+                            <p className="text-base sm:text-lg font-bold" style={{ color }}>
                               {energy}E
                             </p>
                           </div>
 
-                          <ChevronRight className="w-5 h-5 text-slate-400" />
+                          <ChevronRight className="w-4 h-4 text-slate-500 flex-shrink-0" />
                         </div>
                       );
                     })}
@@ -708,7 +651,8 @@ export default function AllTeamsRankingPage() {
             )}
           </section>
         );
-      })}
+      })
+      }
 
       {/* 詳細モーダル */}
       <MemberDetailModal
@@ -719,6 +663,6 @@ export default function AllTeamsRankingPage() {
         teamName={selectedTeam?.name || ''}
         isShorts={selectedTeam?.type === 'shorts'}
       />
-    </div>
+    </div >
   );
 }

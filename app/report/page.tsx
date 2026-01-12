@@ -30,7 +30,9 @@ import {
   Trash2,
   Sparkles,
   TrendingUp,
-  Zap
+  Zap,
+  ChevronDown,
+  ChevronUp
 } from "lucide-react";
 import { teams, processReportWithEnergy, getTodayReport, updateReport, Report, getAllUsers, getUserGuardianProfile, getPreviousFollowerCounts } from "@/lib/firestore";
 import { processPostFeedback } from "@/lib/post-feedback";
@@ -94,6 +96,17 @@ export default function ReportPage() {
   const [xReplyCount, setXReplyCount] = useState("");
   const [xFollowers, setXFollowers] = useState(""); // 🆕 Xフォロワー数追加
   const [xTodayComment, setXTodayComment] = useState("");
+
+  // 📦 セクション折りたたみ用state（Shorts系フォーム）
+  const [openSections, setOpenSections] = useState<Record<string, boolean>>({
+    igMetrics: true,  // Instagram数値（初期表示）
+    followers: true,  // フォロワー数（初期表示）
+    posts: true,      // 投稿数（初期表示）
+  });
+
+  const toggleSection = (sectionId: string) => {
+    setOpenSections(prev => ({ ...prev, [sectionId]: !prev[sectionId] }));
+  };
 
   const selectedTeamData = teams.find(t => t.id === selectedTeam);
   const isXTeam = selectedTeamData?.type === "x";
@@ -584,72 +597,39 @@ export default function ReportPage() {
   }
 
   return (
-    <div className="min-h-screen cosmic-bg relative overflow-hidden p-4 md:p-8 md:pb-8">
-      {/* 星雲背景エフェクト */}
+    <div className="min-h-screen cosmic-bg relative overflow-hidden p-3 sm:p-4 md:p-8 pb-40">
+      {/* 星雲背景エフェクト - 縮小 */}
       <div className="fixed inset-0 overflow-hidden pointer-events-none">
-        <div className="nebula-bg absolute top-0 left-1/4 w-[600px] h-[600px] rounded-full blur-3xl opacity-30"
+        <div className="nebula-bg absolute top-0 left-1/4 w-[400px] h-[400px] rounded-full blur-3xl opacity-20"
           style={{
-            background: `radial-gradient(ellipse at center, ${teamColor}30, ${teamColor}20 40%, transparent 70%)`
+            background: `radial-gradient(ellipse at center, ${teamColor}20, transparent 70%)`
           }}
         />
-        <div className="nebula-bg absolute bottom-0 right-1/4 w-[500px] h-[500px] rounded-full blur-3xl opacity-20"
-          style={{
-            background: 'radial-gradient(ellipse at center, rgba(34, 211, 238, 0.2) 0%, rgba(168, 85, 247, 0.15) 40%, transparent 70%)',
-            animationDelay: '5s'
-          }}
-        />
-      </div>
-
-      {/* 星々パーティクル */}
-      <div className="fixed inset-0 overflow-hidden pointer-events-none">
-        {[...Array(20)].map((_, i) => (
-          <div
-            key={i}
-            className="absolute w-1 h-1 bg-white rounded-full animate-pulse"
-            style={{
-              top: `${Math.random() * 100}%`,
-              left: `${Math.random() * 100}%`,
-              opacity: Math.random() * 0.3 + 0.2,
-              animationDelay: `${Math.random() * 3}s`,
-              animationDuration: `${Math.random() * 2 + 2}s`
-            }}
-          />
-        ))}
       </div>
 
       <div className="max-w-2xl mx-auto relative">
-        {/* Header */}
-        <div className="text-center mb-8 -mt-2">
+        {/* Header - コンパクト */}
+        <div className="flex items-center justify-between mb-4">
           <h1
-            className="text-3xl font-bold bg-clip-text text-transparent mb-2"
-            style={{ backgroundImage: `linear-gradient(to right, ${teamColor}, #a855f7, #06b6d4)` }}
+            className="text-xl sm:text-2xl font-bold bg-clip-text text-transparent"
+            style={{ backgroundImage: `linear-gradient(to right, ${teamColor}, #a855f7)` }}
           >
-            📊 日次レポート
+            📊 日報
           </h1>
-          <p className="text-muted-foreground">
-            SNSの数値を報告してください
-          </p>
+          <div className="text-xs text-slate-400">
+            {new Date(date).toLocaleDateString('ja-JP', { month: 'short', day: 'numeric' })}
+          </div>
         </div>
 
         <Card
-          className="backdrop-blur-xl border-2 transition-all duration-300"
+          className="backdrop-blur-xl border transition-all"
           style={{
-            backgroundColor: 'rgba(255,255,255,0.05)',
-            borderColor: selectedTeam ? `${teamColor}40` : 'rgba(255,255,255,0.1)',
-            boxShadow: selectedTeam ? `0 0 40px ${teamColor}20` : 'none'
+            backgroundColor: 'rgba(255,255,255,0.03)',
+            borderColor: selectedTeam ? `${teamColor}30` : 'rgba(255,255,255,0.1)',
           }}
         >
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-white">
-              <Send className="w-5 h-5" style={{ color: teamColor }} />
-              レポート送信
-            </CardTitle>
-            <CardDescription className="text-slate-300">
-              入力内容は即座にダッシュボードに反映されます
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <form onSubmit={handleSubmit} className="space-y-6">
+          <CardContent className="p-3 sm:p-4">
+            <form onSubmit={handleSubmit} className="space-y-4">
               {/* Success Message（シンプル版） */}
               {success && !showCelebration && (
                 <div
@@ -894,224 +874,274 @@ export default function ReportPage() {
                       </div>
                     </div>
                   ) : (
-                    /* Shorts系チーム用フォーム */
-                    <div className="space-y-6 pt-4 border-t" style={{ borderColor: `${teamColor}20` }}>
+                    /* Shorts系チーム用フォーム - 折りたたみセクション */
+                    <div className="space-y-3 pt-4 border-t" style={{ borderColor: `${teamColor}20` }}>
                       <div className="flex items-center gap-2" style={{ color: teamColor }}>
                         <Instagram className="w-5 h-5" />
                         <span className="font-semibold">Instagram / TikTok / YouTube 活動報告</span>
                       </div>
 
-                      {/* Instagram数値 */}
-                      <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                        <div className="space-y-2">
-                          <Label className="flex items-center gap-2 text-sm text-white">
+                      {/* 📊 セクション1: Instagramメトリクス */}
+                      <div className="rounded-xl border overflow-hidden" style={{ borderColor: `${teamColor}30` }}>
+                        <button
+                          type="button"
+                          onClick={() => toggleSection('igMetrics')}
+                          className="w-full flex items-center justify-between p-3 bg-white/5 hover:bg-white/10 transition-colors"
+                        >
+                          <div className="flex items-center gap-2">
                             <Eye className="w-4 h-4" style={{ color: teamColor }} />
-                            IG 閲覧数
-                          </Label>
-                          <Input
-                            type="number"
-                            inputMode="numeric"
-                            placeholder="0"
-                            value={igViews}
-                            onChange={(e) => setIgViews(e.target.value)}
-                            className="bg-white/5"
-                            style={{ borderColor: `${teamColor}30` }}
-                            min="0"
-                          />
-                        </div>
-                        <div className="space-y-2">
-                          <Label className="flex items-center gap-2 text-sm text-white">
-                            <UserPlus className="w-4 h-4" style={{ color: teamColor }} />
-                            プロフアクセス数
-                          </Label>
-                          <Input
-                            type="number"
-                            inputMode="numeric"
-                            placeholder="0"
-                            value={igProfileAccess}
-                            onChange={(e) => setIgProfileAccess(e.target.value)}
-                            className="bg-white/5"
-                            style={{ borderColor: `${teamColor}30` }}
-                            min="0"
-                          />
-                        </div>
-                        <div className="space-y-2">
-                          <Label className="flex items-center gap-2 text-sm text-white">
-                            <Link2 className="w-4 h-4" style={{ color: teamColor }} />
-                            外部リンクタップ
-                          </Label>
-                          <Input
-                            type="number"
-                            inputMode="numeric"
-                            placeholder="0"
-                            value={igExternalTaps}
-                            onChange={(e) => setIgExternalTaps(e.target.value)}
-                            className="bg-white/5"
-                            style={{ borderColor: `${teamColor}30` }}
-                            min="0"
-                          />
-                        </div>
-                        <div className="space-y-2">
-                          <Label className="flex items-center gap-2 text-sm text-white">
-                            <MousePointerClick className="w-4 h-4" style={{ color: teamColor }} />
-                            インタラクション数
-                          </Label>
-                          <Input
-                            type="number"
-                            inputMode="numeric"
-                            placeholder="0"
-                            value={igInteractions}
-                            onChange={(e) => setIgInteractions(e.target.value)}
-                            className="bg-white/5"
-                            style={{ borderColor: `${teamColor}30` }}
-                            min="0"
-                          />
-                        </div>
-                        <div className="space-y-2">
-                          <Label className="flex items-center gap-2 text-sm text-white">
+                            <span className="text-sm font-medium text-white">Instagramメトリクス</span>
+                            {!openSections.igMetrics && (igViews || igProfileAccess || igExternalTaps || igInteractions || weeklyStories) && (
+                              <span className="text-xs px-2 py-0.5 rounded-full bg-white/10 text-slate-300">入力済み</span>
+                            )}
+                          </div>
+                          {openSections.igMetrics ? (
+                            <ChevronUp className="w-4 h-4 text-slate-400" />
+                          ) : (
+                            <ChevronDown className="w-4 h-4 text-slate-400" />
+                          )}
+                        </button>
+                        {openSections.igMetrics && (
+                          <div className="p-3 space-y-3 bg-white/[0.02]">
+                            <div className="grid grid-cols-2 gap-3">
+                              <div className="space-y-1">
+                                <Label className="flex items-center gap-1.5 text-xs text-slate-300">
+                                  <Eye className="w-3.5 h-3.5" style={{ color: teamColor }} />
+                                  閲覧数
+                                </Label>
+                                <Input
+                                  type="number"
+                                  inputMode="numeric"
+                                  placeholder="0"
+                                  value={igViews}
+                                  onChange={(e) => setIgViews(e.target.value)}
+                                  className="bg-white/5 h-9 text-sm"
+                                  style={{ borderColor: `${teamColor}30` }}
+                                  min="0"
+                                />
+                              </div>
+                              <div className="space-y-1">
+                                <Label className="flex items-center gap-1.5 text-xs text-slate-300">
+                                  <UserPlus className="w-3.5 h-3.5" style={{ color: teamColor }} />
+                                  プロフアクセス
+                                </Label>
+                                <Input
+                                  type="number"
+                                  inputMode="numeric"
+                                  placeholder="0"
+                                  value={igProfileAccess}
+                                  onChange={(e) => setIgProfileAccess(e.target.value)}
+                                  className="bg-white/5 h-9 text-sm"
+                                  style={{ borderColor: `${teamColor}30` }}
+                                  min="0"
+                                />
+                              </div>
+                              <div className="space-y-1">
+                                <Label className="flex items-center gap-1.5 text-xs text-slate-300">
+                                  <Link2 className="w-3.5 h-3.5" style={{ color: teamColor }} />
+                                  外部リンクタップ
+                                </Label>
+                                <Input
+                                  type="number"
+                                  inputMode="numeric"
+                                  placeholder="0"
+                                  value={igExternalTaps}
+                                  onChange={(e) => setIgExternalTaps(e.target.value)}
+                                  className="bg-white/5 h-9 text-sm"
+                                  style={{ borderColor: `${teamColor}30` }}
+                                  min="0"
+                                />
+                              </div>
+                              <div className="space-y-1">
+                                <Label className="flex items-center gap-1.5 text-xs text-slate-300">
+                                  <MousePointerClick className="w-3.5 h-3.5" style={{ color: teamColor }} />
+                                  インタラクション
+                                </Label>
+                                <Input
+                                  type="number"
+                                  inputMode="numeric"
+                                  placeholder="0"
+                                  value={igInteractions}
+                                  onChange={(e) => setIgInteractions(e.target.value)}
+                                  className="bg-white/5 h-9 text-sm"
+                                  style={{ borderColor: `${teamColor}30` }}
+                                  min="0"
+                                />
+                              </div>
+                              <div className="space-y-1 col-span-2">
+                                <Label className="flex items-center gap-1.5 text-xs text-slate-300">
+                                  <FileText className="w-3.5 h-3.5" style={{ color: teamColor }} />
+                                  今日のストーリー投稿数
+                                </Label>
+                                <Input
+                                  type="number"
+                                  inputMode="numeric"
+                                  placeholder="0"
+                                  value={weeklyStories}
+                                  onChange={(e) => setWeeklyStories(e.target.value)}
+                                  className="bg-white/5 h-9 text-sm"
+                                  style={{ borderColor: `${teamColor}30` }}
+                                  min="0"
+                                />
+                              </div>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* 👥 セクション2: フォロワー数 */}
+                      <div className="rounded-xl border overflow-hidden" style={{ borderColor: `${teamColor}30` }}>
+                        <button
+                          type="button"
+                          onClick={() => toggleSection('followers')}
+                          className="w-full flex items-center justify-between p-3 bg-white/5 hover:bg-white/10 transition-colors"
+                        >
+                          <div className="flex items-center gap-2">
+                            <Users className="w-4 h-4" style={{ color: teamColor }} />
+                            <span className="text-sm font-medium text-white">フォロワー数</span>
+                            {!openSections.followers && (igFollowers || ytFollowers || tiktokFollowers) && (
+                              <span className="text-xs px-2 py-0.5 rounded-full bg-white/10 text-slate-300">入力済み</span>
+                            )}
+                          </div>
+                          {openSections.followers ? (
+                            <ChevronUp className="w-4 h-4 text-slate-400" />
+                          ) : (
+                            <ChevronDown className="w-4 h-4 text-slate-400" />
+                          )}
+                        </button>
+                        {openSections.followers && (
+                          <div className="p-3 space-y-3 bg-white/[0.02]">
+                            <div className="grid grid-cols-3 gap-3">
+                              <div className="space-y-1">
+                                <Label className="flex items-center gap-1.5 text-xs text-slate-300">
+                                  <Instagram className="w-3.5 h-3.5" style={{ color: teamColor }} />
+                                  IG
+                                </Label>
+                                <Input
+                                  type="number"
+                                  inputMode="numeric"
+                                  placeholder="0"
+                                  value={igFollowers}
+                                  onChange={(e) => setIgFollowers(e.target.value)}
+                                  className="bg-white/5 h-9 text-sm"
+                                  style={{ borderColor: `${teamColor}30` }}
+                                  min="0"
+                                />
+                              </div>
+                              <div className="space-y-1">
+                                <Label className="flex items-center gap-1.5 text-xs text-slate-300">
+                                  <Youtube className="w-3.5 h-3.5 text-red-500" />
+                                  YT
+                                </Label>
+                                <Input
+                                  type="number"
+                                  inputMode="numeric"
+                                  placeholder="0"
+                                  value={ytFollowers}
+                                  onChange={(e) => setYtFollowers(e.target.value)}
+                                  className="bg-white/5 h-9 text-sm"
+                                  style={{ borderColor: `${teamColor}30` }}
+                                  min="0"
+                                />
+                              </div>
+                              <div className="space-y-1">
+                                <Label className="flex items-center gap-1.5 text-xs text-slate-300">
+                                  <svg className="w-3.5 h-3.5" style={{ color: teamColor }} viewBox="0 0 24 24" fill="currentColor">
+                                    <path d="M12.525.02c1.31-.02 2.61-.01 3.91-.02.08 1.53.63 3.09 1.75 4.17 1.12 1.11 2.7 1.62 4.24 1.79v4.03c-1.44-.05-2.89-.35-4.2-.97-.57-.26-1.1-.59-1.62-.93-.01 2.92.01 5.84-.02 8.75-.08 1.4-.54 2.79-1.35 3.94-1.31 1.92-3.58 3.17-5.91 3.21-1.43.08-2.86-.31-4.08-1.03-2.02-1.19-3.44-3.37-3.65-5.71-.02-.5-.03-1-.01-1.49.18-1.9 1.12-3.72 2.58-4.96 1.66-1.44 3.98-2.13 6.15-1.72.02 1.48-.04 2.96-.04 4.44-.99-.32-2.15-.23-3.02.37-.63.41-1.11 1.04-1.36 1.75-.21.51-.15 1.07-.14 1.61.24 1.64 1.82 3.02 3.5 2.87 1.12-.01 2.19-.66 2.77-1.61.19-.33.4-.67.41-1.06.1-1.79.06-3.57.07-5.36.01-4.03-.01-8.05.02-12.07z" />
+                                  </svg>
+                                  TT
+                                </Label>
+                                <Input
+                                  type="number"
+                                  inputMode="numeric"
+                                  placeholder="0"
+                                  value={tiktokFollowers}
+                                  onChange={(e) => setTiktokFollowers(e.target.value)}
+                                  className="bg-white/5 h-9 text-sm"
+                                  style={{ borderColor: `${teamColor}30` }}
+                                  min="0"
+                                />
+                              </div>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* 📝 セクション3: 投稿数（常に開く - 必須項目） */}
+                      <div className="rounded-xl border-2 overflow-hidden" style={{ borderColor: `${teamColor}40`, backgroundColor: `${teamColor}05` }}>
+                        <button
+                          type="button"
+                          onClick={() => toggleSection('posts')}
+                          className="w-full flex items-center justify-between p-3 hover:bg-white/5 transition-colors"
+                        >
+                          <div className="flex items-center gap-2">
                             <FileText className="w-4 h-4" style={{ color: teamColor }} />
-                            今日のストーリー投稿数
-                          </Label>
-                          <Input
-                            type="number"
-                            inputMode="numeric"
-                            placeholder="0"
-                            value={weeklyStories}
-                            onChange={(e) => setWeeklyStories(e.target.value)}
-                            className="bg-white/5"
-                            style={{ borderColor: `${teamColor}30` }}
-                            min="0"
-                          />
-                        </div>
-                        <div className="space-y-2">
-                          <Label className="flex items-center gap-2 text-sm text-white">
-                            <Instagram className="w-4 h-4" style={{ color: teamColor }} />
-                            IG フォロワー数
-                          </Label>
-                          <Input
-                            type="number"
-                            inputMode="numeric"
-                            placeholder="0"
-                            value={igFollowers}
-                            onChange={(e) => setIgFollowers(e.target.value)}
-                            className="bg-white/5"
-                            style={{ borderColor: `${teamColor}30` }}
-                            min="0"
-                          />
-                        </div>
-                      </div>
-
-                      {/* 他プラットフォームフォロワー */}
-                      <div className="grid grid-cols-2 gap-4">
-                        <div className="space-y-2">
-                          <Label className="flex items-center gap-2 text-sm text-white">
-                            <Youtube className="w-4 h-4 text-red-500" />
-                            YouTube フォロワー数
-                          </Label>
-                          <Input
-                            type="number"
-                            inputMode="numeric"
-                            placeholder="0"
-                            value={ytFollowers}
-                            onChange={(e) => setYtFollowers(e.target.value)}
-                            className="bg-white/5"
-                            style={{ borderColor: `${teamColor}30` }}
-                            min="0"
-                          />
-                        </div>
-                        <div className="space-y-2">
-                          <Label className="flex items-center gap-2 text-sm text-white">
-                            <svg className="w-4 h-4" style={{ color: teamColor }} viewBox="0 0 24 24" fill="currentColor">
-                              <path d="M12.525.02c1.31-.02 2.61-.01 3.91-.02.08 1.53.63 3.09 1.75 4.17 1.12 1.11 2.7 1.62 4.24 1.79v4.03c-1.44-.05-2.89-.35-4.2-.97-.57-.26-1.1-.59-1.62-.93-.01 2.92.01 5.84-.02 8.75-.08 1.4-.54 2.79-1.35 3.94-1.31 1.92-3.58 3.17-5.91 3.21-1.43.08-2.86-.31-4.08-1.03-2.02-1.19-3.44-3.37-3.65-5.71-.02-.5-.03-1-.01-1.49.18-1.9 1.12-3.72 2.58-4.96 1.66-1.44 3.98-2.13 6.15-1.72.02 1.48-.04 2.96-.04 4.44-.99-.32-2.15-.23-3.02.37-.63.41-1.11 1.04-1.36 1.75-.21.51-.15 1.07-.14 1.61.24 1.64 1.82 3.02 3.5 2.87 1.12-.01 2.19-.66 2.77-1.61.19-.33.4-.67.41-1.06.1-1.79.06-3.57.07-5.36.01-4.03-.01-8.05.02-12.07z" />
-                            </svg>
-                            TikTok フォロワー数
-                          </Label>
-                          <Input
-                            type="number"
-                            inputMode="numeric"
-                            placeholder="0"
-                            value={tiktokFollowers}
-                            onChange={(e) => setTiktokFollowers(e.target.value)}
-                            className="bg-white/5"
-                            style={{ borderColor: `${teamColor}30` }}
-                            min="0"
-                          />
-                        </div>
-                      </div>
-
-                      {/* ✅ SNS別投稿数（菅原副社長の要求） */}
-                      <div className="p-4 rounded-xl border-2 space-y-4"
-                        style={{
-                          borderColor: `${teamColor}40`,
-                          backgroundColor: `${teamColor}05`
-                        }}
-                      >
-                        <div className="flex items-center gap-2">
-                          <FileText className="w-5 h-5" style={{ color: teamColor }} />
-                          <span className="font-semibold" style={{ color: teamColor }}>
-                            SNS別投稿数（必須）
-                          </span>
-                        </div>
-                        <p className="text-xs text-muted-foreground">
-                          各SNSで投稿した数を入力してください。合計が自動計算されます。
-                        </p>
-                        <div className="grid grid-cols-3 gap-4">
-                          <div className="space-y-2">
-                            <Label className="flex items-center gap-2 text-sm text-white">
-                              <Instagram className="w-4 h-4" style={{ color: teamColor }} />
-                              IG 投稿数
-                            </Label>
-                            <Input
-                              type="number"
-                              placeholder="0"
-                              value={igPosts}
-                              onChange={(e) => setIgPosts(e.target.value)}
-                              className="bg-white/5"
-                              style={{ borderColor: `${teamColor}30` }}
-                              min="0"
-                            />
-                          </div>
-                          <div className="space-y-2">
-                            <Label className="flex items-center gap-2 text-sm text-white">
-                              <Youtube className="w-4 h-4 text-red-500" />
-                              YT 投稿数
-                            </Label>
-                            <Input
-                              type="number"
-                              placeholder="0"
-                              value={ytPosts}
-                              onChange={(e) => setYtPosts(e.target.value)}
-                              className="bg-white/5"
-                              style={{ borderColor: `${teamColor}30` }}
-                              min="0"
-                            />
-                          </div>
-                          <div className="space-y-2">
-                            <Label className="flex items-center gap-2 text-sm text-white">
-                              <svg className="w-4 h-4" style={{ color: teamColor }} viewBox="0 0 24 24" fill="currentColor">
-                                <path d="M12.525.02c1.31-.02 2.61-.01 3.91-.02.08 1.53.63 3.09 1.75 4.17 1.12 1.11 2.7 1.62 4.24 1.79v4.03c-1.44-.05-2.89-.35-4.2-.97-.57-.26-1.10-.59-1.62-.93-.01 2.92.01 5.84-.02 8.75-.08 1.4-.54 2.79-1.35 3.94-1.31 1.92-3.58 3.17-5.91 3.21-1.43.08-2.86-.31-4.08-1.03-2.02-1.19-3.44-3.37-3.65-5.71-.02-.5-.03-1-.01-1.49.18-1.9 1.12-3.72 2.58-4.96 1.66-1.44 3.98-2.13 6.15-1.72.02 1.48-.04 2.96-.04 4.44-.99-.32-2.15-.23-3.02.37-.63.41-1.11 1.04-1.36 1.75-.21.51-.15 1.07-.14 1.61.24 1.64 1.82 3.02 3.5 2.87 1.12-.01 2.19-.66 2.77-1.61.19-.33.4-.67.41-1.06.1-1.79.06-3.57.07-5.36.01-4.03-.01-8.05.02-12.07z" />
-                              </svg>
-                              TT 投稿数
-                            </Label>
-                            <Input
-                              type="number"
-                              placeholder="0"
-                              value={tiktokPosts}
-                              onChange={(e) => setTiktokPosts(e.target.value)}
-                              className="bg-white/5"
-                              style={{ borderColor: `${teamColor}30` }}
-                              min="0"
-                            />
-                          </div>
-                        </div>
-                        {/* 合計投稿数表示 */}
-                        {(igPosts || ytPosts || tiktokPosts) && (
-                          <div className="pt-2 border-t" style={{ borderColor: `${teamColor}20` }}>
-                            <div className="flex items-center justify-between">
-                              <span className="text-sm text-muted-foreground">合計投稿数</span>
-                              <span className="text-2xl font-bold" style={{ color: teamColor }}>
-                                {(parseInt(igPosts) || 0) + (parseInt(ytPosts) || 0) + (parseInt(tiktokPosts) || 0)}
+                            <span className="text-sm font-medium" style={{ color: teamColor }}>SNS別投稿数（必須）</span>
+                            {(igPosts || ytPosts || tiktokPosts) && (
+                              <span className="text-xs px-2 py-0.5 rounded-full font-medium" style={{ backgroundColor: `${teamColor}20`, color: teamColor }}>
+                                合計: {(parseInt(igPosts) || 0) + (parseInt(ytPosts) || 0) + (parseInt(tiktokPosts) || 0)}
                               </span>
+                            )}
+                          </div>
+                          {openSections.posts ? (
+                            <ChevronUp className="w-4 h-4 text-slate-400" />
+                          ) : (
+                            <ChevronDown className="w-4 h-4 text-slate-400" />
+                          )}
+                        </button>
+                        {openSections.posts && (
+                          <div className="p-3 space-y-3 border-t" style={{ borderColor: `${teamColor}20` }}>
+                            <p className="text-xs text-muted-foreground">
+                              各SNSで投稿した数を入力してください。
+                            </p>
+                            <div className="grid grid-cols-3 gap-3">
+                              <div className="space-y-1">
+                                <Label className="flex items-center gap-1.5 text-xs text-slate-300">
+                                  <Instagram className="w-3.5 h-3.5" style={{ color: teamColor }} />
+                                  IG
+                                </Label>
+                                <Input
+                                  type="number"
+                                  placeholder="0"
+                                  value={igPosts}
+                                  onChange={(e) => setIgPosts(e.target.value)}
+                                  className="bg-white/5 h-9 text-sm"
+                                  style={{ borderColor: `${teamColor}30` }}
+                                  min="0"
+                                />
+                              </div>
+                              <div className="space-y-1">
+                                <Label className="flex items-center gap-1.5 text-xs text-slate-300">
+                                  <Youtube className="w-3.5 h-3.5 text-red-500" />
+                                  YT
+                                </Label>
+                                <Input
+                                  type="number"
+                                  placeholder="0"
+                                  value={ytPosts}
+                                  onChange={(e) => setYtPosts(e.target.value)}
+                                  className="bg-white/5 h-9 text-sm"
+                                  style={{ borderColor: `${teamColor}30` }}
+                                  min="0"
+                                />
+                              </div>
+                              <div className="space-y-1">
+                                <Label className="flex items-center gap-1.5 text-xs text-slate-300">
+                                  <svg className="w-3.5 h-3.5" style={{ color: teamColor }} viewBox="0 0 24 24" fill="currentColor">
+                                    <path d="M12.525.02c1.31-.02 2.61-.01 3.91-.02.08 1.53.63 3.09 1.75 4.17 1.12 1.11 2.7 1.62 4.24 1.79v4.03c-1.44-.05-2.89-.35-4.2-.97-.57-.26-1.10-.59-1.62-.93-.01 2.92.01 5.84-.02 8.75-.08 1.4-.54 2.79-1.35 3.94-1.31 1.92-3.58 3.17-5.91 3.21-1.43.08-2.86-.31-4.08-1.03-2.02-1.19-3.44-3.37-3.65-5.71-.02-.5-.03-1-.01-1.49.18-1.9 1.12-3.72 2.58-4.96 1.66-1.44 3.98-2.13 6.15-1.72.02 1.48-.04 2.96-.04 4.44-.99-.32-2.15-.23-3.02.37-.63.41-1.11 1.04-1.36 1.75-.21.51-.15 1.07-.14 1.61.24 1.64 1.82 3.02 3.5 2.87 1.12-.01 2.19-.66 2.77-1.61.19-.33.4-.67.41-1.06.1-1.79.06-3.57.07-5.36.01-4.03-.01-8.05.02-12.07z" />
+                                  </svg>
+                                  TT
+                                </Label>
+                                <Input
+                                  type="number"
+                                  placeholder="0"
+                                  value={tiktokPosts}
+                                  onChange={(e) => setTiktokPosts(e.target.value)}
+                                  className="bg-white/5 h-9 text-sm"
+                                  style={{ borderColor: `${teamColor}30` }}
+                                  min="0"
+                                />
+                              </div>
                             </div>
                           </div>
                         )}
@@ -1127,35 +1157,14 @@ export default function ReportPage() {
                           placeholder="今日の振り返りや気づきを書いてください..."
                           value={todayComment}
                           onChange={(e) => setTodayComment(e.target.value)}
-                          className="w-full h-24 px-3 py-2 rounded-md bg-white/5 focus:outline-none resize-none"
+                          className="w-full h-20 px-3 py-2 rounded-md bg-white/5 focus:outline-none resize-none text-sm"
                           style={{ borderColor: `${teamColor}30`, borderWidth: '1px', borderStyle: 'solid' }}
                         />
                       </div>
                     </div>
                   )}
 
-                  {/* Submit Button */}
-                  <Button
-                    type="submit"
-                    className="w-full h-12 text-lg text-white hover:opacity-90 transition-all"
-                    style={{
-                      background: `linear-gradient(to right, ${teamColor}, #a855f7)`,
-                      boxShadow: `0 0 30px ${teamColor}40`
-                    }}
-                    disabled={submitting}
-                  >
-                    {submitting ? (
-                      <div className="flex items-center gap-2">
-                        <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                        送信中...
-                      </div>
-                    ) : (
-                      <div className="flex items-center gap-2">
-                        <Send className="w-5 h-5" />
-                        レポートを送信
-                      </div>
-                    )}
-                  </Button>
+                  {/* Submit Button は固定フッターに移動 */}
                 </>
               )}
             </form>
@@ -1163,6 +1172,47 @@ export default function ReportPage() {
         </Card>
 
       </div>
+
+      {/* 🚀 固定送信ボタン */}
+      {selectedTeam && userProfile && selectedTeamData && (
+        <div
+          className="fixed bottom-16 md:bottom-4 left-0 right-0 px-3 py-2 z-40"
+          style={{
+            background: 'linear-gradient(to top, rgba(10, 10, 30, 0.98) 80%, transparent)',
+            paddingBottom: 'env(safe-area-inset-bottom)',
+          }}
+        >
+          <div className="max-w-2xl mx-auto">
+            <Button
+              type="button"
+              onClick={(e) => {
+                const form = document.querySelector('form');
+                if (form) {
+                  form.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }));
+                }
+              }}
+              className="w-full h-12 text-lg text-white hover:opacity-90 transition-all shadow-2xl"
+              style={{
+                background: `linear-gradient(to right, ${teamColor}, #a855f7)`,
+                boxShadow: `0 0 30px ${teamColor}40, 0 4px 20px rgba(0,0,0,0.5)`
+              }}
+              disabled={submitting}
+            >
+              {submitting ? (
+                <div className="flex items-center gap-2">
+                  <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                  送信中...
+                </div>
+              ) : (
+                <div className="flex items-center gap-2">
+                  <Send className="w-5 h-5" />
+                  {isEditMode ? 'レポートを更新' : 'レポートを送信'}
+                </div>
+              )}
+            </Button>
+          </div>
+        </div>
+      )}
 
       {/* 🎉 セレブレーションモーダル */}
       <ReportSuccessCelebration

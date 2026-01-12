@@ -412,17 +412,16 @@ function BottomNavigation() {
         )}
       </AnimatePresence>
 
-      {/* ボトムナビゲーション */}
-      <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50 glass-premium border-t border-white/10 pb-[var(--safe-area-bottom)] shadow-[0_-4px_24px_rgba(0,0,0,0.3)]" style={{ paddingBottom: 'max(env(safe-area-inset-bottom, 0px), 16px)' }}>
-        <div className="flex items-center justify-around h-14">
+      {/* ボトムナビゲーション - コンパクト */}
+      <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50 glass-premium border-t border-white/10" style={{ paddingBottom: 'max(env(safe-area-inset-bottom, 0px), 8px)' }}>
+        <div className="flex items-center justify-around h-12">
           {/* 管理者用メニューボタン */}
           {isAdmin && (
             <button
               onClick={() => setIsDrawerOpen(true)}
-              className="flex flex-col items-center justify-center gap-1 px-4 py-2 transition-all duration-200 active:scale-95"
+              className="flex flex-col items-center justify-center p-2 transition-all active:scale-95"
             >
-              <Menu className="w-6 h-6 text-slate-300" />
-              <span className="text-xs font-medium text-slate-400">メニュー</span>
+              <Menu className="w-5 h-5 text-slate-400" />
             </button>
           )}
 
@@ -435,40 +434,31 @@ function BottomNavigation() {
               <button
                 key={item.href}
                 onClick={() => router.push(item.href)}
-                className={cn(
-                  "flex flex-col items-center justify-center gap-1 px-4 py-2 transition-all duration-200 active:scale-95 relative z-50 group"
-                )}
+                className="flex flex-col items-center justify-center p-2 transition-all active:scale-95 relative group"
                 style={{ touchAction: "manipulation" }}
               >
                 <div className="relative">
                   <Icon
                     className={cn(
-                      "w-6 h-6 transition-all",
+                      "w-5 h-5 transition-all",
                       isActive
                         ? "text-pink-500"
-                        : "text-slate-300 group-hover:text-slate-100"
+                        : "text-slate-400"
                     )}
-                    style={isActive ? {
-                      filter: "drop-shadow(0 0 12px rgba(236, 72, 153, 0.8)) drop-shadow(0 0 6px rgba(168, 85, 247, 0.6))"
-                    } : undefined}
                   />
                   {/* 未読バッジ（DMのみ） */}
                   {isDm && unreadDmCount > 0 && (
-                    <span className="absolute -top-1.5 -right-1.5 bg-red-500 text-white text-[10px] font-bold rounded-full w-4 h-4 flex items-center justify-center border border-black shadow-lg animate-pulse z-50">
+                    <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[9px] font-bold rounded-full w-3.5 h-3.5 flex items-center justify-center border border-black">
                       {unreadDmCount > 9 ? '9+' : unreadDmCount}
                     </span>
                   )}
                 </div>
-                <span
-                  className={cn(
-                    "text-xs font-medium transition-colors",
-                    isActive
-                      ? "text-pink-400"
-                      : "text-slate-400 group-hover:text-slate-200"
-                  )}
-                >
-                  {item.label}
-                </span>
+                {/* ラベル - アクティブ時のみ表示 */}
+                {isActive && (
+                  <span className="text-[10px] font-medium text-pink-400 mt-0.5">
+                    {item.label}
+                  </span>
+                )}
               </button>
             );
           })}
