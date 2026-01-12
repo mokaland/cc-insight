@@ -188,13 +188,54 @@ export default function AllTeamsRankingPage() {
       };
     }
     return null;
-  }, [user, filteredReports, activeTeamData, activeTeamId]);
+  }, [user, filteredReports, activeTeamData, activeTeamId, guardianProfiles]);
 
   const scrollToMyRank = () => {
     if (userRowRef.current) {
       userRowRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
     }
   };
+
+  // 🏆 称号計算（チーム内）
+  const teamTitles = useMemo(() => {
+    if (!activeTeamData) return null;
+
+    const members = activeTeamData.stats.members;
+    if (members.length === 0) return null;
+
+    // 各メンバーのデータを集約
+    const memberData = members.map((member: any) => {
+      const report = filteredReports.find(r => r.name === member.name && r.team === activeTeamId);
+      const userId = report?.userId;
+      const profile = userId && guardianProfiles[userId];
+      const totalEarned = profile?.energy?.totalEarned || 0;
+      const streak = profile?.streak?.current || 0;
+
+      return {
+        name: member.name,
+        userId,
+        totalEarned,
+        streak,
+        views: member.views || 0,
+        reports: member.reports || 0
+      };
+    });
+
+    // 👑 エナジー王: 累計獲得E 1位
+    const energyKing = [...memberData].sort((a, b) => b.totalEarned - a.totalEarned)[0];
+
+    // 🔥 継続の鬼: ストリーク日数 1位
+    const streakMaster = [...memberData].sort((a, b) => b.streak - a.streak)[0];
+
+    // 📈 成長株: 報告回数が多い（先週比は複雑なので報告回数で代用）
+    const growthStar = [...memberData].sort((a, b) => b.reports - a.reports)[0];
+
+    return {
+      energyKing: energyKing?.totalEarned > 0 ? { name: energyKing.name, value: energyKing.totalEarned, label: 'エナジー王', emoji: '👑' } : null,
+      streakMaster: streakMaster?.streak > 0 ? { name: streakMaster.name, value: streakMaster.streak, label: '継続の鬼', emoji: '🔥' } : null,
+      growthStar: growthStar?.reports > 1 ? { name: growthStar.name, value: growthStar.reports, label: '成長株', emoji: '📈' } : null
+    };
+  }, [activeTeamData, filteredReports, activeTeamId, guardianProfiles]);
 
   if (!authLoading && !user) {
     return (
@@ -438,6 +479,42 @@ export default function AllTeamsRankingPage() {
           )}
         </div>
       </div>
+
+      {/* 🏆 今週の称号ホルダー */}
+      {teamTitles && (teamTitles.energyKing || teamTitles.streakMaster || teamTitles.growthStar) && (
+        <div className="rounded-xl p-3 border bg-gradient-to-r from-yellow-500/5 to-purple-500/5 border-yellow-500/20">
+          <div className="flex items-center gap-2 mb-3">
+            <Award className="w-4 h-4 text-yellow-400" />
+            <h3 className="text-sm font-bold text-yellow-400">今週の称号ホルダー</h3>
+          </div>
+          <div className="grid grid-cols-3 gap-2">
+            {teamTitles.energyKing && (
+              <div className="bg-yellow-500/10 rounded-lg p-2 text-center border border-yellow-500/20">
+                <div className="text-lg">{teamTitles.energyKing.emoji}</div>
+                <p className="text-[10px] text-yellow-400 font-medium">{teamTitles.energyKing.label}</p>
+                <p className="text-xs text-white font-bold truncate">{teamTitles.energyKing.name}</p>
+                <p className="text-[9px] text-slate-400">{teamTitles.energyKing.value >= 1000 ? `${(teamTitles.energyKing.value / 1000).toFixed(1)}k` : teamTitles.energyKing.value}E</p>
+              </div>
+            )}
+            {teamTitles.streakMaster && (
+              <div className="bg-orange-500/10 rounded-lg p-2 text-center border border-orange-500/20">
+                <div className="text-lg">{teamTitles.streakMaster.emoji}</div>
+                <p className="text-[10px] text-orange-400 font-medium">{teamTitles.streakMaster.label}</p>
+                <p className="text-xs text-white font-bold truncate">{teamTitles.streakMaster.name}</p>
+                <p className="text-[9px] text-slate-400">{teamTitles.streakMaster.value}日連続</p>
+              </div>
+            )}
+            {teamTitles.growthStar && (
+              <div className="bg-emerald-500/10 rounded-lg p-2 text-center border border-emerald-500/20">
+                <div className="text-lg">{teamTitles.growthStar.emoji}</div>
+                <p className="text-[10px] text-emerald-400 font-medium">{teamTitles.growthStar.label}</p>
+                <p className="text-xs text-white font-bold truncate">{teamTitles.growthStar.name}</p>
+                <p className="text-[9px] text-slate-400">{teamTitles.growthStar.value}回報告</p>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* メンバーランキング */}
       {sortedMembers.length === 0 ? (
