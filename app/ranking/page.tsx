@@ -195,6 +195,15 @@ export default function AllTeamsRankingPage() {
   }, [user, filteredReports, activeTeamData, activeTeamId, guardianProfiles]);
 
   const scrollToMyRank = () => {
+    // userRankInfoから自分のユーザーIDを使ってスクロール
+    if (user?.uid) {
+      const myRow = document.getElementById(`ranking-row-${user.uid}`);
+      if (myRow) {
+        myRow.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        return;
+      }
+    }
+    // フォールバック: refを使用
     if (userRowRef.current) {
       userRowRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
     }
@@ -616,6 +625,7 @@ export default function AllTeamsRankingPage() {
             return (
               <div
                 key={userId || member?.name || `member-${index}`}
+                id={userId ? `ranking-row-${userId}` : undefined}
                 ref={isCurrentUser ? userRowRef : null}
                 onClick={() => {
                   setSelectedMember({ ...member, energy, totalEarned, guardianData });
