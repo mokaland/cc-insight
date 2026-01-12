@@ -128,17 +128,21 @@ function LayoutContent({ children }: { children: React.ReactNode }) {
         }}
       />
       <div className="flex min-h-dvh relative overflow-hidden">
-        {/* 星雲背景レイヤー - containで効果を分離 */}
+        {/* 星雲背景レイヤー - containで効果を分離 & overflow防止 */}
         <div
           className="absolute inset-0 pointer-events-none overflow-hidden"
-          style={{ contain: 'layout paint' }}
+          style={{
+            contain: 'strict',
+            maxWidth: '100vw',
+            clipPath: 'inset(0)',
+          }}
         >
-          <div className="nebula-bg absolute top-0 left-1/4 w-[min(600px,150vw)] h-[min(600px,150vw)] rounded-full blur-3xl opacity-30"
+          <div className="nebula-bg absolute top-0 left-1/4 w-[min(400px,80vw)] h-[min(400px,80vw)] rounded-full blur-3xl opacity-30"
             style={{
               background: 'radial-gradient(ellipse at center, rgba(139, 92, 246, 0.3) 0%, rgba(236, 72, 153, 0.2) 40%, transparent 70%)'
             }}
           />
-          <div className="nebula-bg absolute bottom-0 right-1/4 w-[min(500px,120vw)] h-[min(500px,120vw)] rounded-full blur-3xl opacity-20"
+          <div className="nebula-bg absolute bottom-0 right-1/4 w-[min(350px,70vw)] h-[min(350px,70vw)] rounded-full blur-3xl opacity-20"
             style={{
               background: 'radial-gradient(ellipse at center, rgba(34, 211, 238, 0.2) 0%, rgba(168, 85, 247, 0.15) 40%, transparent 70%)',
               animationDelay: '5s'
