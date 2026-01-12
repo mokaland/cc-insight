@@ -128,7 +128,7 @@
   * {
     @apply border-border outline-ring/50;
   }
-  
+
   html,
   body {
     background: #020617 !important;
@@ -161,9 +161,12 @@
   }
 
   @keyframes stars-float {
-    0%, 100% {
+
+    0%,
+    100% {
       background-position: 0% 0%;
     }
+
     50% {
       background-position: 100% 100%;
     }
@@ -175,6 +178,7 @@
   0% {
     background-position: 200% 0;
   }
+
   100% {
     background-position: -200% 0;
   }
@@ -186,10 +190,13 @@
 
 /* Neon Glow Animation */
 @keyframes neon-pulse {
-  0%, 100% {
+
+  0%,
+  100% {
     opacity: 1;
     filter: brightness(1);
   }
+
   50% {
     opacity: 0.8;
     filter: brightness(1.2);
@@ -217,19 +224,25 @@
 
 /* 浮遊アニメーション（呼吸するような動き） */
 @keyframes guardian-float {
-  0%, 100% {
+
+  0%,
+  100% {
     transform: translateY(0px);
   }
+
   50% {
     transform: translateY(-10px);
   }
 }
 
 @keyframes guardian-breathe {
-  0%, 100% {
+
+  0%,
+  100% {
     transform: scale(1);
     filter: brightness(1);
   }
+
   50% {
     transform: scale(1.02);
     filter: brightness(1.1);
@@ -237,8 +250,8 @@
 }
 
 .guardian-floating {
-  animation: guardian-float 3s ease-in-out infinite, 
-             guardian-breathe 4s ease-in-out infinite;
+  animation: guardian-float 3s ease-in-out infinite,
+    guardian-breathe 4s ease-in-out infinite;
 }
 
 /* 進化演出用のパルスアニメーション */
@@ -247,10 +260,12 @@
     transform: scale(0.95);
     opacity: 0.7;
   }
+
   50% {
     transform: scale(1.05);
     opacity: 1;
   }
+
   100% {
     transform: scale(0.95);
     opacity: 0.7;
@@ -266,33 +281,36 @@
   0% {
     background-position: 0% 50%;
   }
+
   50% {
     background-position: 100% 50%;
   }
+
   100% {
     background-position: 0% 50%;
   }
 }
 
 .energy-flow {
-  background: linear-gradient(
-    90deg,
-    rgba(168, 85, 247, 0.4),
-    rgba(236, 72, 153, 0.6),
-    rgba(168, 85, 247, 0.4)
-  );
+  background: linear-gradient(90deg,
+      rgba(168, 85, 247, 0.4),
+      rgba(236, 72, 153, 0.6),
+      rgba(168, 85, 247, 0.4));
   background-size: 200% 200%;
   animation: energy-flow 2s ease infinite;
 }
 
 /* オーラ輝きエフェクト */
 @keyframes aura-glow {
-  0%, 100% {
+
+  0%,
+  100% {
     box-shadow: 0 0 20px rgba(168, 85, 247, 0.3);
   }
+
   50% {
     box-shadow: 0 0 40px rgba(236, 72, 153, 0.5),
-                0 0 60px rgba(168, 85, 247, 0.3);
+      0 0 60px rgba(168, 85, 247, 0.3);
   }
 }
 
@@ -302,10 +320,13 @@
 
 /* キラキラエフェクト */
 @keyframes sparkle {
-  0%, 100% {
+
+  0%,
+  100% {
     opacity: 0;
     transform: scale(0);
   }
+
   50% {
     opacity: 1;
     transform: scale(1);
@@ -322,6 +343,7 @@
     transform: scale(0);
     opacity: 1;
   }
+
   100% {
     transform: scale(3);
     opacity: 0;
@@ -341,12 +363,15 @@
   0% {
     transform: translate(0, 0) rotate(0deg) scale(1);
   }
+
   33% {
     transform: translate(15px, -10px) rotate(120deg) scale(1.05);
   }
+
   66% {
     transform: translate(-10px, 15px) rotate(240deg) scale(0.95);
   }
+
   100% {
     transform: translate(0, 0) rotate(360deg) scale(1);
   }
@@ -361,9 +386,12 @@
 
 /* 優しいフローティング */
 @keyframes float-gentle {
-  0%, 100% {
+
+  0%,
+  100% {
     transform: translateY(0px) scale(1);
   }
+
   50% {
     transform: translateY(-15px) scale(1.02);
   }
@@ -380,15 +408,19 @@
   0% {
     box-shadow: 0 0 20px #A855F7, 0 0 40px #A855F7;
   }
+
   25% {
     box-shadow: 0 0 20px #EC4899, 0 0 40px #EC4899;
   }
+
   50% {
     box-shadow: 0 0 20px #22D3EE, 0 0 40px #22D3EE;
   }
+
   75% {
     box-shadow: 0 0 20px #FACC15, 0 0 40px #FACC15;
   }
+
   100% {
     box-shadow: 0 0 20px #A855F7, 0 0 40px #A855F7;
   }
@@ -404,6 +436,7 @@
     transform: scale(1);
     opacity: 0.8;
   }
+
   100% {
     transform: scale(2.5);
     opacity: 0;
@@ -432,18 +465,33 @@
 
 /* 魔法陣回転（異なる速度） */
 @keyframes spin-slow {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
+  from {
+    transform: rotate(0deg);
+  }
+
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 @keyframes spin-medium {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(-360deg); }
+  from {
+    transform: rotate(0deg);
+  }
+
+  to {
+    transform: rotate(-360deg);
+  }
 }
 
 @keyframes spin-fast {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
+  from {
+    transform: rotate(0deg);
+  }
+
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 .animate-spin-slow {
@@ -468,13 +516,11 @@
 
 /* 3Dジュエルカード */
 .jewel-card {
-  background: linear-gradient(
-    145deg,
-    rgba(255, 255, 255, 0.15) 0%,
-    rgba(255, 255, 255, 0.05) 50%,
-    rgba(0, 0, 0, 0.1) 100%
-  );
-  box-shadow: 
+  background: linear-gradient(145deg,
+      rgba(255, 255, 255, 0.15) 0%,
+      rgba(255, 255, 255, 0.05) 50%,
+      rgba(0, 0, 0, 0.1) 100%);
+  box-shadow:
     inset 0 2px 0 rgba(255, 255, 255, 0.4),
     inset 0 -2px 0 rgba(0, 0, 0, 0.4),
     0 15px 35px rgba(0, 0, 0, 0.4),
@@ -502,9 +548,12 @@
 
 /* リキッドプログレスバー */
 @keyframes liquid-wave {
-  0%, 100% {
+
+  0%,
+  100% {
     transform: scaleY(1);
   }
+
   50% {
     transform: scaleY(1.1);
   }
@@ -520,10 +569,13 @@
 
 /* ガーディアンブレス（呼吸） */
 @keyframes guardian-breathe {
-  0%, 100% {
+
+  0%,
+  100% {
     transform: scale(1);
     filter: brightness(1);
   }
+
   50% {
     transform: scale(1.05);
     filter: brightness(1.15);
@@ -549,7 +601,7 @@
   backdrop-filter: blur(20px) saturate(180%);
   -webkit-backdrop-filter: blur(20px) saturate(180%);
   border: 1px solid rgba(255, 255, 255, 0.1);
-  box-shadow: 
+  box-shadow:
     0 25px 50px -12px rgba(0, 0, 0, 0.5),
     inset 0 1px 0 rgba(255, 255, 255, 0.1);
 }
@@ -581,7 +633,8 @@
   height: 48px;
   border-radius: 9999px;
   position: relative;
-  overflow: visible; /* リングを外側に表示 */
+  overflow: visible;
+  /* リングを外側に表示 */
   flex-shrink: 0;
 }
 
@@ -603,21 +656,28 @@
 
 /* TOP 10%: 勝利ポーズ + リング状光彩 */
 @keyframes triumphant-pose {
-  0%, 100% {
+
+  0%,
+  100% {
     transform: translateY(0) scale(1);
   }
+
   50% {
     transform: translateY(-8px) scale(1.05);
   }
 }
 
 @keyframes rainbow-ring {
-  0%, 100% {
+
+  0%,
+  100% {
     box-shadow: 0 0 20px 4px #FFD700, 0 0 40px 8px rgba(255, 215, 0, 0.4);
   }
+
   33% {
     box-shadow: 0 0 20px 4px #FF00FF, 0 0 40px 8px rgba(255, 0, 255, 0.4);
   }
+
   66% {
     box-shadow: 0 0 20px 4px #00FFFF, 0 0 40px 8px rgba(0, 255, 255, 0.4);
   }
@@ -639,9 +699,12 @@
 
 /* TOP 30%: 安定した輝き + 金色リング */
 @keyframes golden-ring {
-  0%, 100% {
+
+  0%,
+  100% {
     box-shadow: 0 0 15px 3px rgba(251, 191, 36, 0.8), 0 0 30px 6px rgba(251, 191, 36, 0.3);
   }
+
   50% {
     box-shadow: 0 0 20px 4px rgba(251, 191, 36, 1), 0 0 40px 8px rgba(251, 191, 36, 0.4);
   }
@@ -668,9 +731,12 @@
 
 /* 下位 30%: うなだれる + くすんだ色 */
 @keyframes slumped-pose {
-  0%, 100% {
+
+  0%,
+  100% {
     transform: rotate(0deg) translateY(0);
   }
+
   50% {
     transform: rotate(-5deg) translateY(3px);
   }
@@ -687,9 +753,12 @@
 
 /* 最下位層（10%）: 居眠り + モノクロ */
 @keyframes sleeping-zzz {
-  0%, 100% {
+
+  0%,
+  100% {
     transform: scale(1);
   }
+
   50% {
     transform: scale(0.98);
   }
@@ -720,6 +789,7 @@
 
 /* モバイル最適化 */
 @media (max-width: 640px) {
+
   /* 最小タップターゲット: 44x44px（Appleガイドライン準拠） */
   button,
   a,
@@ -736,39 +806,47 @@
     font-size: 0.7rem;
     line-height: 1.4;
   }
+
   .text-sm {
     font-size: 0.8rem;
     line-height: 1.5;
   }
+
   .text-base {
     font-size: 0.9rem;
     line-height: 1.6;
   }
+
   .text-lg {
     font-size: 1rem;
     line-height: 1.6;
   }
+
   .text-xl {
     font-size: 1.1rem;
     line-height: 1.7;
   }
+
   .text-2xl {
     font-size: 1.3rem;
     line-height: 1.7;
   }
+
   .text-3xl {
     font-size: 1.5rem;
     line-height: 1.8;
   }
 
   /* カード間隔調整 */
-  .space-y-8 > * + * {
+  .space-y-8>*+* {
     margin-top: 1.5rem !important;
   }
-  .space-y-6 > * + * {
+
+  .space-y-6>*+* {
     margin-top: 1rem !important;
   }
-  .space-y-4 > * + * {
+
+  .space-y-4>*+* {
     margin-top: 0.75rem !important;
   }
 
@@ -776,9 +854,11 @@
   .p-8 {
     padding: 1.5rem;
   }
+
   .p-6 {
     padding: 1.25rem;
   }
+
   .p-4 {
     padding: 1rem;
   }
@@ -787,6 +867,7 @@
   .grid-cols-3 {
     grid-template-columns: repeat(1, minmax(0, 1fr)) !important;
   }
+
   .grid-cols-2 {
     grid-template-columns: repeat(1, minmax(0, 1fr)) !important;
   }
@@ -795,9 +876,11 @@
   .gap-8 {
     gap: 1.5rem;
   }
+
   .gap-6 {
     gap: 1rem;
   }
+
   .gap-4 {
     gap: 0.75rem;
   }
@@ -826,16 +909,20 @@
 
 /* タッチデバイス用ホバー無効化 */
 @media (hover: none) and (pointer: coarse) {
+
   /* ホバーエフェクトを無効化（タッチデバイス） */
   .hover\:scale-105:hover {
     transform: scale(1);
   }
+
   .hover\:bg-white\/10:hover {
     background-color: transparent;
   }
+
   .hover\:opacity-90:hover {
     opacity: 1;
   }
+
   .hover\:shadow-lg:hover {
     box-shadow: none;
   }
@@ -865,6 +952,7 @@
 
 /* 大画面（デスクトップ） */
 @media (min-width: 1025px) {
+
   /* パフォーマンス最適化：アニメーションの有効化 */
   .guardian-floating,
   .nebula-bg,
@@ -875,19 +963,22 @@
 
 /* 縦長画面対応（スマートフォン） */
 @media (max-height: 700px) and (max-width: 640px) {
+
   /* ヘッダーを小さく */
   h1 {
     font-size: 1.5rem !important;
   }
+
   h2 {
     font-size: 1.25rem !important;
   }
 
   /* カード間隔をさらに縮小 */
-  .space-y-8 > * + * {
+  .space-y-8>*+* {
     margin-top: 1rem !important;
   }
-  .space-y-6 > * + * {
+
+  .space-y-6>*+* {
     margin-top: 0.75rem !important;
   }
 
@@ -895,6 +986,7 @@
   .p-8 {
     padding: 1rem;
   }
+
   .p-6 {
     padding: 0.875rem;
   }
@@ -902,6 +994,7 @@
 
 /* アクセシビリティ：フォーカス可視化 */
 @media (prefers-reduced-motion: no-preference) {
+
   /* アニメーション許可時のみ */
   *:focus-visible {
     outline: 2px solid rgba(168, 85, 247, 0.8);
@@ -912,6 +1005,7 @@
 
 /* 低速モード対応（アニメーション削減） */
 @media (prefers-reduced-motion: reduce) {
+
   *,
   *::before,
   *::after {
@@ -962,12 +1056,10 @@ button::before,
   left: -100%;
   width: 100%;
   height: 100%;
-  background: linear-gradient(
-    90deg,
-    transparent 0%,
-    rgba(255, 255, 255, 0.3) 50%,
-    transparent 100%
-  );
+  background: linear-gradient(90deg,
+      transparent 0%,
+      rgba(255, 255, 255, 0.3) 50%,
+      transparent 100%);
   transition: left 0.5s ease;
   pointer-events: none;
 }
@@ -990,7 +1082,7 @@ button:hover::before,
 .jewel-card:hover {
   transform: translateY(-4px) scale(1.01);
   box-shadow: 0 12px 40px rgba(0, 0, 0, 0.3),
-              0 0 30px rgba(168, 85, 247, 0.2);
+    0 0 30px rgba(168, 85, 247, 0.2);
 }
 
 /* インプットフィールドのフォーカスリング */
@@ -999,7 +1091,7 @@ textarea:focus,
 select:focus {
   outline: none;
   box-shadow: 0 0 0 3px rgba(168, 85, 247, 0.3),
-              0 0 20px rgba(168, 85, 247, 0.2);
+    0 0 20px rgba(168, 85, 247, 0.2);
   transform: scale(1.01);
   transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
 }
@@ -1086,9 +1178,11 @@ progress::-webkit-progress-value {
   0% {
     background-position: 0% 50%;
   }
+
   50% {
     background-position: 100% 50%;
   }
+
   100% {
     background-position: 0% 50%;
   }
@@ -1143,12 +1237,12 @@ select:focus {
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
 }
 
-.toggle-switch input:checked + .toggle-slider {
+.toggle-switch input:checked+.toggle-slider {
   background: linear-gradient(135deg, #a855f7, #ec4899);
   box-shadow: 0 0 10px rgba(168, 85, 247, 0.5);
 }
 
-.toggle-switch input:checked + .toggle-slider:before {
+.toggle-switch input:checked+.toggle-slider:before {
   transform: translateX(24px);
 }
 
@@ -1165,6 +1259,7 @@ select:focus {
   from {
     opacity: 0;
   }
+
   to {
     opacity: 1;
   }
@@ -1175,6 +1270,7 @@ select:focus {
     opacity: 0;
     transform: translateY(50px) scale(0.9);
   }
+
   to {
     opacity: 1;
     transform: translateY(0) scale(1);
@@ -1192,6 +1288,7 @@ select:focus {
     opacity: 0;
     transform: scaleY(0.8) translateY(-10px);
   }
+
   to {
     opacity: 1;
     transform: scaleY(1) translateY(0);
@@ -1208,6 +1305,7 @@ select:focus {
     opacity: 0;
     transform: translateY(5px);
   }
+
   to {
     opacity: 1;
     transform: translateY(0);
@@ -1219,17 +1317,32 @@ select:focus {
   animation: staggerFadeIn 0.5s cubic-bezier(0.4, 0, 0.2, 1) both;
 }
 
-.stagger-item:nth-child(1) { animation-delay: 0.05s; }
-.stagger-item:nth-child(2) { animation-delay: 0.1s; }
-.stagger-item:nth-child(3) { animation-delay: 0.15s; }
-.stagger-item:nth-child(4) { animation-delay: 0.2s; }
-.stagger-item:nth-child(5) { animation-delay: 0.25s; }
+.stagger-item:nth-child(1) {
+  animation-delay: 0.05s;
+}
+
+.stagger-item:nth-child(2) {
+  animation-delay: 0.1s;
+}
+
+.stagger-item:nth-child(3) {
+  animation-delay: 0.15s;
+}
+
+.stagger-item:nth-child(4) {
+  animation-delay: 0.2s;
+}
+
+.stagger-item:nth-child(5) {
+  animation-delay: 0.25s;
+}
 
 @keyframes staggerFadeIn {
   from {
     opacity: 0;
     transform: translateY(20px);
   }
+
   to {
     opacity: 1;
     transform: translateY(0);
@@ -1246,9 +1359,11 @@ select:focus {
     transform: scale(0);
     opacity: 0;
   }
+
   50% {
     transform: scale(1.2);
   }
+
   100% {
     transform: scale(1);
     opacity: 1;
@@ -1265,6 +1380,7 @@ select:focus {
   from {
     transform: rotate(0deg);
   }
+
   to {
     transform: rotate(360deg);
   }
@@ -1276,22 +1392,26 @@ select:focus {
   border-right: 2px solid rgba(168, 85, 247, 0.75);
   white-space: nowrap;
   animation: typing 3s steps(40) 1s both,
-             blink-caret 0.75s step-end infinite;
+    blink-caret 0.75s step-end infinite;
 }
 
 @keyframes typing {
   from {
     width: 0;
   }
+
   to {
     width: 100%;
   }
 }
 
 @keyframes blink-caret {
-  from, to {
+
+  from,
+  to {
     border-color: transparent;
   }
+
   50% {
     border-color: rgba(168, 85, 247, 0.75);
   }
@@ -1299,12 +1419,10 @@ select:focus {
 
 /* スケルトンローディング */
 .skeleton {
-  background: linear-gradient(
-    90deg,
-    rgba(255, 255, 255, 0.05) 25%,
-    rgba(255, 255, 255, 0.1) 50%,
-    rgba(255, 255, 255, 0.05) 75%
-  );
+  background: linear-gradient(90deg,
+      rgba(255, 255, 255, 0.05) 25%,
+      rgba(255, 255, 255, 0.1) 50%,
+      rgba(255, 255, 255, 0.05) 75%);
   background-size: 200% 100%;
   animation: skeleton-loading 1.5s ease-in-out infinite;
   border-radius: 4px;
@@ -1314,6 +1432,7 @@ select:focus {
   0% {
     background-position: 200% 0;
   }
+
   100% {
     background-position: -200% 0;
   }
@@ -1326,96 +1445,85 @@ select:focus {
 
 /* エナジーオーブ系アイコン */
 .icon-energy-orb {
-  filter: drop-shadow(0 0 20px rgba(168, 85, 247, 0.8))
-          drop-shadow(0 0 40px rgba(236, 72, 153, 0.6));
+  filter: drop-shadow(0 0 20px rgba(168, 85, 247, 0.8)) drop-shadow(0 0 40px rgba(236, 72, 153, 0.6));
   animation: float-gentle 3s ease-in-out infinite;
 }
 
 /* 保有エナジーアイコン */
 .icon-total-energy {
-  filter: drop-shadow(0 0 15px rgba(168, 85, 247, 0.9))
-          drop-shadow(0 0 30px rgba(168, 85, 247, 0.5));
+  filter: drop-shadow(0 0 15px rgba(168, 85, 247, 0.9)) drop-shadow(0 0 30px rgba(168, 85, 247, 0.5));
 }
 
 /* 累計エナジーアイコン */
 .icon-cumulative-energy {
-  filter: drop-shadow(0 0 15px rgba(34, 211, 238, 0.8))
-          drop-shadow(0 0 25px rgba(34, 211, 238, 0.4));
+  filter: drop-shadow(0 0 15px rgba(34, 211, 238, 0.8)) drop-shadow(0 0 25px rgba(34, 211, 238, 0.4));
 }
 
 /* ストリーク炎アイコン */
 .icon-streak-flame {
-  filter: drop-shadow(0 0 20px rgba(251, 191, 36, 0.9))
-          drop-shadow(0 0 35px rgba(251, 191, 36, 0.6));
+  filter: drop-shadow(0 0 20px rgba(251, 191, 36, 0.9)) drop-shadow(0 0 35px rgba(251, 191, 36, 0.6));
   animation: flicker-flame 2s ease-in-out infinite;
 }
 
 @keyframes flicker-flame {
-  0%, 100% {
-    filter: drop-shadow(0 0 20px rgba(251, 191, 36, 0.9))
-            drop-shadow(0 0 35px rgba(251, 191, 36, 0.6));
+
+  0%,
+  100% {
+    filter: drop-shadow(0 0 20px rgba(251, 191, 36, 0.9)) drop-shadow(0 0 35px rgba(251, 191, 36, 0.6));
   }
+
   50% {
-    filter: drop-shadow(0 0 25px rgba(251, 191, 36, 1))
-            drop-shadow(0 0 45px rgba(251, 191, 36, 0.8));
+    filter: drop-shadow(0 0 25px rgba(251, 191, 36, 1)) drop-shadow(0 0 45px rgba(251, 191, 36, 0.8));
   }
 }
 
 /* ストリーク炎バリエーション */
 .icon-streak-flame-spark {
-  filter: drop-shadow(0 0 18px rgba(249, 115, 22, 0.9))
-          drop-shadow(0 0 30px rgba(249, 115, 22, 0.6));
+  filter: drop-shadow(0 0 18px rgba(249, 115, 22, 0.9)) drop-shadow(0 0 30px rgba(249, 115, 22, 0.6));
 }
 
 .icon-streak-flame-blue {
-  filter: drop-shadow(0 0 22px rgba(34, 211, 238, 0.9))
-          drop-shadow(0 0 40px rgba(34, 211, 238, 0.7));
+  filter: drop-shadow(0 0 22px rgba(34, 211, 238, 0.9)) drop-shadow(0 0 40px rgba(34, 211, 238, 0.7));
 }
 
 .icon-streak-flame-inferno {
-  filter: drop-shadow(0 0 25px rgba(255, 215, 0, 1))
-          drop-shadow(0 0 45px rgba(236, 72, 153, 0.8))
-          drop-shadow(0 0 60px rgba(168, 85, 247, 0.6));
+  filter: drop-shadow(0 0 25px rgba(255, 215, 0, 1)) drop-shadow(0 0 45px rgba(236, 72, 153, 0.8)) drop-shadow(0 0 60px rgba(168, 85, 247, 0.6));
   animation: rainbow-pulse 3s ease-in-out infinite;
 }
 
 @keyframes rainbow-pulse {
-  0%, 100% {
-    filter: drop-shadow(0 0 25px rgba(255, 215, 0, 1))
-            drop-shadow(0 0 45px rgba(236, 72, 153, 0.8));
+
+  0%,
+  100% {
+    filter: drop-shadow(0 0 25px rgba(255, 215, 0, 1)) drop-shadow(0 0 45px rgba(236, 72, 153, 0.8));
   }
+
   50% {
-    filter: drop-shadow(0 0 30px rgba(236, 72, 153, 1))
-            drop-shadow(0 0 50px rgba(168, 85, 247, 0.9));
+    filter: drop-shadow(0 0 30px rgba(236, 72, 153, 1)) drop-shadow(0 0 50px rgba(168, 85, 247, 0.9));
   }
 }
 
 /* ランキングメダル */
 .icon-medal-gold {
-  filter: drop-shadow(0 0 20px rgba(255, 215, 0, 0.9))
-          drop-shadow(0 0 35px rgba(255, 215, 0, 0.6));
+  filter: drop-shadow(0 0 20px rgba(255, 215, 0, 0.9)) drop-shadow(0 0 35px rgba(255, 215, 0, 0.6));
 }
 
 .icon-medal-silver {
-  filter: drop-shadow(0 0 18px rgba(192, 192, 192, 0.9))
-          drop-shadow(0 0 30px rgba(192, 192, 192, 0.5));
+  filter: drop-shadow(0 0 18px rgba(192, 192, 192, 0.9)) drop-shadow(0 0 30px rgba(192, 192, 192, 0.5));
 }
 
 .icon-medal-bronze {
-  filter: drop-shadow(0 0 18px rgba(205, 127, 50, 0.9))
-          drop-shadow(0 0 30px rgba(205, 127, 50, 0.5));
+  filter: drop-shadow(0 0 18px rgba(205, 127, 50, 0.9)) drop-shadow(0 0 30px rgba(205, 127, 50, 0.5));
 }
 
 /* KPIアイコンセット */
 .icon-kpi {
-  filter: drop-shadow(0 0 12px rgba(168, 85, 247, 0.7))
-          drop-shadow(0 0 20px rgba(168, 85, 247, 0.4));
+  filter: drop-shadow(0 0 12px rgba(168, 85, 247, 0.7)) drop-shadow(0 0 20px rgba(168, 85, 247, 0.4));
   transition: all 0.3s ease;
 }
 
 .icon-kpi:hover {
-  filter: drop-shadow(0 0 18px rgba(168, 85, 247, 0.9))
-          drop-shadow(0 0 30px rgba(168, 85, 247, 0.6));
+  filter: drop-shadow(0 0 18px rgba(168, 85, 247, 0.9)) drop-shadow(0 0 30px rgba(168, 85, 247, 0.6));
   transform: scale(1.05);
 }
 
@@ -1429,29 +1537,27 @@ select:focus {
 }
 
 .icon-tier-gold {
-  filter: drop-shadow(0 0 22px rgba(251, 191, 36, 0.9))
-          drop-shadow(0 0 40px rgba(251, 191, 36, 0.6));
+  filter: drop-shadow(0 0 22px rgba(251, 191, 36, 0.9)) drop-shadow(0 0 40px rgba(251, 191, 36, 0.6));
 }
 
 .icon-tier-platinum {
-  filter: drop-shadow(0 0 25px rgba(168, 85, 247, 0.9))
-          drop-shadow(0 0 45px rgba(236, 72, 153, 0.7));
+  filter: drop-shadow(0 0 25px rgba(168, 85, 247, 0.9)) drop-shadow(0 0 45px rgba(236, 72, 153, 0.7));
 }
 
 .icon-tier-diamond {
-  filter: drop-shadow(0 0 28px rgba(34, 211, 238, 0.9))
-          drop-shadow(0 0 50px rgba(168, 85, 247, 0.8));
+  filter: drop-shadow(0 0 28px rgba(34, 211, 238, 0.9)) drop-shadow(0 0 50px rgba(168, 85, 247, 0.8));
   animation: divine-pulse 4s ease-in-out infinite;
 }
 
 @keyframes divine-pulse {
-  0%, 100% {
-    filter: drop-shadow(0 0 28px rgba(34, 211, 238, 0.9))
-            drop-shadow(0 0 50px rgba(168, 85, 247, 0.8));
+
+  0%,
+  100% {
+    filter: drop-shadow(0 0 28px rgba(34, 211, 238, 0.9)) drop-shadow(0 0 50px rgba(168, 85, 247, 0.8));
   }
+
   50% {
-    filter: drop-shadow(0 0 35px rgba(34, 211, 238, 1))
-            drop-shadow(0 0 60px rgba(168, 85, 247, 1));
+    filter: drop-shadow(0 0 35px rgba(34, 211, 238, 1)) drop-shadow(0 0 60px rgba(168, 85, 247, 1));
   }
 }
 
@@ -1465,19 +1571,19 @@ select:focus {
 }
 
 .icon-status-cursed {
-  filter: drop-shadow(0 0 20px rgba(220, 38, 38, 0.9))
-          drop-shadow(0 0 35px rgba(0, 0, 0, 0.8));
+  filter: drop-shadow(0 0 20px rgba(220, 38, 38, 0.9)) drop-shadow(0 0 35px rgba(0, 0, 0, 0.8));
   animation: ominous-pulse 2s ease-in-out infinite;
 }
 
 @keyframes ominous-pulse {
-  0%, 100% {
-    filter: drop-shadow(0 0 20px rgba(220, 38, 38, 0.9))
-            drop-shadow(0 0 35px rgba(0, 0, 0, 0.8));
+
+  0%,
+  100% {
+    filter: drop-shadow(0 0 20px rgba(220, 38, 38, 0.9)) drop-shadow(0 0 35px rgba(0, 0, 0, 0.8));
   }
+
   50% {
-    filter: drop-shadow(0 0 25px rgba(220, 38, 38, 1))
-            drop-shadow(0 0 45px rgba(0, 0, 0, 1));
+    filter: drop-shadow(0 0 25px rgba(220, 38, 38, 1)) drop-shadow(0 0 45px rgba(0, 0, 0, 1));
   }
 }
 
@@ -1496,8 +1602,7 @@ select:focus {
 }
 
 .icon-invest-energy {
-  filter: drop-shadow(0 0 15px rgba(251, 191, 36, 0.8))
-          drop-shadow(0 0 25px rgba(168, 85, 247, 0.5));
+  filter: drop-shadow(0 0 15px rgba(251, 191, 36, 0.8)) drop-shadow(0 0 25px rgba(168, 85, 247, 0.5));
 }
 
 /* 共通アイコンスタイル */
@@ -1567,10 +1672,13 @@ select:focus {
 }
 
 @keyframes glow-pulse {
-  0%, 100% {
+
+  0%,
+  100% {
     opacity: 0.6;
     transform: scale(1);
   }
+
   50% {
     opacity: 0.8;
     transform: scale(1.1);
@@ -1592,20 +1700,20 @@ select:focus {
 
 /* レスポンシブ対応 */
 @media (max-width: 640px) {
+
   /* モバイルではグローエフェクトを軽減 */
   .icon-energy-orb,
   .icon-streak-flame,
   .icon-tier-diamond {
-    filter: drop-shadow(0 0 10px currentColor)
-            drop-shadow(0 0 20px currentColor);
+    filter: drop-shadow(0 0 10px currentColor) drop-shadow(0 0 20px currentColor);
   }
-  
+
   /* アイコンサイズを自動調整 */
   .ui-icon-lg {
     width: 40px;
     height: 40px;
   }
-  
+
   .ui-icon-xl {
     width: 56px;
     height: 56px;
@@ -1614,6 +1722,7 @@ select:focus {
 
 /* ダークモード最適化 */
 @media (prefers-color-scheme: dark) {
+
   /* 既にダークモード前提だが念のため */
   .ui-icon {
     filter: brightness(1.1);
@@ -1622,6 +1731,7 @@ select:focus {
 
 /* アクセシビリティ：アニメーション削減設定 */
 @media (prefers-reduced-motion: reduce) {
+
   .icon-energy-orb,
   .icon-streak-flame,
   .icon-tier-diamond,
@@ -1637,20 +1747,26 @@ select:focus {
 
 /* パーティクルの浮遊アニメーション */
 @keyframes float-particle {
-  0%, 100% {
+
+  0%,
+  100% {
     transform: translateY(0) translateX(0) scale(1);
     opacity: 0;
   }
+
   10% {
     opacity: 1;
   }
+
   50% {
     transform: translateY(-100px) translateX(20px) scale(1.5);
     opacity: 0.8;
   }
+
   90% {
     opacity: 0.3;
   }
+
   100% {
     transform: translateY(-200px) translateX(-10px) scale(0.5);
     opacity: 0;
@@ -1672,6 +1788,7 @@ select:focus {
     opacity: 0;
     transform: translateY(20px);
   }
+
   to {
     opacity: 1;
     transform: translateY(0);
@@ -1684,9 +1801,12 @@ select:focus {
 
 /* 魔法陣の輝き */
 @keyframes magic-glow {
-  0%, 100% {
+
+  0%,
+  100% {
     filter: brightness(1) drop-shadow(0 0 20px rgba(168, 85, 247, 0.5));
   }
+
   50% {
     filter: brightness(1.3) drop-shadow(0 0 40px rgba(168, 85, 247, 0.8));
   }
@@ -1702,10 +1822,12 @@ select:focus {
     transform: scale(0.5);
     opacity: 0;
   }
+
   50% {
     transform: scale(1.2);
     opacity: 1;
   }
+
   100% {
     transform: scale(1);
     opacity: 1;
@@ -1718,11 +1840,14 @@ select:focus {
 
 /* 神秘的な呼吸エフェクト */
 @keyframes mystic-breathe {
-  0%, 100% {
+
+  0%,
+  100% {
     transform: scale(1);
     opacity: 0.8;
     filter: brightness(1);
   }
+
   50% {
     transform: scale(1.05);
     opacity: 1;
@@ -1736,9 +1861,12 @@ select:focus {
 
 /* テキストのシャドウパルス */
 @keyframes text-glow-pulse {
-  0%, 100% {
+
+  0%,
+  100% {
     text-shadow: 0 0 10px currentColor, 0 0 20px currentColor;
   }
+
   50% {
     text-shadow: 0 0 20px currentColor, 0 0 40px currentColor, 0 0 60px currentColor;
   }
@@ -1754,10 +1882,12 @@ select:focus {
     transform: scale(1);
     box-shadow: 0 0 0 0 rgba(168, 85, 247, 0.4);
   }
+
   70% {
     transform: scale(1);
     box-shadow: 0 0 0 20px rgba(168, 85, 247, 0);
   }
+
   100% {
     transform: scale(1);
     box-shadow: 0 0 0 0 rgba(168, 85, 247, 0);
@@ -1770,10 +1900,13 @@ select:focus {
 
 /* 星の瞬き */
 @keyframes star-twinkle {
-  0%, 100% {
+
+  0%,
+  100% {
     opacity: 0.3;
     transform: scale(0.8);
   }
+
   50% {
     opacity: 1;
     transform: scale(1.2);
@@ -1790,6 +1923,7 @@ select:focus {
     opacity: 0;
     transform: translateY(50px) scale(0.9) rotateX(10deg);
   }
+
   100% {
     opacity: 1;
     transform: translateY(0) scale(1) rotateX(0);
@@ -1805,6 +1939,7 @@ select:focus {
   0% {
     box-shadow: 0 0 0 0 rgba(168, 85, 247, 0.6);
   }
+
   100% {
     box-shadow: 0 0 30px 10px rgba(168, 85, 247, 0.3);
   }
@@ -1812,4 +1947,177 @@ select:focus {
 
 .animate-selection-highlight {
   animation: selection-highlight 0.5s ease-out forwards;
+}
+
+/* =====================================
+   📱 Phase 5: ネイティブ感向上
+   ===================================== */
+
+/* ネイティブライクなスクロール */
+html {
+  scroll-behavior: smooth;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* PWA: 選択・コピー禁止（ネイティブ感向上） */
+.pwa-native {
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+}
+
+/* PWA: テキスト選択可能（入力フィールド等） */
+.pwa-selectable {
+  -webkit-user-select: text;
+  user-select: text;
+}
+
+/* タップハイライト無効化（ネイティブ感向上） */
+* {
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* スムーズなページ遷移用 */
+.page-enter {
+  opacity: 0;
+  transform: translateY(20px) scale(0.98);
+}
+
+.page-enter-active {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+  transition: opacity 0.25s ease-out, transform 0.25s ease-out;
+}
+
+.page-exit {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+}
+
+.page-exit-active {
+  opacity: 0;
+  transform: translateY(-10px) scale(1.02);
+  transition: opacity 0.2s ease-in, transform 0.2s ease-in;
+}
+
+/* ボトムナビ用タップフィードバック */
+@keyframes nav-tap-feedback {
+  0% {
+    transform: scale(1);
+    background-color: transparent;
+  }
+
+  50% {
+    transform: scale(0.9);
+    background-color: rgba(255, 255, 255, 0.1);
+  }
+
+  100% {
+    transform: scale(1);
+    background-color: transparent;
+  }
+}
+
+.nav-tap-active {
+  animation: nav-tap-feedback 0.2s ease-out;
+}
+
+/* プルダウンリフレッシュインジケータ（将来用） */
+.pull-indicator {
+  position: fixed;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%) translateY(-100%);
+  transition: transform 0.3s ease;
+  z-index: 9999;
+}
+
+.pull-indicator.active {
+  transform: translateX(-50%) translateY(20px);
+}
+
+/* ローディングスピナー - ネイティブスタイル */
+@keyframes native-spinner {
+  0% {
+    transform: rotate(0deg);
+  }
+
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+.native-spinner {
+  width: 24px;
+  height: 24px;
+  border: 3px solid rgba(255, 255, 255, 0.2);
+  border-top-color: #ec4899;
+  border-radius: 50%;
+  animation: native-spinner 0.8s linear infinite;
+}
+
+/* スケルトンローディング */
+@keyframes skeleton-pulse {
+
+  0%,
+  100% {
+    opacity: 0.4;
+  }
+
+  50% {
+    opacity: 0.8;
+  }
+}
+
+.skeleton {
+  background: linear-gradient(90deg,
+      rgba(255, 255, 255, 0.05) 25%,
+      rgba(255, 255, 255, 0.1) 50%,
+      rgba(255, 255, 255, 0.05) 75%);
+  background-size: 200% 100%;
+  animation: skeleton-pulse 1.5s ease-in-out infinite;
+  border-radius: 8px;
+}
+
+/* スプラッシュスクリーン背景 */
+.splash-bg {
+  background: linear-gradient(135deg, #0a0a1e 0%, #1e1b4b 50%, #4c1d95 100%);
+}
+
+/* 固定フッター用のセーフエリア */
+.fixed-footer-safe {
+  padding-bottom: max(env(safe-area-inset-bottom, 0px), 16px);
+}
+
+/* アクティブナビアイテムのグロー */
+.nav-active-glow {
+  position: relative;
+}
+
+.nav-active-glow::after {
+  content: '';
+  position: absolute;
+  bottom: -2px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 4px;
+  height: 4px;
+  background: #ec4899;
+  border-radius: 50%;
+  box-shadow: 0 0 8px 2px rgba(236, 72, 153, 0.6);
+}
+
+/* キーボード表示時の対応 */
+@media (max-height: 500px) {
+  .bottom-nav-hide-on-keyboard {
+    display: none;
+  }
+}
+
+/* 横画面での最適化 */
+@media (orientation: landscape) and (max-height: 500px) {
+  .landscape-compact {
+    padding-top: 0.5rem !important;
+    padding-bottom: 0.5rem !important;
+  }
 }

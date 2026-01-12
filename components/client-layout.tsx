@@ -15,6 +15,7 @@ import { checkDailyLoginBonus, addLoginBonusToProfile, type LoginBonusResult } f
 import { DailyLoginModal } from "@/components/daily-login-modal";
 import { motion, AnimatePresence } from "framer-motion";
 import { subscribeToUnreadCount } from "@/lib/services/dm";
+import { PageTransition } from "@/components/page-transition";
 
 // 完全公開ページ（認証不要・サイドバー非表示・ボトムナビ非表示）
 const publicPages = ["/login", "/register", "/verify-email", "/pending-approval", "/admin/login"];
@@ -152,7 +153,7 @@ function LayoutContent({ children }: { children: React.ReactNode }) {
           <Sidebar />
         </div>
 
-        {/* メインコンテンツ */}
+        {/* メインコンテンツ - ページトランジション付き */}
         <main
           className="flex-1 md:ml-64 pb-[var(--bottom-nav-height)] md:pb-8 p-4 md:p-8 pt-10 w-full z-10"
           style={{
@@ -161,7 +162,11 @@ function LayoutContent({ children }: { children: React.ReactNode }) {
           }}
         >
           <LogoutButton />
-          {children}
+          <AnimatePresence mode="wait">
+            <PageTransition>
+              {children}
+            </PageTransition>
+          </AnimatePresence>
         </main>
 
         {/* ボトムナビゲーション（モバイルのみ） */}
@@ -431,16 +436,22 @@ function BottomNavigation() {
             const Icon = item.icon;
 
             return (
-              <button
+              <motion.button
                 key={item.href}
                 onClick={() => router.push(item.href)}
-                className="flex flex-col items-center justify-center p-2 transition-all active:scale-95 relative group"
+                whileTap={{ scale: 0.85 }}
+                transition={{ type: "spring", stiffness: 400, damping: 17 }}
+                className="flex flex-col items-center justify-center p-2 transition-colors relative group"
                 style={{ touchAction: "manipulation" }}
               >
-                <div className="relative">
+                <motion.div
+                  className="relative"
+                  animate={isActive ? { y: -2 } : { y: 0 }}
+                  transition={{ type: "spring", stiffness: 500, damping: 30 }}
+                >
                   <Icon
                     className={cn(
-                      "w-5 h-5 transition-all",
+                      "w-5 h-5 transition-colors",
                       isActive
                         ? "text-pink-500"
                         : "text-slate-400"
@@ -448,18 +459,30 @@ function BottomNavigation() {
                   />
                   {/* 未読バッジ（DMのみ） */}
                   {isDm && unreadDmCount > 0 && (
-                    <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[9px] font-bold rounded-full w-3.5 h-3.5 flex items-center justify-center border border-black">
+                    <motion.span
+                      initial={{ scale: 0 }}
+                      animate={{ scale: 1 }}
+                      className="absolute -top-1 -right-1 bg-red-500 text-white text-[9px] font-bold rounded-full w-3.5 h-3.5 flex items-center justify-center border border-black"
+                    >
                       {unreadDmCount > 9 ? '9+' : unreadDmCount}
-                    </span>
+                    </motion.span>
                   )}
-                </div>
+                </motion.div>
                 {/* ラベル - アクティブ時のみ表示 */}
-                {isActive && (
-                  <span className="text-[10px] font-medium text-pink-400 mt-0.5">
-                    {item.label}
-                  </span>
-                )}
-              </button>
+                <AnimatePresence>
+                  {isActive && (
+                    <motion.span
+                      initial={{ opacity: 0, y: 5 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: 5 }}
+                      transition={{ duration: 0.15 }}
+                      className="text-[10px] font-medium text-pink-400 mt-0.5"
+                    >
+                      {item.label}
+                    </motion.span>
+                  )}
+                </AnimatePresence>
+              </motion.button>
             );
           })}
 

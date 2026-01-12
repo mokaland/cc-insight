@@ -42,7 +42,7 @@ export const metadata: Metadata = {
 
 // 🆕 viewport設定を専用エクスポートに移行
 export const viewport: Viewport = {
-  themeColor: "#111827",
+  themeColor: "#ec4899",
   width: "device-width",
   initialScale: 1,
   maximumScale: 1,
