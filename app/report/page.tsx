@@ -39,6 +39,7 @@ import { processPostFeedback } from "@/lib/post-feedback";
 import EnergyToast from "@/components/energy-toast";
 import { ReportSuccessCelebration } from "@/components/report-success-celebration";
 import { LevelUpCelebration } from "@/components/level-up-celebration";
+import { PackOpeningModal } from "@/components/pack-opening-modal";
 import { GUARDIANS, ATTRIBUTES, calculateLevel } from "@/lib/guardian-collection";
 
 export default function ReportPage() {
@@ -50,7 +51,9 @@ export default function ReportPage() {
   const [error, setError] = useState("");
   const [earnedXP, setEarnedXP] = useState(0);
   const [showEnergyToast, setShowEnergyToast] = useState(false);
+  const [showPackOpening, setShowPackOpening] = useState(false);
   const [showCelebration, setShowCelebration] = useState(false);
+  const [packRarity, setPackRarity] = useState<"common" | "rare" | "epic" | "legendary">("common");
   const [guardianData, setGuardianData] = useState<{
     emoji: string;
     name: string;
@@ -449,8 +452,14 @@ export default function ReportPage() {
               console.error("守護神データ取得エラー:", guardianError);
             }
 
-            // セレブレーション表示
-            setShowCelebration(true);
+            // 🎁 パックのレア度を決定（エナジー獲得量に基づく）
+            const rarity = result.energyEarned >= 50 ? "legendary" :
+              result.energyEarned >= 30 ? "epic" :
+                result.energyEarned >= 20 ? "rare" : "common";
+            setPackRarity(rarity);
+
+            // 🎮 パック開封演出を表示（セレブレーションはその後）
+            setShowPackOpening(true);
           }
         } catch (energyError) {
           console.error("エナジー処理エラー:", energyError);
@@ -1218,6 +1227,21 @@ export default function ReportPage() {
           </div>
         </div>
       )}
+
+      {/* 🎁 パック開封演出 */}
+      <PackOpeningModal
+        isOpen={showPackOpening}
+        onComplete={() => {
+          setShowPackOpening(false);
+          // パック開封完了後、セレブレーションを表示
+          setTimeout(() => {
+            setShowCelebration(true);
+          }, 300);
+        }}
+        earnedEnergy={earnedXP}
+        rarity={packRarity}
+        teamColor={teamColor}
+      />
 
       {/* 🎉 セレブレーションモーダル */}
       <ReportSuccessCelebration
