@@ -1,14 +1,12 @@
 /**
  * Slack Interactive Components Webhook
  * 目標承認ボタンのクリックを処理
- * NOTE: Firebase REST APIを使用（サーバーサイドではクライアントSDKが動作しないため）
+ * NOTE: Firebase Admin SDKを使用（セキュリティルールをバイパス）
  */
 
 import { NextRequest, NextResponse } from "next/server";
+import * as admin from "firebase-admin";
 import { notifyGoalApproved, notifyGoalRejected } from "@/lib/slack-notifier";
-
-const FIREBASE_PROJECT_ID = "cc-insight";
-const FIRESTORE_BASE_URL = `https://firestore.googleapis.com/v1/projects/${FIREBASE_PROJECT_ID}/databases/(default)/documents`;
 
 const TEAM_NAMES: Record<string, string> = {
     fukugyou: "副業チーム",
@@ -16,15 +14,22 @@ const TEAM_NAMES: Record<string, string> = {
     buppan: "スマホ物販チーム",
 };
 
-interface FirestoreDocument {
-    fields: {
-        [key: string]: {
-            stringValue?: string;
-            integerValue?: string;
-            booleanValue?: boolean;
-            mapValue?: { fields: { [key: string]: any } };
-        };
-    };
+// Firebase Admin SDKの初期化
+function getAdminFirestore() {
+    if (admin.apps.length === 0) {
+        const serviceAccount = process.env.FIREBASE_SERVICE_ACCOUNT_KEY;
+        if (serviceAccount) {
+            admin.initializeApp({
+                credential: admin.credential.cert(JSON.parse(serviceAccount)),
+            });
+        } else {
+            admin.initializeApp({
+                credential: admin.credential.applicationDefault(),
+                projectId: "cc-insight",
+            });
+        }
+    }
+    return admin.firestore();
 }
 
 export async function POST(request: NextRequest) {
@@ -36,6 +41,7 @@ export async function POST(request: NextRequest) {
         const payloadString = params.get("payload");
 
         if (!payloadString) {
+            console.error("[Goal Approval] No payload in request");
             return NextResponse.json({ error: "No payload" }, { status: 400 });
         }
 
@@ -44,6 +50,7 @@ export async function POST(request: NextRequest) {
         // アクションを取得
         const actions = payload.actions;
         if (!actions || actions.length === 0) {
+            console.error("[Goal Approval] No actions in payload");
             return NextResponse.json({ error: "No actions" }, { status: 400 });
         }
 
@@ -54,13 +61,13 @@ export async function POST(request: NextRequest) {
 
         console.log(`[Goal Approval] Action: ${actionId}, Goal: ${goalId}, User: ${slackUserName}`);
 
-        // Firestore REST APIで目標を取得
-        const getResponse = await fetch(`${FIRESTORE_BASE_URL}/team_goals/${goalId}`, {
-            method: "GET",
-        });
+        // Firebase Admin SDKでFirestoreにアクセス
+        const db = getAdminFirestore();
+        const goalRef = db.collection("team_goals").doc(goalId);
+        const goalSnap = await goalRef.get();
 
-        if (!getResponse.ok) {
-            console.error("[Goal Approval] Failed to get goal:", await getResponse.text());
+        if (!goalSnap.exists) {
+            console.error(`[Goal Approval] Goal not found: ${goalId}`);
             return NextResponse.json({
                 replace_original: true,
                 blocks: [
@@ -75,13 +82,28 @@ export async function POST(request: NextRequest) {
             });
         }
 
-        const goalDoc = await getResponse.json() as FirestoreDocument;
-        const teamId = goalDoc.fields.teamId?.stringValue || "";
-        const goalType = goalDoc.fields.type?.stringValue || "monthly";
-        const year = goalDoc.fields.year?.integerValue || "";
-        const month = goalDoc.fields.month?.integerValue || "";
-        const quarter = goalDoc.fields.quarter?.integerValue || "";
-        const currentStatus = goalDoc.fields.status?.stringValue || "pending";
+        const goal = goalSnap.data();
+        if (!goal) {
+            return NextResponse.json({
+                replace_original: true,
+                blocks: [
+                    {
+                        type: "section",
+                        text: {
+                            type: "mrkdwn",
+                            text: "❌ 目標データが不正です。",
+                        },
+                    },
+                ],
+            });
+        }
+
+        const teamId = goal.teamId || "";
+        const goalType = goal.type || "monthly";
+        const year = goal.year || "";
+        const month = goal.month || "";
+        const quarter = goal.quarter || "";
+        const currentStatus = goal.status || "pending";
 
         // 既に処理済みかチェック
         if (currentStatus === "approved") {
@@ -105,25 +127,12 @@ export async function POST(request: NextRequest) {
             : `${year}年 Q${quarter}`;
 
         if (actionId === "approve_goal") {
-            // 承認処理 - Firestore REST APIで更新
-            const updateResponse = await fetch(`${FIRESTORE_BASE_URL}/team_goals/${goalId}?updateMask.fieldPaths=status&updateMask.fieldPaths=approvedBy&updateMask.fieldPaths=approvedAt`, {
-                method: "PATCH",
-                headers: {
-                    "Content-Type": "application/json",
-                },
-                body: JSON.stringify({
-                    fields: {
-                        status: { stringValue: "approved" },
-                        approvedBy: { stringValue: slackUserName },
-                        approvedAt: { timestampValue: new Date().toISOString() },
-                    },
-                }),
+            // 承認処理
+            await goalRef.update({
+                status: "approved",
+                approvedBy: slackUserName,
+                approvedAt: admin.firestore.FieldValue.serverTimestamp(),
             });
-
-            if (!updateResponse.ok) {
-                console.error("[Goal Approval] Failed to update goal:", await updateResponse.text());
-                throw new Error("Failed to update goal");
-            }
 
             console.log(`[Goal Approval] Goal approved: ${goalId}`);
 
@@ -155,24 +164,11 @@ export async function POST(request: NextRequest) {
 
         } else if (actionId === "reject_goal") {
             // 却下処理
-            const updateResponse = await fetch(`${FIRESTORE_BASE_URL}/team_goals/${goalId}?updateMask.fieldPaths=status&updateMask.fieldPaths=rejectedBy&updateMask.fieldPaths=rejectedAt`, {
-                method: "PATCH",
-                headers: {
-                    "Content-Type": "application/json",
-                },
-                body: JSON.stringify({
-                    fields: {
-                        status: { stringValue: "draft" },
-                        rejectedBy: { stringValue: slackUserName },
-                        rejectedAt: { timestampValue: new Date().toISOString() },
-                    },
-                }),
+            await goalRef.update({
+                status: "draft",
+                rejectedBy: slackUserName,
+                rejectedAt: admin.firestore.FieldValue.serverTimestamp(),
             });
-
-            if (!updateResponse.ok) {
-                console.error("[Goal Approval] Failed to update goal:", await updateResponse.text());
-                throw new Error("Failed to update goal");
-            }
 
             console.log(`[Goal Approval] Goal rejected: ${goalId}`);
 
@@ -214,7 +210,7 @@ export async function POST(request: NextRequest) {
                     type: "section",
                     text: {
                         type: "mrkdwn",
-                        text: "❌ 処理中にエラーが発生しました。もう一度お試しください。",
+                        text: `❌ 処理中にエラーが発生しました。\n\nエラー: ${error instanceof Error ? error.message : "Unknown error"}`,
                     },
                 },
             ],
