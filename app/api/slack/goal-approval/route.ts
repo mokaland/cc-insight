@@ -1,16 +1,31 @@
 /**
  * Slack Interactive Components Webhook
  * 目標承認ボタンのクリックを処理
+ * NOTE: Firebase REST APIを使用（サーバーサイドではクライアントSDKが動作しないため）
  */
 
 import { NextRequest, NextResponse } from "next/server";
-import { doc, updateDoc, getDoc, Timestamp } from "firebase/firestore";
-import { db } from "@/lib/firebase";
 import { notifyGoalApproved, notifyGoalRejected } from "@/lib/slack-notifier";
-import { TeamGoal } from "@/lib/types";
 
-// Slack署名検証用シークレット
-const SLACK_SIGNING_SECRET = process.env.SLACK_SIGNING_SECRET;
+const FIREBASE_PROJECT_ID = "cc-insight";
+const FIRESTORE_BASE_URL = `https://firestore.googleapis.com/v1/projects/${FIREBASE_PROJECT_ID}/databases/(default)/documents`;
+
+const TEAM_NAMES: Record<string, string> = {
+    fukugyou: "副業チーム",
+    taishoku: "退職サポートチーム",
+    buppan: "スマホ物販チーム",
+};
+
+interface FirestoreDocument {
+    fields: {
+        [key: string]: {
+            stringValue?: string;
+            integerValue?: string;
+            booleanValue?: boolean;
+            mapValue?: { fields: { [key: string]: any } };
+        };
+    };
+}
 
 export async function POST(request: NextRequest) {
     try {
@@ -35,18 +50,19 @@ export async function POST(request: NextRequest) {
         const action = actions[0];
         const actionId = action.action_id;
         const goalId = action.value;
-        const slackUserId = payload.user?.id || "unknown";
         const slackUserName = payload.user?.name || payload.user?.username || "Slack User";
 
         console.log(`[Goal Approval] Action: ${actionId}, Goal: ${goalId}, User: ${slackUserName}`);
 
-        // 目標を取得
-        const goalRef = doc(db, "team_goals", goalId);
-        const goalSnap = await getDoc(goalRef);
+        // Firestore REST APIで目標を取得
+        const getResponse = await fetch(`${FIRESTORE_BASE_URL}/team_goals/${goalId}`, {
+            method: "GET",
+        });
 
-        if (!goalSnap.exists()) {
+        if (!getResponse.ok) {
+            console.error("[Goal Approval] Failed to get goal:", await getResponse.text());
             return NextResponse.json({
-                response_action: "update",
+                replace_original: true,
                 blocks: [
                     {
                         type: "section",
@@ -59,12 +75,18 @@ export async function POST(request: NextRequest) {
             });
         }
 
-        const goal = goalSnap.data() as TeamGoal;
+        const goalDoc = await getResponse.json() as FirestoreDocument;
+        const teamId = goalDoc.fields.teamId?.stringValue || "";
+        const goalType = goalDoc.fields.type?.stringValue || "monthly";
+        const year = goalDoc.fields.year?.integerValue || "";
+        const month = goalDoc.fields.month?.integerValue || "";
+        const quarter = goalDoc.fields.quarter?.integerValue || "";
+        const currentStatus = goalDoc.fields.status?.stringValue || "pending";
 
         // 既に処理済みかチェック
-        if (goal.status === "approved") {
+        if (currentStatus === "approved") {
             return NextResponse.json({
-                response_action: "update",
+                replace_original: true,
                 blocks: [
                     {
                         type: "section",
@@ -78,25 +100,44 @@ export async function POST(request: NextRequest) {
         }
 
         // 期間ラベルを生成
-        const periodLabel = goal.type === "monthly"
-            ? `${goal.year}年${goal.month}月`
-            : `${goal.year}年 Q${goal.quarter}`;
+        const periodLabel = goalType === "monthly"
+            ? `${year}年${month}月`
+            : `${year}年 Q${quarter}`;
 
         if (actionId === "approve_goal") {
-            // 承認処理
-            await updateDoc(goalRef, {
-                status: "approved",
-                approvedBy: slackUserName,
-                approvedAt: Timestamp.now(),
+            // 承認処理 - Firestore REST APIで更新
+            const updateResponse = await fetch(`${FIRESTORE_BASE_URL}/team_goals/${goalId}?updateMask.fieldPaths=status&updateMask.fieldPaths=approvedBy&updateMask.fieldPaths=approvedAt`, {
+                method: "PATCH",
+                headers: {
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify({
+                    fields: {
+                        status: { stringValue: "approved" },
+                        approvedBy: { stringValue: slackUserName },
+                        approvedAt: { timestampValue: new Date().toISOString() },
+                    },
+                }),
             });
 
-            // 管理者チャンネルに通知
-            await notifyGoalApproved({
-                goalId,
-                teamId: goal.teamId,
-                periodLabel,
-                approvedBy: slackUserName,
-            });
+            if (!updateResponse.ok) {
+                console.error("[Goal Approval] Failed to update goal:", await updateResponse.text());
+                throw new Error("Failed to update goal");
+            }
+
+            console.log(`[Goal Approval] Goal approved: ${goalId}`);
+
+            // 管理者チャンネルに通知（バックグラウンド）
+            try {
+                await notifyGoalApproved({
+                    goalId,
+                    teamId,
+                    periodLabel,
+                    approvedBy: slackUserName,
+                });
+            } catch (e) {
+                console.warn("[Goal Approval] Notification failed:", e);
+            }
 
             // Slackメッセージを更新
             return NextResponse.json({
@@ -106,7 +147,7 @@ export async function POST(request: NextRequest) {
                         type: "section",
                         text: {
                             type: "mrkdwn",
-                            text: `✅ *目標承認完了*\n\n*${TEAM_NAMES[goal.teamId] || goal.teamId}* の *${periodLabel}* 目標が承認されました。\n\n承認者: ${slackUserName}`,
+                            text: `✅ *目標承認完了*\n\n*${TEAM_NAMES[teamId] || teamId}* の *${periodLabel}* 目標が承認されました。\n\n承認者: ${slackUserName}`,
                         },
                     },
                 ],
@@ -114,19 +155,38 @@ export async function POST(request: NextRequest) {
 
         } else if (actionId === "reject_goal") {
             // 却下処理
-            await updateDoc(goalRef, {
-                status: "draft", // 却下された場合はdraftに戻す
-                rejectedBy: slackUserName,
-                rejectedAt: Timestamp.now(),
+            const updateResponse = await fetch(`${FIRESTORE_BASE_URL}/team_goals/${goalId}?updateMask.fieldPaths=status&updateMask.fieldPaths=rejectedBy&updateMask.fieldPaths=rejectedAt`, {
+                method: "PATCH",
+                headers: {
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify({
+                    fields: {
+                        status: { stringValue: "draft" },
+                        rejectedBy: { stringValue: slackUserName },
+                        rejectedAt: { timestampValue: new Date().toISOString() },
+                    },
+                }),
             });
 
-            // 通知
-            await notifyGoalRejected({
-                goalId,
-                teamId: goal.teamId,
-                periodLabel,
-                rejectedBy: slackUserName,
-            });
+            if (!updateResponse.ok) {
+                console.error("[Goal Approval] Failed to update goal:", await updateResponse.text());
+                throw new Error("Failed to update goal");
+            }
+
+            console.log(`[Goal Approval] Goal rejected: ${goalId}`);
+
+            // 通知（バックグラウンド）
+            try {
+                await notifyGoalRejected({
+                    goalId,
+                    teamId,
+                    periodLabel,
+                    rejectedBy: slackUserName,
+                });
+            } catch (e) {
+                console.warn("[Goal Approval] Notification failed:", e);
+            }
 
             // Slackメッセージを更新
             return NextResponse.json({
@@ -136,7 +196,7 @@ export async function POST(request: NextRequest) {
                         type: "section",
                         text: {
                             type: "mrkdwn",
-                            text: `❌ *目標却下*\n\n*${TEAM_NAMES[goal.teamId] || goal.teamId}* の *${periodLabel}* 目標が却下されました。\n\n却下者: ${slackUserName}`,
+                            text: `❌ *目標却下*\n\n*${TEAM_NAMES[teamId] || teamId}* の *${periodLabel}* 目標が却下されました。\n\n却下者: ${slackUserName}`,
                         },
                     },
                 ],
@@ -147,15 +207,17 @@ export async function POST(request: NextRequest) {
 
     } catch (error) {
         console.error("[Goal Approval] Error:", error);
-        return NextResponse.json(
-            { error: "Internal server error" },
-            { status: 500 }
-        );
+        return NextResponse.json({
+            replace_original: true,
+            blocks: [
+                {
+                    type: "section",
+                    text: {
+                        type: "mrkdwn",
+                        text: "❌ 処理中にエラーが発生しました。もう一度お試しください。",
+                    },
+                },
+            ],
+        });
     }
 }
-
-const TEAM_NAMES: Record<string, string> = {
-    fukugyou: "副業チーム",
-    taishoku: "退職サポートチーム",
-    buppan: "スマホ物販チーム",
-};
