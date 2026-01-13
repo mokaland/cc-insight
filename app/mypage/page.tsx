@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { useAuth } from "@/lib/auth-context";
 import { GlassCard } from "@/components/glass-card";
 import { Button } from "@/components/ui/button";
+import { MemberLayout, NeuCard, NeuButton, NeuProgress, NeuBadge } from "@/components/member-ui";
 import { getUserGuardianProfile } from "@/lib/firestore";
 import {
   GUARDIANS,
@@ -430,680 +431,682 @@ export default function MyPage() {
   const auraLevel = getAuraLevel(investedEnergy, stage);
 
   return (
-    <div className="space-y-4 md:space-y-6 md:pb-8">
-      {/* ヘッダー - コンパクト */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-xl sm:text-2xl font-bold bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">
-            マイページ
-          </h1>
-          <p className="text-sm text-slate-400">
-            {user.displayName || user.email}
-          </p>
-        </div>
-      </div>
-
-      {/* ⚠️ ストリーク警告バナー */}
-      {streakWarning && showWarning && (
-        <StreakWarningBanner
-          warning={streakWarning}
-          onClose={() => setShowWarning(false)}
-        />
-      )}
-
-      {/* 📅 今日の報告ステータス - コンパクト */}
-      {todayReported ? (
-        <div className="bg-green-500/15 border border-green-500/40 rounded-lg p-3 flex items-center gap-3">
-          <span className="text-3xl">✅</span>
-          <div className="flex-1">
-            <p className="text-sm font-semibold text-green-400">今日の報告完了！</p>
-            <p className="text-xs text-slate-400">獲得: <span className="text-yellow-400 font-medium">+{todayEnergy}E</span></p>
-          </div>
-        </div>
-      ) : isFirstDay ? (
-        /* 新規登録当日はウェルカムメッセージを表示 - コンパクト */
-        <div className="bg-purple-500/15 border border-purple-500/40 rounded-lg p-3">
-          <div className="flex items-center gap-3 mb-2">
-            <span className="text-2xl">✨</span>
-            <p className="font-semibold text-sm bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">
-              ようこそ、契約者よ！
+    <MemberLayout className="p-4 md:p-6">
+      <div className="space-y-4 md:space-y-6 md:pb-8 max-w-2xl mx-auto">
+        {/* ヘッダー - コンパクト */}
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-xl sm:text-2xl font-bold bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">
+              マイページ
+            </h1>
+            <p className="text-sm text-slate-400">
+              {user.displayName || user.email}
             </p>
           </div>
-          <p className="text-xs text-slate-400">
-            明日から日報を報告してエナジーを獲得しましょう
-          </p>
         </div>
-      ) : (
-        <div className="bg-red-500/15 border border-red-500/40 rounded-lg p-3 flex items-center gap-3">
-          <span className="text-3xl">⚠️</span>
-          <div className="flex-1">
-            <p className="text-sm font-semibold text-red-400">今日の報告がまだです</p>
-            <p className="text-xs text-slate-400">ストリークを維持しましょう</p>
-          </div>
-          <Link href="/report">
-            <Button size="sm" className="bg-gradient-to-r from-red-500 to-orange-500 text-white text-xs px-3 py-1.5 h-auto">
-              報告する
-            </Button>
-          </Link>
-        </div>
-      )}
 
-      {/* 🎯 レベル & 称号 - コンパクト */}
-      <div className="bg-gradient-to-r from-yellow-500/10 via-amber-500/10 to-orange-500/10 border border-yellow-500/30 rounded-xl p-3">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="w-12 h-12 rounded-full bg-gradient-to-br from-yellow-500 to-amber-500 flex items-center justify-center">
-              <span className="text-xl font-bold text-white">{currentLevel}</span>
-            </div>
-            <div>
-              <p className="text-sm font-bold text-yellow-400">Lv.{currentLevel}</p>
-              <p className="text-xs text-purple-400 font-medium">{levelTitle}</p>
-            </div>
-          </div>
-          {levelProgress && (
-            <div className="flex-1 max-w-[120px] ml-4">
-              <div className="h-2 bg-slate-700 rounded-full overflow-hidden">
-                <motion.div
-                  initial={{ width: 0 }}
-                  animate={{ width: `${levelProgress.progress}%` }}
-                  transition={{ duration: 1, ease: "easeOut" }}
-                  className="h-full bg-gradient-to-r from-yellow-500 to-amber-500 rounded-full"
-                />
-              </div>
-              <p className="text-[10px] text-slate-400 mt-1 text-right">
-                次まで {levelProgress.remaining}E
-              </p>
-            </div>
-          )}
-        </div>
-      </div>
-
-      {/* 守護神エリア - コンパクト */}
-      <GlassCard glowColor={attr.color} className="p-3 sm:p-4">
-        <div className="flex flex-col gap-3">
-          {/* 守護神表示 - 横並び */}
-          <div className="flex items-center gap-3">
-            {/* 守護神画像 - 小さく */}
-            <div className="flex-shrink-0 relative">
-              <div
-                className="w-20 h-20 sm:w-24 sm:h-24 rounded-xl flex items-center justify-center relative overflow-hidden"
-                style={{
-                  background: placeholder.background,
-                  border: `2px solid ${attr.color}`,
-                }}
-              >
-                <img
-                  src={getGuardianImagePath(activeGuardianId as GuardianId, stage)}
-                  alt={activeGuardian?.name || '守護神'}
-                  className="w-full h-full object-contain"
-                  onError={(e) => {
-                    e.currentTarget.style.display = 'none';
-                    e.currentTarget.nextElementSibling?.classList.remove('hidden');
-                  }}
-                />
-                <div className="absolute inset-0 flex items-center justify-center hidden">
-                  <span className="text-4xl">{placeholder.emoji}</span>
-                </div>
-              </div>
-
-              {/* Stage表示 */}
-              <div className="absolute -bottom-1 left-1/2 transform -translate-x-1/2">
-                <div
-                  className="px-2 py-0.5 rounded-full text-[10px] font-bold text-white"
-                  style={{ backgroundColor: attr.color }}
-                >
-                  S{stage}
-                </div>
-              </div>
-            </div>
-
-            {/* 守護神情報 */}
-            <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-1.5 mb-1">
-                <span className="text-xl">{attr.emoji}</span>
-                <h2 className="text-lg sm:text-xl font-bold truncate" style={{ color: attr.color }}>
-                  {activeGuardian?.name || '守護神'}
-                </h2>
-              </div>
-              <p className="text-[11px] text-slate-400 mb-2">
-                {stageInfo.name} • {attr.name}属性
-              </p>
-
-              {/* ステータス - インライン */}
-              <div className="flex gap-2">
-                <div className="flex-1 bg-black/30 rounded-lg p-1.5 text-center">
-                  <p className="text-[9px] text-slate-400">投資済み</p>
-                  <p className="text-sm font-bold text-purple-400">{investedEnergy}E</p>
-                </div>
-                <div className="flex-1 bg-black/30 rounded-lg p-1.5 text-center">
-                  <p className="text-[9px] text-slate-400">オーラ</p>
-                  <p className="text-sm font-bold text-pink-400">{auraLevel}%</p>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* オーラゲージ */}
-          <div className="space-y-2">
-            <div className="flex justify-between text-sm">
-              <span className="text-muted-foreground">オーラレベル</span>
-              <span className="font-bold" style={{ color: attr.color }}>
-                {auraLevel}%
-              </span>
-            </div>
-
-            <div className="relative w-full h-4 bg-white/10 rounded-full overflow-hidden border-2 border-white/20">
-              <div
-                className="h-full transition-all duration-1000"
-                style={{
-                  width: `${auraLevel}%`,
-                  background: `linear-gradient(90deg, ${attr.color}, ${attr.gradientTo})`,
-                  boxShadow: `0 0 20px ${attr.color}`,
-                }}
-              />
-            </div>
-          </div>
-
-          {/* 🎯 進化予告表示 */}
-          {(() => {
-            const evolutionInfo = getEnergyToNextStage(investedEnergy, activeGuardianId as GuardianId);
-            if (!evolutionInfo) return null; // 究極体は進化不可
-
-            const nextStage = EVOLUTION_STAGES[stage + 1];
-            if (!nextStage) return null; // 次のステージがない場合
-            const progressPercent = Math.round((evolutionInfo.current / evolutionInfo.required) * 100);
-
-            return (
-              <div
-                className="mt-6 p-4 rounded-xl border-2 animate-in fade-in slide-in-from-bottom-4 duration-500"
-                style={{
-                  backgroundColor: `${attr.color}05`,
-                  borderColor: `${attr.color}40`,
-                  boxShadow: `0 0 20px ${attr.color}20`
-                }}
-              >
-                <div className="flex items-center gap-2 mb-3">
-                  <Sparkles className="w-5 h-5" style={{ color: attr.color }} />
-                  <h3 className="font-bold" style={{ color: attr.color }}>
-                    次の進化まで
-                  </h3>
-                </div>
-
-                <div className="space-y-3">
-                  {/* 次の進化段階情報 */}
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-sm text-slate-400">目標</p>
-                      <p className="font-bold text-white text-lg">
-                        {nextStage.name}
-                      </p>
-                    </div>
-                    <div className="text-right">
-                      <p className="text-sm text-slate-400">必要エナジー</p>
-                      <p className="font-bold text-yellow-400 text-2xl">
-                        {evolutionInfo.remaining}E
-                      </p>
-                    </div>
-                  </div>
-
-                  {/* プログレスバー */}
-                  <div className="space-y-2">
-                    <div className="flex justify-between text-sm">
-                      <span className="text-slate-400">進化までの進捗</span>
-                      <span className="font-bold" style={{ color: attr.color }}>
-                        {progressPercent}%
-                      </span>
-                    </div>
-                    <div className="relative w-full h-6 bg-black/40 rounded-full overflow-hidden border-2 border-white/20">
-                      <div
-                        className="h-full transition-all duration-1000 flex items-center justify-center"
-                        style={{
-                          width: `${progressPercent}%`,
-                          background: `linear-gradient(90deg, ${attr.color}, ${attr.gradientTo})`,
-                          boxShadow: `0 0 15px ${attr.color}`,
-                        }}
-                      >
-                        {progressPercent > 20 && (
-                          <span className="text-xs font-bold text-white drop-shadow-lg">
-                            {evolutionInfo.current} / {evolutionInfo.required}
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* 励ましメッセージ or 進化可能ボタン */}
-                  <div className="text-center pt-2">
-                    {profile.energy.current >= evolutionInfo.remaining ? (
-                      /* 進化可能！ */
-                      <button
-                        onClick={() => setShowEnergyModal(true)}
-                        className="w-full py-3 rounded-xl font-bold text-lg bg-gradient-to-r from-yellow-500 via-orange-500 to-red-500 hover:from-yellow-400 hover:via-orange-400 hover:to-red-400 text-white transition-all flex items-center justify-center gap-2 animate-pulse shadow-lg"
-                        style={{
-                          boxShadow: `0 0 30px rgba(250, 204, 21, 0.6)`
-                        }}
-                      >
-                        <Zap className="w-6 h-6" />
-                        今すぐ進化可能！ タップして進化させよう
-                        <ArrowRight className="w-5 h-5" />
-                      </button>
-                    ) : evolutionInfo.remaining <= 50 ? (
-                      <p className="text-sm font-medium" style={{ color: attr.color }}>
-                        🔥 もう少しで進化！あと {evolutionInfo.remaining}E 稼ごう！
-                      </p>
-                    ) : evolutionInfo.remaining <= 100 ? (
-                      <p className="text-sm text-slate-300">
-                        💪 着実に成長中！このペースで続けよう
-                      </p>
-                    ) : (
-                      <p className="text-sm text-slate-400">
-                        🌱 毎日の報告が成長への近道です
-                      </p>
-                    )}
-                  </div>
-
-                  {/* エナジー投資ボタン（進化可能でない場合も表示） */}
-                  {profile.energy.current < evolutionInfo.remaining && profile.energy.current > 0 && (
-                    <button
-                      onClick={() => setShowEnergyModal(true)}
-                      className="w-full mt-3 py-2 rounded-lg font-medium text-sm border-2 transition-all flex items-center justify-center gap-2 hover:scale-[1.02]"
-                      style={{
-                        borderColor: attr.color,
-                        color: attr.color,
-                        backgroundColor: `${attr.color}10`
-                      }}
-                    >
-                      <Zap className="w-4 h-4" />
-                      エナジーを投資して進化を早める
-                    </button>
-                  )}
-                </div>
-              </div>
-            );
-          })()}
-
-          {/* 特性 */}
-          {stage >= 3 && (
-            <div
-              className="p-3 rounded-lg border"
-              style={{
-                backgroundColor: `${attr.color}08`,
-                borderColor: `${attr.color}40`,
-              }}
-            >
-              <div className="flex items-center gap-2">
-                <Sparkles className="w-4 h-4" style={{ color: attr.color }} />
-                <div className="flex-1">
-                  <p className="text-sm font-semibold" style={{ color: attr.color }}>
-                    特性: {activeGuardian?.ability?.name || '特性'}
-                  </p>
-                  <p className="text-xs text-slate-400">
-                    {activeGuardian?.ability?.description || ''}
-                  </p>
-                </div>
-                <div className="text-green-400 font-bold text-xs">
-                  ✓ 発動中
-                </div>
-              </div>
-            </div>
-          )
-          }
-        </div >
-      </GlassCard >
-
-      {/* 🏅 獲得バッジ */}
-      {profile && (
-        <GlassCard className="p-3">
-          <div className="flex items-center gap-2 mb-3">
-            <Crown className="w-4 h-4 text-yellow-400" />
-            <h3 className="text-sm font-bold text-slate-200">獲得バッジ</h3>
-          </div>
-          <div className="flex flex-wrap gap-2">
-            {/* レベルバッジ */}
-            {currentLevel >= 5 && (
-              <div className="px-2 py-1 rounded-lg bg-purple-500/20 border border-purple-500/30 flex items-center gap-1">
-                <span className="text-xs">⭐</span>
-                <span className="text-[10px] text-purple-300 font-medium">Lv.{currentLevel}達成</span>
-              </div>
-            )}
-
-            {/* ストリークバッジ */}
-            {profile.streak.current >= 7 && (
-              <div className="px-2 py-1 rounded-lg bg-orange-500/20 border border-orange-500/30 flex items-center gap-1">
-                <span className="text-xs">🔥</span>
-                <span className="text-[10px] text-orange-300 font-medium">{profile.streak.current}日連続</span>
-              </div>
-            )}
-            {profile.streak.max >= 30 && (
-              <div className="px-2 py-1 rounded-lg bg-red-500/20 border border-red-500/30 flex items-center gap-1">
-                <span className="text-xs">💪</span>
-                <span className="text-[10px] text-red-300 font-medium">継続マスター</span>
-              </div>
-            )}
-
-            {/* 守護神コンプリートバッジ */}
-            {Object.values(profile.guardians).filter(g => g?.unlocked).length >= 3 && (
-              <div className="px-2 py-1 rounded-lg bg-cyan-500/20 border border-cyan-500/30 flex items-center gap-1">
-                <span className="text-xs">🛡️</span>
-                <span className="text-[10px] text-cyan-300 font-medium">守護神収集家</span>
-              </div>
-            )}
-
-            {/* 究極体バッジ */}
-            {Object.values(profile.guardians).some(g => g?.stage === 4) && (
-              <div className="px-2 py-1 rounded-lg bg-gradient-to-r from-yellow-500/20 to-amber-500/20 border border-yellow-500/30 flex items-center gap-1">
-                <span className="text-xs">👑</span>
-                <span className="text-[10px] text-yellow-300 font-medium">究極体持ち</span>
-              </div>
-            )}
-
-            {/* バッジがない場合 */}
-            {currentLevel < 5 && profile.streak.current < 7 && (
-              <p className="text-[10px] text-slate-500">まだバッジがありません。報告を続けてバッジを獲得しよう！</p>
-            )}
-          </div>
-        </GlassCard>
-      )}
-
-      {/* 📊 6カード統合グリッド（3x2） - PWAモバイル対応・同サイズ統一 */}
-      <div className="grid gap-2" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)' }}>
-        {/* 保有エナジー */}
-        <motion.div
-          initial={{ scale: 0.8, opacity: 0 }}
-          animate={{ scale: 1, opacity: 1 }}
-          transition={{ duration: 0.3, delay: 0 }}
-          onClick={() => setEnergyModalOpen(true)}
-          className="glass-premium p-3 rounded-xl border border-yellow-500/30 cursor-pointer active:scale-95 transition-transform aspect-square flex flex-col items-center justify-center"
-        >
-          <div className="w-8 h-8 mb-1">
-            <Image
-              src="/images/ui/energy-orb.png"
-              alt="Energy"
-              width={32}
-              height={32}
-              className="w-full h-full object-contain"
-              style={{ filter: 'drop-shadow(0 0 6px rgba(250, 204, 21, 0.8))' }}
-            />
-          </div>
-          <p className="text-[10px] text-gray-400 text-center leading-tight">保有エナジー</p>
-          <p className="text-lg font-bold text-yellow-400">
-            <AnimatedNumber value={profile.energy.current} />
-          </p>
-        </motion.div>
-
-        {/* 累計獲得 */}
-        <motion.div
-          initial={{ scale: 0.8, opacity: 0 }}
-          animate={{ scale: 1, opacity: 1 }}
-          transition={{ duration: 0.3, delay: 0.05 }}
-          onClick={() => setTotalModalOpen(true)}
-          className="glass-premium p-3 rounded-xl border border-purple-500/30 cursor-pointer active:scale-95 transition-transform aspect-square flex flex-col items-center justify-center"
-        >
-          <div className="w-8 h-8 mb-1">
-            <Image
-              src="/images/ui/gem.png"
-              alt="Gem"
-              width={32}
-              height={32}
-              className="w-full h-full object-contain"
-              style={{ filter: 'drop-shadow(0 0 6px rgba(168, 85, 247, 0.8))' }}
-            />
-          </div>
-          <p className="text-[10px] text-gray-400 text-center leading-tight">累計獲得</p>
-          <p className="text-lg font-bold text-purple-400">
-            <AnimatedNumber value={profile.energy.totalEarned} />
-          </p>
-        </motion.div>
-
-        {/* 連続報告 */}
-        <motion.div
-          initial={{ scale: 0.8, opacity: 0 }}
-          animate={{ scale: 1, opacity: 1 }}
-          transition={{ duration: 0.3, delay: 0.1 }}
-          onClick={() => setStreakModalOpen(true)}
-          className="glass-premium p-3 rounded-xl border border-orange-500/30 cursor-pointer active:scale-95 transition-transform aspect-square flex flex-col items-center justify-center"
-        >
-          <div className="w-8 h-8 mb-1">
-            <Image
-              src="/images/ui/streak-1.png"
-              alt="Streak"
-              width={32}
-              height={32}
-              className="w-full h-full object-contain"
-              style={{ filter: 'drop-shadow(0 0 6px rgba(251, 146, 60, 0.8))' }}
-            />
-          </div>
-          <p className="text-[10px] text-gray-400 text-center leading-tight">連続報告</p>
-          <p className="text-lg font-bold text-orange-400">
-            <AnimatedNumber value={profile.streak.current} /><span className="text-xs">日</span>
-          </p>
-        </motion.div>
-
-        {/* 日報 */}
-        <Link
-          href="/report"
-          className="glass-premium p-3 rounded-xl border border-green-500/30 cursor-pointer active:scale-95 transition-all aspect-square flex flex-col items-center justify-center"
-        >
-          <div className="text-3xl mb-1">📝</div>
-          <p className="text-[10px] text-gray-400 text-center leading-tight">日報</p>
-          <p className="text-xs font-bold text-green-400">入力する</p>
-        </Link>
-
-        {/* 守護神図鑑 */}
-        <Link
-          href="/guardians"
-          className="glass-premium p-3 rounded-xl border border-purple-500/30 cursor-pointer active:scale-95 transition-all aspect-square flex flex-col items-center justify-center"
-        >
-          <div className="text-3xl mb-1">🛡️</div>
-          <p className="text-[10px] text-gray-400 text-center leading-tight">守護神図鑑</p>
-          <p className="text-xs font-bold text-purple-400">見る</p>
-        </Link>
-
-        {/* ランキング */}
-        <Link
-          href="/ranking"
-          className="glass-premium p-3 rounded-xl border border-yellow-500/30 cursor-pointer active:scale-95 transition-all aspect-square flex flex-col items-center justify-center"
-        >
-          <div className="text-3xl mb-1">🏆</div>
-          <p className="text-[10px] text-gray-400 text-center leading-tight">ランキング</p>
-          <p className="text-xs font-bold text-yellow-400">確認</p>
-        </Link>
-      </div>
-
-      {/* 💎 エナジー獲得の内訳 - 折りたたみ式 */}
-      <div className="glass-bg rounded-xl border border-yellow-500/20 overflow-hidden">
-        <button
-          onClick={() => setEnergyBreakdownExpanded(!energyBreakdownExpanded)}
-          className="w-full p-3 flex items-center justify-between hover:bg-white/5 transition-colors"
-        >
-          <div className="flex items-center gap-2">
-            <Sparkles className="w-4 h-4 text-yellow-400" />
-            <h3 className="text-sm font-bold text-white">エナジー獲得の内訳</h3>
-          </div>
-          <ChevronDown
-            className={`w-4 h-4 text-gray-400 transition-transform ${energyBreakdownExpanded ? 'rotate-180' : ''}`}
+        {/* ⚠️ ストリーク警告バナー */}
+        {streakWarning && showWarning && (
+          <StreakWarningBanner
+            warning={streakWarning}
+            onClose={() => setShowWarning(false)}
           />
-        </button>
+        )}
 
-        {energyBreakdownExpanded && (
-          <div className="p-3 pt-0 border-t border-white/10">
-            <div className="grid grid-cols-2 gap-2">
-              {/* 日報提出 */}
-              <div className="flex items-center justify-between p-2 rounded-lg bg-green-500/10 border border-green-500/20">
-                <div className="flex items-center gap-2">
-                  <span className="text-lg">📝</span>
-                  <span className="text-xs text-white">日報提出</span>
-                </div>
-                <span className="text-sm font-bold text-green-400">+10E</span>
-              </div>
-              {/* ストリーク */}
-              <div className="flex items-center justify-between p-2 rounded-lg bg-orange-500/10 border border-orange-500/20">
-                <div className="flex items-center gap-2">
-                  <span className="text-lg">🔥</span>
-                  <span className="text-xs text-white">ストリーク</span>
-                </div>
-                <span className="text-sm font-bold text-orange-400">+{Math.min((profile.streak.current || 0) * 2, 20)}E</span>
-              </div>
-              {/* 成果 */}
-              <div className="flex items-center justify-between p-2 rounded-lg bg-purple-500/10 border border-purple-500/20">
-                <div className="flex items-center gap-2">
-                  <span className="text-lg">💎</span>
-                  <span className="text-xs text-white">成果</span>
-                </div>
-                <span className="text-sm font-bold text-purple-400">変動</span>
-              </div>
-              {/* 週次 */}
-              <div className="flex items-center justify-between p-2 rounded-lg bg-blue-500/10 border border-blue-500/20">
-                <div className="flex items-center gap-2">
-                  <span className="text-lg">🏆</span>
-                  <span className="text-xs text-white">週次目標</span>
-                </div>
-                <span className="text-sm font-bold text-blue-400">+50E</span>
-              </div>
+        {/* 📅 今日の報告ステータス - コンパクト */}
+        {todayReported ? (
+          <div className="bg-green-500/15 border border-green-500/40 rounded-lg p-3 flex items-center gap-3">
+            <span className="text-3xl">✅</span>
+            <div className="flex-1">
+              <p className="text-sm font-semibold text-green-400">今日の報告完了！</p>
+              <p className="text-xs text-slate-400">獲得: <span className="text-yellow-400 font-medium">+{todayEnergy}E</span></p>
             </div>
+          </div>
+        ) : isFirstDay ? (
+          /* 新規登録当日はウェルカムメッセージを表示 - コンパクト */
+          <div className="bg-purple-500/15 border border-purple-500/40 rounded-lg p-3">
+            <div className="flex items-center gap-3 mb-2">
+              <span className="text-2xl">✨</span>
+              <p className="font-semibold text-sm bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">
+                ようこそ、契約者よ！
+              </p>
+            </div>
+            <p className="text-xs text-slate-400">
+              明日から日報を報告してエナジーを獲得しましょう
+            </p>
+          </div>
+        ) : (
+          <div className="bg-red-500/15 border border-red-500/40 rounded-lg p-3 flex items-center gap-3">
+            <span className="text-3xl">⚠️</span>
+            <div className="flex-1">
+              <p className="text-sm font-semibold text-red-400">今日の報告がまだです</p>
+              <p className="text-xs text-slate-400">ストリークを維持しましょう</p>
+            </div>
+            <Link href="/report">
+              <Button size="sm" className="bg-gradient-to-r from-red-500 to-orange-500 text-white text-xs px-3 py-1.5 h-auto">
+                報告する
+              </Button>
+            </Link>
           </div>
         )}
-      </div>
 
-
-      {/* 📱 SNSアカウント設定 - 折りたたみ式 */}
-      <div className="glass-bg rounded-xl border border-blue-500/20 overflow-hidden">
-        {/* ヘッダー（クリックで展開） */}
-        <button
-          onClick={() => setSnsExpanded(!snsExpanded)}
-          className="w-full p-3 flex items-center justify-between hover:bg-white/5 transition-colors"
-        >
-          <div className="flex items-center gap-2">
-            <Settings className="w-4 h-4 text-blue-400" />
-            <h3 className="text-sm font-bold text-white">SNSアカウント設定</h3>
-            {snsAccounts.completionBonusClaimed && (
-              <span className="text-xs bg-green-500/20 text-green-300 px-2 py-0.5 rounded-full">完了</span>
-            )}
-          </div>
-          <ChevronDown
-            className={`w-4 h-4 text-gray-400 transition-transform ${snsExpanded ? 'rotate-180' : ''}`}
-          />
-        </button>
-
-        {/* 展開コンテンツ */}
-        {snsExpanded && (
-          <div className="p-3 pt-0 border-t border-white/10">
-            {/* 全SNS承認完了時のボーナス表示 */}
-            {snsAccounts.completionBonusClaimed && (
-              <div className="p-2 rounded-lg border border-green-500/30 mb-3 flex items-center gap-2 bg-green-500/10">
-                <Check className="w-4 h-4 text-green-400 flex-shrink-0" />
-                <p className="text-xs text-green-300">全SNS承認済み・ボーナス{PROFILE_COMPLETION_BONUS}E受取済み</p>
+        {/* 🎯 レベル & 称号 - コンパクト */}
+        <div className="bg-gradient-to-r from-yellow-500/10 via-amber-500/10 to-orange-500/10 border border-yellow-500/30 rounded-xl p-3">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="w-12 h-12 rounded-full bg-gradient-to-br from-yellow-500 to-amber-500 flex items-center justify-center">
+                <span className="text-xl font-bold text-white">{currentLevel}</span>
               </div>
-            )}
-
-            {/* ボーナス案内（ボーナス未受取の場合） */}
-            {!snsAccounts.completionBonusClaimed && (
-              <div className="p-2 rounded-lg border border-yellow-500/30 mb-3 flex items-center gap-2 bg-yellow-500/10">
-                <Gift className="w-4 h-4 text-yellow-400 flex-shrink-0" />
-                <p className="text-xs text-yellow-300">
-                  4SNS承認で <span className="font-bold">{PROFILE_COMPLETION_BONUS}E</span> 獲得！
+              <div>
+                <p className="text-sm font-bold text-yellow-400">Lv.{currentLevel}</p>
+                <p className="text-xs text-purple-400 font-medium">{levelTitle}</p>
+              </div>
+            </div>
+            {levelProgress && (
+              <div className="flex-1 max-w-[120px] ml-4">
+                <div className="h-2 bg-slate-700 rounded-full overflow-hidden">
+                  <motion.div
+                    initial={{ width: 0 }}
+                    animate={{ width: `${levelProgress.progress}%` }}
+                    transition={{ duration: 1, ease: "easeOut" }}
+                    className="h-full bg-gradient-to-r from-yellow-500 to-amber-500 rounded-full"
+                  />
+                </div>
+                <p className="text-[10px] text-slate-400 mt-1 text-right">
+                  次まで {levelProgress.remaining}E
                 </p>
               </div>
             )}
+          </div>
+        </div>
 
-            {/* SNS入力フォーム（コンパクト） */}
-            <div className="space-y-2">
-              {snsOrder.map((snsKey) => {
-                const snsInfo = SNS_LABELS[snsKey];
-                const snsData = snsAccounts[snsKey] as SnsAccountApproval | undefined;
-                const status = snsData?.status || 'none';
-                const isApproved = status === 'approved';
-                const isPending = status === 'pending';
-                const isRejected = status === 'rejected';
-                const currentUrl = inputUrls[snsKey] || '';
-
-                return (
-                  <div key={snsKey} className="flex items-center gap-2">
-                    <span className="text-lg w-6 flex-shrink-0">{snsInfo.icon}</span>
-                    <Input
-                      placeholder={snsInfo.placeholder}
-                      value={currentUrl}
-                      onChange={(e) => setInputUrls(prev => ({
-                        ...prev,
-                        [snsKey]: e.target.value
-                      }))}
-                      disabled={isApproved || isPending}
-                      className={`flex-1 h-8 text-xs bg-white/5 border-slate-600 ${(isApproved || isPending) ? 'opacity-60' : ''}`}
-                    />
-                    {isApproved && <Check className="w-4 h-4 text-green-400 flex-shrink-0" />}
-                    {isPending && <Clock className="w-4 h-4 text-yellow-400 flex-shrink-0 animate-pulse" />}
-                    {isRejected && <AlertCircle className="w-4 h-4 text-red-400 flex-shrink-0" />}
+        {/* 守護神エリア - コンパクト */}
+        <GlassCard glowColor={attr.color} className="p-3 sm:p-4">
+          <div className="flex flex-col gap-3">
+            {/* 守護神表示 - 横並び */}
+            <div className="flex items-center gap-3">
+              {/* 守護神画像 - 小さく */}
+              <div className="flex-shrink-0 relative">
+                <div
+                  className="w-20 h-20 sm:w-24 sm:h-24 rounded-xl flex items-center justify-center relative overflow-hidden"
+                  style={{
+                    background: placeholder.background,
+                    border: `2px solid ${attr.color}`,
+                  }}
+                >
+                  <img
+                    src={getGuardianImagePath(activeGuardianId as GuardianId, stage)}
+                    alt={activeGuardian?.name || '守護神'}
+                    className="w-full h-full object-contain"
+                    onError={(e) => {
+                      e.currentTarget.style.display = 'none';
+                      e.currentTarget.nextElementSibling?.classList.remove('hidden');
+                    }}
+                  />
+                  <div className="absolute inset-0 flex items-center justify-center hidden">
+                    <span className="text-4xl">{placeholder.emoji}</span>
                   </div>
-                );
-              })}
+                </div>
+
+                {/* Stage表示 */}
+                <div className="absolute -bottom-1 left-1/2 transform -translate-x-1/2">
+                  <div
+                    className="px-2 py-0.5 rounded-full text-[10px] font-bold text-white"
+                    style={{ backgroundColor: attr.color }}
+                  >
+                    S{stage}
+                  </div>
+                </div>
+              </div>
+
+              {/* 守護神情報 */}
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-1.5 mb-1">
+                  <span className="text-xl">{attr.emoji}</span>
+                  <h2 className="text-lg sm:text-xl font-bold truncate" style={{ color: attr.color }}>
+                    {activeGuardian?.name || '守護神'}
+                  </h2>
+                </div>
+                <p className="text-[11px] text-slate-400 mb-2">
+                  {stageInfo.name} • {attr.name}属性
+                </p>
+
+                {/* ステータス - インライン */}
+                <div className="flex gap-2">
+                  <div className="flex-1 bg-black/30 rounded-lg p-1.5 text-center">
+                    <p className="text-[9px] text-slate-400">投資済み</p>
+                    <p className="text-sm font-bold text-purple-400">{investedEnergy}E</p>
+                  </div>
+                  <div className="flex-1 bg-black/30 rounded-lg p-1.5 text-center">
+                    <p className="text-[9px] text-slate-400">オーラ</p>
+                    <p className="text-sm font-bold text-pink-400">{auraLevel}%</p>
+                  </div>
+                </div>
+              </div>
             </div>
 
-            {/* 一括送信ボタン */}
-            <Button
-              onClick={handleSaveAllSns}
-              disabled={savingKey === 'all' || !hasAnyChanges}
-              className={`w-full mt-3 h-9 text-sm font-bold ${hasAnyChanges
-                ? 'bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600'
-                : 'bg-slate-600 cursor-not-allowed'
-                }`}
-            >
-              {savingKey === 'all' ? '送信中...' : hasAnyChanges ? '一括送信' : '変更なし'}
-            </Button>
-
-            {/* メッセージ表示 */}
-            {snsMessage && (
-              <div className={`mt-2 p-2 rounded-lg text-xs ${snsMessage.type === 'success'
-                ? 'bg-green-500/20 border border-green-500/30 text-green-300'
-                : 'bg-red-500/20 border border-red-500/30 text-red-300'
-                }`}>
-                {snsMessage.text}
+            {/* オーラゲージ */}
+            <div className="space-y-2">
+              <div className="flex justify-between text-sm">
+                <span className="text-muted-foreground">オーラレベル</span>
+                <span className="font-bold" style={{ color: attr.color }}>
+                  {auraLevel}%
+                </span>
               </div>
-            )}
-          </div>
+
+              <div className="relative w-full h-4 bg-white/10 rounded-full overflow-hidden border-2 border-white/20">
+                <div
+                  className="h-full transition-all duration-1000"
+                  style={{
+                    width: `${auraLevel}%`,
+                    background: `linear-gradient(90deg, ${attr.color}, ${attr.gradientTo})`,
+                    boxShadow: `0 0 20px ${attr.color}`,
+                  }}
+                />
+              </div>
+            </div>
+
+            {/* 🎯 進化予告表示 */}
+            {(() => {
+              const evolutionInfo = getEnergyToNextStage(investedEnergy, activeGuardianId as GuardianId);
+              if (!evolutionInfo) return null; // 究極体は進化不可
+
+              const nextStage = EVOLUTION_STAGES[stage + 1];
+              if (!nextStage) return null; // 次のステージがない場合
+              const progressPercent = Math.round((evolutionInfo.current / evolutionInfo.required) * 100);
+
+              return (
+                <div
+                  className="mt-6 p-4 rounded-xl border-2 animate-in fade-in slide-in-from-bottom-4 duration-500"
+                  style={{
+                    backgroundColor: `${attr.color}05`,
+                    borderColor: `${attr.color}40`,
+                    boxShadow: `0 0 20px ${attr.color}20`
+                  }}
+                >
+                  <div className="flex items-center gap-2 mb-3">
+                    <Sparkles className="w-5 h-5" style={{ color: attr.color }} />
+                    <h3 className="font-bold" style={{ color: attr.color }}>
+                      次の進化まで
+                    </h3>
+                  </div>
+
+                  <div className="space-y-3">
+                    {/* 次の進化段階情報 */}
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-sm text-slate-400">目標</p>
+                        <p className="font-bold text-white text-lg">
+                          {nextStage.name}
+                        </p>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-sm text-slate-400">必要エナジー</p>
+                        <p className="font-bold text-yellow-400 text-2xl">
+                          {evolutionInfo.remaining}E
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* プログレスバー */}
+                    <div className="space-y-2">
+                      <div className="flex justify-between text-sm">
+                        <span className="text-slate-400">進化までの進捗</span>
+                        <span className="font-bold" style={{ color: attr.color }}>
+                          {progressPercent}%
+                        </span>
+                      </div>
+                      <div className="relative w-full h-6 bg-black/40 rounded-full overflow-hidden border-2 border-white/20">
+                        <div
+                          className="h-full transition-all duration-1000 flex items-center justify-center"
+                          style={{
+                            width: `${progressPercent}%`,
+                            background: `linear-gradient(90deg, ${attr.color}, ${attr.gradientTo})`,
+                            boxShadow: `0 0 15px ${attr.color}`,
+                          }}
+                        >
+                          {progressPercent > 20 && (
+                            <span className="text-xs font-bold text-white drop-shadow-lg">
+                              {evolutionInfo.current} / {evolutionInfo.required}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* 励ましメッセージ or 進化可能ボタン */}
+                    <div className="text-center pt-2">
+                      {profile.energy.current >= evolutionInfo.remaining ? (
+                        /* 進化可能！ */
+                        <button
+                          onClick={() => setShowEnergyModal(true)}
+                          className="w-full py-3 rounded-xl font-bold text-lg bg-gradient-to-r from-yellow-500 via-orange-500 to-red-500 hover:from-yellow-400 hover:via-orange-400 hover:to-red-400 text-white transition-all flex items-center justify-center gap-2 animate-pulse shadow-lg"
+                          style={{
+                            boxShadow: `0 0 30px rgba(250, 204, 21, 0.6)`
+                          }}
+                        >
+                          <Zap className="w-6 h-6" />
+                          今すぐ進化可能！ タップして進化させよう
+                          <ArrowRight className="w-5 h-5" />
+                        </button>
+                      ) : evolutionInfo.remaining <= 50 ? (
+                        <p className="text-sm font-medium" style={{ color: attr.color }}>
+                          🔥 もう少しで進化！あと {evolutionInfo.remaining}E 稼ごう！
+                        </p>
+                      ) : evolutionInfo.remaining <= 100 ? (
+                        <p className="text-sm text-slate-300">
+                          💪 着実に成長中！このペースで続けよう
+                        </p>
+                      ) : (
+                        <p className="text-sm text-slate-400">
+                          🌱 毎日の報告が成長への近道です
+                        </p>
+                      )}
+                    </div>
+
+                    {/* エナジー投資ボタン（進化可能でない場合も表示） */}
+                    {profile.energy.current < evolutionInfo.remaining && profile.energy.current > 0 && (
+                      <button
+                        onClick={() => setShowEnergyModal(true)}
+                        className="w-full mt-3 py-2 rounded-lg font-medium text-sm border-2 transition-all flex items-center justify-center gap-2 hover:scale-[1.02]"
+                        style={{
+                          borderColor: attr.color,
+                          color: attr.color,
+                          backgroundColor: `${attr.color}10`
+                        }}
+                      >
+                        <Zap className="w-4 h-4" />
+                        エナジーを投資して進化を早める
+                      </button>
+                    )}
+                  </div>
+                </div>
+              );
+            })()}
+
+            {/* 特性 */}
+            {stage >= 3 && (
+              <div
+                className="p-3 rounded-lg border"
+                style={{
+                  backgroundColor: `${attr.color}08`,
+                  borderColor: `${attr.color}40`,
+                }}
+              >
+                <div className="flex items-center gap-2">
+                  <Sparkles className="w-4 h-4" style={{ color: attr.color }} />
+                  <div className="flex-1">
+                    <p className="text-sm font-semibold" style={{ color: attr.color }}>
+                      特性: {activeGuardian?.ability?.name || '特性'}
+                    </p>
+                    <p className="text-xs text-slate-400">
+                      {activeGuardian?.ability?.description || ''}
+                    </p>
+                  </div>
+                  <div className="text-green-400 font-bold text-xs">
+                    ✓ 発動中
+                  </div>
+                </div>
+              </div>
+            )
+            }
+          </div >
+        </GlassCard >
+
+        {/* 🏅 獲得バッジ */}
+        {profile && (
+          <GlassCard className="p-3">
+            <div className="flex items-center gap-2 mb-3">
+              <Crown className="w-4 h-4 text-yellow-400" />
+              <h3 className="text-sm font-bold text-slate-200">獲得バッジ</h3>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              {/* レベルバッジ */}
+              {currentLevel >= 5 && (
+                <div className="px-2 py-1 rounded-lg bg-purple-500/20 border border-purple-500/30 flex items-center gap-1">
+                  <span className="text-xs">⭐</span>
+                  <span className="text-[10px] text-purple-300 font-medium">Lv.{currentLevel}達成</span>
+                </div>
+              )}
+
+              {/* ストリークバッジ */}
+              {profile.streak.current >= 7 && (
+                <div className="px-2 py-1 rounded-lg bg-orange-500/20 border border-orange-500/30 flex items-center gap-1">
+                  <span className="text-xs">🔥</span>
+                  <span className="text-[10px] text-orange-300 font-medium">{profile.streak.current}日連続</span>
+                </div>
+              )}
+              {profile.streak.max >= 30 && (
+                <div className="px-2 py-1 rounded-lg bg-red-500/20 border border-red-500/30 flex items-center gap-1">
+                  <span className="text-xs">💪</span>
+                  <span className="text-[10px] text-red-300 font-medium">継続マスター</span>
+                </div>
+              )}
+
+              {/* 守護神コンプリートバッジ */}
+              {Object.values(profile.guardians).filter(g => g?.unlocked).length >= 3 && (
+                <div className="px-2 py-1 rounded-lg bg-cyan-500/20 border border-cyan-500/30 flex items-center gap-1">
+                  <span className="text-xs">🛡️</span>
+                  <span className="text-[10px] text-cyan-300 font-medium">守護神収集家</span>
+                </div>
+              )}
+
+              {/* 究極体バッジ */}
+              {Object.values(profile.guardians).some(g => g?.stage === 4) && (
+                <div className="px-2 py-1 rounded-lg bg-gradient-to-r from-yellow-500/20 to-amber-500/20 border border-yellow-500/30 flex items-center gap-1">
+                  <span className="text-xs">👑</span>
+                  <span className="text-[10px] text-yellow-300 font-medium">究極体持ち</span>
+                </div>
+              )}
+
+              {/* バッジがない場合 */}
+              {currentLevel < 5 && profile.streak.current < 7 && (
+                <p className="text-[10px] text-slate-500">まだバッジがありません。報告を続けてバッジを獲得しよう！</p>
+              )}
+            </div>
+          </GlassCard>
         )}
+
+        {/* 📊 6カード統合グリッド（3x2） - PWAモバイル対応・同サイズ統一 */}
+        <div className="grid gap-2" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)' }}>
+          {/* 保有エナジー */}
+          <motion.div
+            initial={{ scale: 0.8, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            transition={{ duration: 0.3, delay: 0 }}
+            onClick={() => setEnergyModalOpen(true)}
+            className="glass-premium p-3 rounded-xl border border-yellow-500/30 cursor-pointer active:scale-95 transition-transform aspect-square flex flex-col items-center justify-center"
+          >
+            <div className="w-8 h-8 mb-1">
+              <Image
+                src="/images/ui/energy-orb.png"
+                alt="Energy"
+                width={32}
+                height={32}
+                className="w-full h-full object-contain"
+                style={{ filter: 'drop-shadow(0 0 6px rgba(250, 204, 21, 0.8))' }}
+              />
+            </div>
+            <p className="text-[10px] text-gray-400 text-center leading-tight">保有エナジー</p>
+            <p className="text-lg font-bold text-yellow-400">
+              <AnimatedNumber value={profile.energy.current} />
+            </p>
+          </motion.div>
+
+          {/* 累計獲得 */}
+          <motion.div
+            initial={{ scale: 0.8, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            transition={{ duration: 0.3, delay: 0.05 }}
+            onClick={() => setTotalModalOpen(true)}
+            className="glass-premium p-3 rounded-xl border border-purple-500/30 cursor-pointer active:scale-95 transition-transform aspect-square flex flex-col items-center justify-center"
+          >
+            <div className="w-8 h-8 mb-1">
+              <Image
+                src="/images/ui/gem.png"
+                alt="Gem"
+                width={32}
+                height={32}
+                className="w-full h-full object-contain"
+                style={{ filter: 'drop-shadow(0 0 6px rgba(168, 85, 247, 0.8))' }}
+              />
+            </div>
+            <p className="text-[10px] text-gray-400 text-center leading-tight">累計獲得</p>
+            <p className="text-lg font-bold text-purple-400">
+              <AnimatedNumber value={profile.energy.totalEarned} />
+            </p>
+          </motion.div>
+
+          {/* 連続報告 */}
+          <motion.div
+            initial={{ scale: 0.8, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            transition={{ duration: 0.3, delay: 0.1 }}
+            onClick={() => setStreakModalOpen(true)}
+            className="glass-premium p-3 rounded-xl border border-orange-500/30 cursor-pointer active:scale-95 transition-transform aspect-square flex flex-col items-center justify-center"
+          >
+            <div className="w-8 h-8 mb-1">
+              <Image
+                src="/images/ui/streak-1.png"
+                alt="Streak"
+                width={32}
+                height={32}
+                className="w-full h-full object-contain"
+                style={{ filter: 'drop-shadow(0 0 6px rgba(251, 146, 60, 0.8))' }}
+              />
+            </div>
+            <p className="text-[10px] text-gray-400 text-center leading-tight">連続報告</p>
+            <p className="text-lg font-bold text-orange-400">
+              <AnimatedNumber value={profile.streak.current} /><span className="text-xs">日</span>
+            </p>
+          </motion.div>
+
+          {/* 日報 */}
+          <Link
+            href="/report"
+            className="glass-premium p-3 rounded-xl border border-green-500/30 cursor-pointer active:scale-95 transition-all aspect-square flex flex-col items-center justify-center"
+          >
+            <div className="text-3xl mb-1">📝</div>
+            <p className="text-[10px] text-gray-400 text-center leading-tight">日報</p>
+            <p className="text-xs font-bold text-green-400">入力する</p>
+          </Link>
+
+          {/* 守護神図鑑 */}
+          <Link
+            href="/guardians"
+            className="glass-premium p-3 rounded-xl border border-purple-500/30 cursor-pointer active:scale-95 transition-all aspect-square flex flex-col items-center justify-center"
+          >
+            <div className="text-3xl mb-1">🛡️</div>
+            <p className="text-[10px] text-gray-400 text-center leading-tight">守護神図鑑</p>
+            <p className="text-xs font-bold text-purple-400">見る</p>
+          </Link>
+
+          {/* ランキング */}
+          <Link
+            href="/ranking"
+            className="glass-premium p-3 rounded-xl border border-yellow-500/30 cursor-pointer active:scale-95 transition-all aspect-square flex flex-col items-center justify-center"
+          >
+            <div className="text-3xl mb-1">🏆</div>
+            <p className="text-[10px] text-gray-400 text-center leading-tight">ランキング</p>
+            <p className="text-xs font-bold text-yellow-400">確認</p>
+          </Link>
+        </div>
+
+        {/* 💎 エナジー獲得の内訳 - 折りたたみ式 */}
+        <div className="glass-bg rounded-xl border border-yellow-500/20 overflow-hidden">
+          <button
+            onClick={() => setEnergyBreakdownExpanded(!energyBreakdownExpanded)}
+            className="w-full p-3 flex items-center justify-between hover:bg-white/5 transition-colors"
+          >
+            <div className="flex items-center gap-2">
+              <Sparkles className="w-4 h-4 text-yellow-400" />
+              <h3 className="text-sm font-bold text-white">エナジー獲得の内訳</h3>
+            </div>
+            <ChevronDown
+              className={`w-4 h-4 text-gray-400 transition-transform ${energyBreakdownExpanded ? 'rotate-180' : ''}`}
+            />
+          </button>
+
+          {energyBreakdownExpanded && (
+            <div className="p-3 pt-0 border-t border-white/10">
+              <div className="grid grid-cols-2 gap-2">
+                {/* 日報提出 */}
+                <div className="flex items-center justify-between p-2 rounded-lg bg-green-500/10 border border-green-500/20">
+                  <div className="flex items-center gap-2">
+                    <span className="text-lg">📝</span>
+                    <span className="text-xs text-white">日報提出</span>
+                  </div>
+                  <span className="text-sm font-bold text-green-400">+10E</span>
+                </div>
+                {/* ストリーク */}
+                <div className="flex items-center justify-between p-2 rounded-lg bg-orange-500/10 border border-orange-500/20">
+                  <div className="flex items-center gap-2">
+                    <span className="text-lg">🔥</span>
+                    <span className="text-xs text-white">ストリーク</span>
+                  </div>
+                  <span className="text-sm font-bold text-orange-400">+{Math.min((profile.streak.current || 0) * 2, 20)}E</span>
+                </div>
+                {/* 成果 */}
+                <div className="flex items-center justify-between p-2 rounded-lg bg-purple-500/10 border border-purple-500/20">
+                  <div className="flex items-center gap-2">
+                    <span className="text-lg">💎</span>
+                    <span className="text-xs text-white">成果</span>
+                  </div>
+                  <span className="text-sm font-bold text-purple-400">変動</span>
+                </div>
+                {/* 週次 */}
+                <div className="flex items-center justify-between p-2 rounded-lg bg-blue-500/10 border border-blue-500/20">
+                  <div className="flex items-center gap-2">
+                    <span className="text-lg">🏆</span>
+                    <span className="text-xs text-white">週次目標</span>
+                  </div>
+                  <span className="text-sm font-bold text-blue-400">+50E</span>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+
+
+        {/* 📱 SNSアカウント設定 - 折りたたみ式 */}
+        <div className="glass-bg rounded-xl border border-blue-500/20 overflow-hidden">
+          {/* ヘッダー（クリックで展開） */}
+          <button
+            onClick={() => setSnsExpanded(!snsExpanded)}
+            className="w-full p-3 flex items-center justify-between hover:bg-white/5 transition-colors"
+          >
+            <div className="flex items-center gap-2">
+              <Settings className="w-4 h-4 text-blue-400" />
+              <h3 className="text-sm font-bold text-white">SNSアカウント設定</h3>
+              {snsAccounts.completionBonusClaimed && (
+                <span className="text-xs bg-green-500/20 text-green-300 px-2 py-0.5 rounded-full">完了</span>
+              )}
+            </div>
+            <ChevronDown
+              className={`w-4 h-4 text-gray-400 transition-transform ${snsExpanded ? 'rotate-180' : ''}`}
+            />
+          </button>
+
+          {/* 展開コンテンツ */}
+          {snsExpanded && (
+            <div className="p-3 pt-0 border-t border-white/10">
+              {/* 全SNS承認完了時のボーナス表示 */}
+              {snsAccounts.completionBonusClaimed && (
+                <div className="p-2 rounded-lg border border-green-500/30 mb-3 flex items-center gap-2 bg-green-500/10">
+                  <Check className="w-4 h-4 text-green-400 flex-shrink-0" />
+                  <p className="text-xs text-green-300">全SNS承認済み・ボーナス{PROFILE_COMPLETION_BONUS}E受取済み</p>
+                </div>
+              )}
+
+              {/* ボーナス案内（ボーナス未受取の場合） */}
+              {!snsAccounts.completionBonusClaimed && (
+                <div className="p-2 rounded-lg border border-yellow-500/30 mb-3 flex items-center gap-2 bg-yellow-500/10">
+                  <Gift className="w-4 h-4 text-yellow-400 flex-shrink-0" />
+                  <p className="text-xs text-yellow-300">
+                    4SNS承認で <span className="font-bold">{PROFILE_COMPLETION_BONUS}E</span> 獲得！
+                  </p>
+                </div>
+              )}
+
+              {/* SNS入力フォーム（コンパクト） */}
+              <div className="space-y-2">
+                {snsOrder.map((snsKey) => {
+                  const snsInfo = SNS_LABELS[snsKey];
+                  const snsData = snsAccounts[snsKey] as SnsAccountApproval | undefined;
+                  const status = snsData?.status || 'none';
+                  const isApproved = status === 'approved';
+                  const isPending = status === 'pending';
+                  const isRejected = status === 'rejected';
+                  const currentUrl = inputUrls[snsKey] || '';
+
+                  return (
+                    <div key={snsKey} className="flex items-center gap-2">
+                      <span className="text-lg w-6 flex-shrink-0">{snsInfo.icon}</span>
+                      <Input
+                        placeholder={snsInfo.placeholder}
+                        value={currentUrl}
+                        onChange={(e) => setInputUrls(prev => ({
+                          ...prev,
+                          [snsKey]: e.target.value
+                        }))}
+                        disabled={isApproved || isPending}
+                        className={`flex-1 h-8 text-xs bg-white/5 border-slate-600 ${(isApproved || isPending) ? 'opacity-60' : ''}`}
+                      />
+                      {isApproved && <Check className="w-4 h-4 text-green-400 flex-shrink-0" />}
+                      {isPending && <Clock className="w-4 h-4 text-yellow-400 flex-shrink-0 animate-pulse" />}
+                      {isRejected && <AlertCircle className="w-4 h-4 text-red-400 flex-shrink-0" />}
+                    </div>
+                  );
+                })}
+              </div>
+
+              {/* 一括送信ボタン */}
+              <Button
+                onClick={handleSaveAllSns}
+                disabled={savingKey === 'all' || !hasAnyChanges}
+                className={`w-full mt-3 h-9 text-sm font-bold ${hasAnyChanges
+                  ? 'bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600'
+                  : 'bg-slate-600 cursor-not-allowed'
+                  }`}
+              >
+                {savingKey === 'all' ? '送信中...' : hasAnyChanges ? '一括送信' : '変更なし'}
+              </Button>
+
+              {/* メッセージ表示 */}
+              {snsMessage && (
+                <div className={`mt-2 p-2 rounded-lg text-xs ${snsMessage.type === 'success'
+                  ? 'bg-green-500/20 border border-green-500/30 text-green-300'
+                  : 'bg-red-500/20 border border-red-500/30 text-red-300'
+                  }`}>
+                  {snsMessage.text}
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+
+        {/* モーダル */}
+        < EnergyHistoryModal
+          isOpen={energyModalOpen}
+          onClose={() => setEnergyModalOpen(false)}
+          userId={user.uid}
+        />
+
+        <TotalEarnedModal
+          isOpen={totalModalOpen}
+          onClose={() => setTotalModalOpen(false)}
+          userId={user.uid}
+          totalEarned={profile.energy.totalEarned}
+        />
+
+        <StreakHistoryModal
+          isOpen={streakModalOpen}
+          onClose={() => setStreakModalOpen(false)}
+          userId={user.uid}
+          currentStreak={profile.streak.current}
+          maxStreak={profile.streak.max}
+        />
+
+        {/* エナジー投資モーダル */}
+        {
+          activeGuardianId && showEnergyModal && (
+            <EnergyInvestmentModal
+              guardianId={activeGuardianId}
+              profile={profile}
+              userId={user.uid}
+              onClose={() => setShowEnergyModal(false)}
+              onSuccess={async () => {
+                setShowEnergyModal(false);
+                // プロファイルを再読み込み
+                const data = await getUserGuardianProfile(user.uid);
+                if (data) {
+                  setProfile(data);
+                }
+              }}
+            />
+          )
+        }
       </div>
-
-      {/* モーダル */}
-      < EnergyHistoryModal
-        isOpen={energyModalOpen}
-        onClose={() => setEnergyModalOpen(false)}
-        userId={user.uid}
-      />
-
-      <TotalEarnedModal
-        isOpen={totalModalOpen}
-        onClose={() => setTotalModalOpen(false)}
-        userId={user.uid}
-        totalEarned={profile.energy.totalEarned}
-      />
-
-      <StreakHistoryModal
-        isOpen={streakModalOpen}
-        onClose={() => setStreakModalOpen(false)}
-        userId={user.uid}
-        currentStreak={profile.streak.current}
-        maxStreak={profile.streak.max}
-      />
-
-      {/* エナジー投資モーダル */}
-      {
-        activeGuardianId && showEnergyModal && (
-          <EnergyInvestmentModal
-            guardianId={activeGuardianId}
-            profile={profile}
-            userId={user.uid}
-            onClose={() => setShowEnergyModal(false)}
-            onSuccess={async () => {
-              setShowEnergyModal(false);
-              // プロファイルを再読み込み
-              const data = await getUserGuardianProfile(user.uid);
-              if (data) {
-                setProfile(data);
-              }
-            }}
-          />
-        )
-      }
-    </div >
+    </MemberLayout>
   );
 }
