@@ -327,6 +327,23 @@ export async function sendAdminDMToUser(
         isAdmin: true,
         participants: [adminUid, targetUserId],
     });
+
+    // プッシュ通知を送信（バックグラウンドで非同期実行、エラーは無視）
+    try {
+        await fetch('/api/push/send', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                type: 'dm',
+                userId: targetUserId,
+                senderName: adminDisplayName,
+                messagePreview: message.slice(0, 100),
+            }),
+        });
+        console.log(`📱 [DM] プッシュ通知を送信: ${targetUserId}`);
+    } catch (e) {
+        console.warn('📱 [DM] プッシュ通知の送信に失敗:', e);
+    }
 }
 
 /**
