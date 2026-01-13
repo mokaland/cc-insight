@@ -5,17 +5,7 @@
  */
 
 import webpush from 'web-push';
-import {
-    collection,
-    doc,
-    setDoc,
-    getDoc,
-    getDocs,
-    deleteDoc,
-    query,
-    where,
-} from 'firebase/firestore';
-import { db } from '@/lib/firebase';
+import * as admin from 'firebase-admin';
 
 // VAPID設定（環境変数から取得）
 const VAPID_PUBLIC_KEY = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY || '';
@@ -25,6 +15,24 @@ const VAPID_SUBJECT = process.env.VAPID_SUBJECT || 'mailto:admin@c-creation.co.j
 // web-push設定
 if (VAPID_PUBLIC_KEY && VAPID_PRIVATE_KEY) {
     webpush.setVapidDetails(VAPID_SUBJECT, VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY);
+}
+
+// Firebase Admin SDKの初期化
+function getAdminFirestore() {
+    if (admin.apps.length === 0) {
+        const serviceAccount = process.env.FIREBASE_SERVICE_ACCOUNT_KEY;
+        if (serviceAccount) {
+            admin.initializeApp({
+                credential: admin.credential.cert(JSON.parse(serviceAccount)),
+            });
+        } else {
+            admin.initializeApp({
+                credential: admin.credential.applicationDefault(),
+                projectId: "cc-insight",
+            });
+        }
+    }
+    return admin.firestore();
 }
 
 // 型定義
@@ -67,14 +75,15 @@ export async function savePushSubscription(
     subscription: PushSubscription,
     userAgent?: string
 ): Promise<string> {
+    const db = getAdminFirestore();
     // endpointをIDとして使用（重複防止）
     const subscriptionId = Buffer.from(subscription.endpoint).toString('base64').slice(0, 100);
 
-    await setDoc(doc(db, 'push_subscriptions', subscriptionId), {
+    await db.collection('push_subscriptions').doc(subscriptionId).set({
         userId,
         subscription,
         userAgent,
-        createdAt: new Date(),
+        createdAt: admin.firestore.FieldValue.serverTimestamp(),
     });
 
     console.log(`📱 [Push] Subscription saved for user: ${userId}`);
@@ -85,8 +94,8 @@ export async function savePushSubscription(
  * ユーザーの購読を取得
  */
 export async function getUserSubscriptions(userId: string): Promise<StoredSubscription[]> {
-    const q = query(collection(db, 'push_subscriptions'), where('userId', '==', userId));
-    const snapshot = await getDocs(q);
+    const db = getAdminFirestore();
+    const snapshot = await db.collection('push_subscriptions').where('userId', '==', userId).get();
 
     return snapshot.docs.map((doc) => ({
         id: doc.id,
@@ -98,7 +107,8 @@ export async function getUserSubscriptions(userId: string): Promise<StoredSubscr
  * 購読を削除
  */
 export async function deletePushSubscription(subscriptionId: string): Promise<void> {
-    await deleteDoc(doc(db, 'push_subscriptions', subscriptionId));
+    const db = getAdminFirestore();
+    await db.collection('push_subscriptions').doc(subscriptionId).delete();
     console.log(`📱 [Push] Subscription deleted: ${subscriptionId}`);
 }
 
@@ -151,7 +161,8 @@ export async function sendPushToUser(userId: string, payload: PushPayload): Prom
  * 全ユーザーにプッシュ通知を送信（ブロードキャスト）
  */
 export async function sendPushBroadcast(payload: PushPayload): Promise<{ total: number; success: number }> {
-    const snapshot = await getDocs(collection(db, 'push_subscriptions'));
+    const db = getAdminFirestore();
+    const snapshot = await db.collection('push_subscriptions').get();
 
     const pushPayload = JSON.stringify({
         title: payload.title,
