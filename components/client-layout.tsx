@@ -229,19 +229,37 @@ function BottomNavigation() {
     },
   ];
 
-  // 管理者用：ドロワーに表示する全メニュー（整理後）
+  // 管理者用：ドロワーに表示する全メニュー（v3 チームページ対応）
   const adminDrawerItems = [
     {
-      label: "📊 ダッシュボード",
-      subtitle: "監視・監査",
+      label: "📈 CEOダッシュボード",
+      subtitle: "全チーム俯瞰・KPI",
+      icon: Shield,
+      href: "/admin/ceo",
+    },
+    {
+      label: "📊 Active Monitor",
+      subtitle: "離脱防止監視",
       icon: Shield,
       href: "/admin/monitor",
     },
     {
-      label: "👥 チーム",
-      subtitle: "副業・退職・スマホ",
+      label: "💼 副業チーム",
+      subtitle: "ファネル・目標・入力",
       icon: Briefcase,
-      href: "/dashboard?team=fukugyou",
+      href: "/team/fukugyou",
+    },
+    {
+      label: "🚪 退職チーム",
+      subtitle: "ファネル・目標・入力",
+      icon: Shield,
+      href: "/team/taishoku",
+    },
+    {
+      label: "📱 スマホ物販",
+      subtitle: "ファネル・目標・投稿",
+      icon: Smartphone,
+      href: "/team/buppan",
     },
     {
       label: "💬 DM",
