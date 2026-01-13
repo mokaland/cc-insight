@@ -72,31 +72,43 @@ const memberMobileNavItems = [
   },
 ];
 
-// 管理者専用ナビゲーション（整理後）
+// 管理者専用ナビゲーション（v3 事業KPIダッシュボード対応）
 const adminNavItems = [
   {
-    title: "📊 ダッシュボード",
-    subtitle: "監視・監査",
+    title: "📈 事業ダッシュボード",
+    subtitle: "全チーム俯瞰・目標承認",
+    href: "/admin/ceo",
+    icon: Shield,
+  },
+  {
+    title: "📊 Active Monitor",
+    subtitle: "離脱防止監視",
     href: "/admin/monitor",
     icon: Shield,
   },
   {
-    title: "👥 チーム",
-    subtitle: "副業・退職・スマホ",
-    href: "/dashboard?team=fukugyou",
+    title: "💼 副業チーム",
+    subtitle: "ファネル・目標・入力",
+    href: "/team/fukugyou",
     icon: Briefcase,
+  },
+  {
+    title: "🚪 退職チーム",
+    subtitle: "ファネル・目標・入力",
+    href: "/team/taishoku",
+    icon: LogOut,
+  },
+  {
+    title: "📱 スマホ物販",
+    subtitle: "ファネル・目標・入力",
+    href: "/team/buppan",
+    icon: Smartphone,
   },
   {
     title: "💬 DM",
     subtitle: "メンバーとやり取り",
     href: "/admin/dm",
     icon: MessageSquare,
-  },
-  {
-    title: "🏆 ランキング",
-    subtitle: "全チーム比較",
-    href: "/ranking",
-    icon: Trophy,
   },
   {
     title: "👤 メンバー管理",
@@ -117,6 +129,7 @@ const adminNavItems = [
     icon: Sparkles,
   },
 ];
+
 
 export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
   const pathname = usePathname();
