@@ -232,8 +232,8 @@ function TeamDashboardContent() {
                         key={tab.id}
                         onClick={() => handleTabChange(tab.id)}
                         className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-all ${activeTab === tab.id
-                                ? "bg-gradient-to-r from-purple-500 to-pink-500 text-white shadow-lg"
-                                : "text-muted-foreground hover:bg-white/10"
+                            ? "bg-gradient-to-r from-purple-500 to-pink-500 text-white shadow-lg"
+                            : "text-muted-foreground hover:bg-white/10"
                             }`}
                     >
                         {tab.icon}
@@ -352,10 +352,10 @@ function TeamDashboardContent() {
                         <div className="mb-4 flex items-center gap-2">
                             <span
                                 className={`px-3 py-1 rounded-full text-sm ${goal.status === "approved"
-                                        ? "bg-green-500/20 text-green-400"
-                                        : goal.status === "pending"
-                                            ? "bg-yellow-500/20 text-yellow-400"
-                                            : "bg-gray-500/20 text-gray-400"
+                                    ? "bg-green-500/20 text-green-400"
+                                    : goal.status === "pending"
+                                        ? "bg-yellow-500/20 text-yellow-400"
+                                        : "bg-gray-500/20 text-gray-400"
                                     }`}
                             >
                                 {goal.status === "approved"
@@ -371,14 +371,18 @@ function TeamDashboardContent() {
                             <div key={key}>
                                 <label className="block text-sm text-muted-foreground mb-1">{label}</label>
                                 <input
-                                    type="number"
-                                    value={goalInput[key as keyof FunnelKPI]}
-                                    onChange={(e) =>
+                                    type="text"
+                                    inputMode="numeric"
+                                    pattern="[0-9]*"
+                                    value={goalInput[key as keyof FunnelKPI] === 0 ? '' : goalInput[key as keyof FunnelKPI]}
+                                    onChange={(e) => {
+                                        const val = e.target.value;
                                         setGoalInput((prev) => ({
                                             ...prev,
-                                            [key]: Number(e.target.value),
-                                        }))
-                                    }
+                                            [key]: val === '' ? 0 : parseInt(val, 10) || 0,
+                                        }));
+                                    }}
+                                    placeholder="0"
                                     className="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-lg"
                                 />
                             </div>
@@ -435,14 +439,18 @@ function TeamDashboardContent() {
                                 <div key={key} className="flex items-center gap-4">
                                     <div className="w-28 text-sm">{label}</div>
                                     <input
-                                        type="number"
-                                        value={currentValue}
-                                        onChange={(e) =>
+                                        type="text"
+                                        inputMode="numeric"
+                                        pattern="[0-9]*"
+                                        value={currentValue === 0 ? '' : currentValue}
+                                        onChange={(e) => {
+                                            const val = e.target.value;
                                             setInputKPI((prev) => ({
                                                 ...prev,
-                                                [key]: Number(e.target.value),
-                                            }))
-                                        }
+                                                [key]: val === '' ? 0 : parseInt(val, 10) || 0,
+                                            }));
+                                        }}
+                                        placeholder="0"
                                         className="w-24 px-3 py-2 bg-white/5 border border-white/10 rounded-lg"
                                     />
                                     <div className="flex-1 text-sm text-muted-foreground">

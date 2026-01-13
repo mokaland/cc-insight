@@ -140,15 +140,27 @@ export async function approveGoal(
 
 /**
  * 承認待ちの目標一覧を取得
+ * インデックス不要: 全件取得後にフィルタリング
  */
 export async function getPendingGoals(): Promise<TeamGoal[]> {
-    const q = query(
-        collection(db, "team_goals"),
-        where("status", "==", "pending"),
-        orderBy("createdAt", "desc")
-    );
-    const snapshot = await getDocs(q);
-    return snapshot.docs.map((doc) => doc.data() as TeamGoal);
+    const snapshot = await getDocs(collection(db, "team_goals"));
+    const results: TeamGoal[] = [];
+
+    snapshot.docs.forEach((docSnap) => {
+        const data = docSnap.data() as TeamGoal;
+        if (data.status === "pending") {
+            results.push(data);
+        }
+    });
+
+    // createdAtで降順ソート
+    results.sort((a, b) => {
+        const aTime = a.createdAt?.toMillis?.() || 0;
+        const bTime = b.createdAt?.toMillis?.() || 0;
+        return bTime - aTime;
+    });
+
+    return results;
 }
 
 // ============================================
@@ -226,19 +238,27 @@ export async function getWeeklyKPI(
 
 /**
  * チームの週次KPI一覧を取得（年指定）
+ * インデックス不要: ドキュメントIDでフィルタリング
  */
 export async function getWeeklyKPIsByYear(
     teamId: TeamId,
     year: number
 ): Promise<TeamWeeklyKPI[]> {
-    const q = query(
-        collection(db, "team_weekly_kpi"),
-        where("teamId", "==", teamId),
-        where("year", "==", year),
-        orderBy("weekNumber", "asc")
-    );
-    const snapshot = await getDocs(q);
-    return snapshot.docs.map((doc) => doc.data() as TeamWeeklyKPI);
+    // 全ドキュメント取得してクライアント側でフィルタリング
+    // ドキュメントIDが `${teamId}_${year}_w${weekNumber}` 形式なので効率的
+    const snapshot = await getDocs(collection(db, "team_weekly_kpi"));
+    const results: TeamWeeklyKPI[] = [];
+
+    snapshot.docs.forEach((docSnap) => {
+        const data = docSnap.data() as TeamWeeklyKPI;
+        if (data.teamId === teamId && data.year === year) {
+            results.push(data);
+        }
+    });
+
+    // 週番号でソート
+    results.sort((a, b) => a.weekNumber - b.weekNumber);
+    return results;
 }
 
 /**
