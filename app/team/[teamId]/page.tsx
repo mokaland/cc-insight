@@ -17,6 +17,12 @@ import {
     Save,
     Check,
     Loader2,
+    ExternalLink,
+    Copy,
+    ChevronDown,
+    ChevronUp,
+    Play,
+    Twitter,
 } from "lucide-react";
 import {
     TeamId,
@@ -51,15 +57,18 @@ const TEAM_CONFIG: Record<TeamId, { name: string; color: string }> = {
     buppan: { name: "スマホ物販", color: "#f59e0b" },
 };
 
-type TabId = "funnel" | "goal" | "input" | "members" | "alerts";
+type TabId = "funnel" | "goal" | "input" | "members" | "alerts" | "posts";
 
-const TABS: { id: TabId; label: string; icon: React.ReactNode }[] = [
+const BASE_TABS: { id: TabId; label: string; icon: React.ReactNode }[] = [
     { id: "funnel", label: "ファネル", icon: <BarChart3 className="h-4 w-4" /> },
     { id: "goal", label: "目標設定", icon: <Target className="h-4 w-4" /> },
     { id: "input", label: "週次入力", icon: <FileEdit className="h-4 w-4" /> },
     { id: "members", label: "メンバー", icon: <Users className="h-4 w-4" /> },
     { id: "alerts", label: "アラート", icon: <AlertTriangle className="h-4 w-4" /> },
 ];
+
+// X系チーム用に「投稿」タブを追加
+const POSTS_TAB = { id: "posts" as TabId, label: "投稿", icon: <Twitter className="h-4 w-4" /> };
 
 function TeamDashboardContent() {
     const params = useParams();
@@ -233,7 +242,8 @@ function TeamDashboardContent() {
 
             {/* Tabs */}
             <div className="flex flex-wrap gap-2 p-1 bg-white/5 rounded-xl border border-white/10">
-                {TABS.map((tab) => (
+                {/* X系チームの場合は投稿タブを追加 */}
+                {(teamId === "buppan" ? [...BASE_TABS, POSTS_TAB] : BASE_TABS).map((tab) => (
                     <button
                         key={tab.id}
                         onClick={() => handleTabChange(tab.id)}
@@ -286,7 +296,7 @@ function TeamDashboardContent() {
                                                     <td className="py-2 text-right font-medium">{actual.toLocaleString()}</td>
                                                     <td className="py-2 text-right text-muted-foreground">{target.toLocaleString()}</td>
                                                     <td className={`py-2 text-right font-semibold ${status === "on_track" ? "text-green-400" :
-                                                            status === "warning" ? "text-yellow-400" : "text-red-400"
+                                                        status === "warning" ? "text-yellow-400" : "text-red-400"
                                                         }`}>
                                                         {rate}%
                                                     </td>
@@ -507,6 +517,16 @@ function TeamDashboardContent() {
 
             {activeTab === "alerts" && (
                 <AlertsTab
+                    teamId={teamId}
+                    teamConfig={teamConfig}
+                    year={selectedYear}
+                    month={selectedMonth}
+                />
+            )}
+
+            {/* X系チーム用：投稿タブ */}
+            {activeTab === "posts" && teamId === "buppan" && (
+                <MemberPostsTab
                     teamId={teamId}
                     teamConfig={teamConfig}
                     year={selectedYear}
@@ -931,6 +951,225 @@ function AlertsTab({
     );
 }
 
+// メンバー投稿タブコンポーネント（X系チーム用）
+interface MemberPostUrl {
+    name: string;
+    urls: { date: string; url: string; content?: string }[];
+}
+
+function MemberPostsTab({
+    teamId,
+    teamConfig,
+    year,
+    month,
+}: {
+    teamId: TeamId;
+    teamConfig: { name: string; color: string };
+    year: number;
+    month: number;
+}) {
+    const [loading, setLoading] = useState(true);
+    const [memberPosts, setMemberPosts] = useState<MemberPostUrl[]>([]);
+    const [expandedMember, setExpandedMember] = useState<string | null>(null);
+    const [copyMessage, setCopyMessage] = useState<string | null>(null);
+
+    useEffect(() => {
+        const loadPosts = async () => {
+            setLoading(true);
+            try {
+                // 動的インポートでレポートサービスを取得
+                const { getReportsByPeriod } = await import("@/lib/services/report");
+
+                // 月間レポートを取得
+                const startDate = `${year}-${String(month).padStart(2, "0")}-01`;
+                const endDate = `${year}-${String(month).padStart(2, "0")}-31`;
+                const reports = await getReportsByPeriod("month", teamId);
+
+                // メンバーごとにpostUrlsをグループ化
+                const urlsByMember: { [name: string]: { date: string; url: string; content?: string }[] } = {};
+                reports.forEach((report) => {
+                    if (report.postUrls && report.postUrls.length > 0) {
+                        if (!urlsByMember[report.name]) {
+                            urlsByMember[report.name] = [];
+                        }
+                        // postsがある場合は投稿内容も取得
+                        report.postUrls.forEach((url, idx) => {
+                            if (url.trim()) {
+                                const postContent = report.posts?.[idx]?.content || "";
+                                urlsByMember[report.name].push({
+                                    date: report.date,
+                                    url,
+                                    content: postContent,
+                                });
+                            }
+                        });
+                    }
+                });
+
+                const memberList = Object.entries(urlsByMember)
+                    .map(([name, urls]) => ({ name, urls }))
+                    .sort((a, b) => b.urls.length - a.urls.length);
+
+                setMemberPosts(memberList);
+            } catch (error) {
+                console.error("投稿データ取得エラー:", error);
+            } finally {
+                setLoading(false);
+            }
+        };
+        loadPosts();
+    }, [teamId, year, month]);
+
+    const copyMemberUrls = async (memberName: string) => {
+        const member = memberPosts.find((m) => m.name === memberName);
+        if (member) {
+            const urlText = member.urls.map(({ url }) => url).join("\n");
+            try {
+                await navigator.clipboard.writeText(urlText);
+                setCopyMessage(`${member.name}さんの${member.urls.length}件のURLをコピーしました`);
+                setTimeout(() => setCopyMessage(null), 3000);
+            } catch (error) {
+                console.error("コピー失敗:", error);
+            }
+        }
+    };
+
+    const copyAllUrls = async () => {
+        const allUrls = memberPosts.flatMap((m) => m.urls.map((u) => u.url));
+        try {
+            await navigator.clipboard.writeText(allUrls.join("\n"));
+            setCopyMessage(`全${allUrls.length}件のURLをコピーしました`);
+            setTimeout(() => setCopyMessage(null), 3000);
+        } catch (error) {
+            console.error("コピー失敗:", error);
+        }
+    };
+
+    const totalUrlCount = memberPosts.reduce((sum, m) => sum + m.urls.length, 0);
+
+    if (loading) {
+        return (
+            <GlassCard glowColor={teamConfig.color} className="p-6">
+                <div className="flex items-center justify-center py-8">
+                    <Loader2 className="h-8 w-8 animate-spin" style={{ color: teamConfig.color }} />
+                </div>
+            </GlassCard>
+        );
+    }
+
+    return (
+        <GlassCard glowColor="#3b82f6" className="p-6">
+            {/* コピー成功メッセージ */}
+            {copyMessage && (
+                <div className="mb-4 p-3 rounded-lg bg-green-500/20 border border-green-500/30 flex items-center gap-2 text-green-300">
+                    <Check className="h-4 w-4 flex-shrink-0" />
+                    <span className="text-sm">{copyMessage}</span>
+                </div>
+            )}
+
+            {/* ヘッダー */}
+            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 mb-4">
+                <div className="flex items-center gap-2">
+                    <Twitter className="h-5 w-5 text-blue-400" />
+                    <h3 className="text-lg font-semibold">メンバーの投稿</h3>
+                    <span className="text-sm text-muted-foreground">（{totalUrlCount}件）</span>
+                </div>
+                {totalUrlCount > 0 && (
+                    <Button
+                        onClick={copyAllUrls}
+                        className="bg-gradient-to-r from-blue-500 to-cyan-500 text-white"
+                    >
+                        <Copy className="h-4 w-4 mr-2" />
+                        全{totalUrlCount}件のURLをコピー
+                    </Button>
+                )}
+            </div>
+
+            {totalUrlCount === 0 ? (
+                <div className="text-center py-8 text-muted-foreground">
+                    <ExternalLink className="w-8 h-8 mx-auto mb-2 opacity-50" />
+                    <p>この月の投稿URLはありません</p>
+                    <p className="text-xs mt-1">メンバーが日報で投稿URLを報告すると表示されます</p>
+                </div>
+            ) : (
+                <div className="space-y-3">
+                    {memberPosts.map((member) => (
+                        <div
+                            key={member.name}
+                            className="border border-white/10 rounded-xl overflow-hidden bg-white/5"
+                        >
+                            {/* メンバーヘッダー */}
+                            <div
+                                className="flex items-center justify-between p-4 cursor-pointer hover:bg-white/5 transition-colors"
+                                onClick={() => setExpandedMember(expandedMember === member.name ? null : member.name)}
+                            >
+                                <div className="flex items-center gap-3">
+                                    <div
+                                        className="w-8 h-8 rounded-full flex items-center justify-center text-white font-bold"
+                                        style={{ backgroundColor: teamConfig.color }}
+                                    >
+                                        {member.name.charAt(0)}
+                                    </div>
+                                    <div>
+                                        <p className="font-medium">{member.name}</p>
+                                        <p className="text-xs text-muted-foreground">{member.urls.length}件の投稿</p>
+                                    </div>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                    <Button
+                                        size="sm"
+                                        variant="outline"
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            copyMemberUrls(member.name);
+                                        }}
+                                        className="text-blue-400 border-blue-400/30 hover:bg-blue-400/10"
+                                    >
+                                        <Copy className="h-3 w-3 mr-1" />
+                                        コピー
+                                    </Button>
+                                    {expandedMember === member.name ? (
+                                        <ChevronUp className="h-5 w-5 text-muted-foreground" />
+                                    ) : (
+                                        <ChevronDown className="h-5 w-5 text-muted-foreground" />
+                                    )}
+                                </div>
+                            </div>
+
+                            {/* 投稿一覧（展開時） */}
+                            {expandedMember === member.name && (
+                                <div className="border-t border-white/10 p-4 space-y-3 bg-black/20">
+                                    {member.urls.map((item, idx) => (
+                                        <div key={idx} className="p-3 rounded-lg bg-white/5">
+                                            <div className="flex items-center gap-2 mb-2">
+                                                <span className="text-xs text-muted-foreground">{item.date}</span>
+                                                <a
+                                                    href={item.url}
+                                                    target="_blank"
+                                                    rel="noopener noreferrer"
+                                                    className="text-sm text-blue-400 hover:text-blue-300 flex items-center gap-1"
+                                                >
+                                                    {item.url.length > 50 ? item.url.substring(0, 50) + "..." : item.url}
+                                                    <ExternalLink className="h-3 w-3" />
+                                                </a>
+                                            </div>
+                                            {item.content && (
+                                                <div className="mt-2 p-2 bg-black/20 rounded text-sm text-muted-foreground whitespace-pre-wrap">
+                                                    {item.content.length > 200 ? item.content.substring(0, 200) + "..." : item.content}
+                                                </div>
+                                            )}
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+                        </div>
+                    ))}
+                </div>
+            )}
+        </GlassCard>
+    );
+}
+
 export default function TeamDashboardPage() {
     return (
         <Suspense
@@ -944,3 +1183,4 @@ export default function TeamDashboardPage() {
         </Suspense>
     );
 }
+
