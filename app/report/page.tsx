@@ -6,7 +6,6 @@ import { useRouter } from "next/navigation";
 import { createReport } from "@/lib/services/report";
 import { sendDMToAdmins } from "@/lib/services/dm";
 import { Button } from "@/components/ui/button";
-import { MemberLayout, NeuCard, NeuButton } from "@/components/member-ui";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -603,654 +602,652 @@ export default function ReportPage() {
   }
 
   return (
-    <MemberLayout className="p-3 sm:p-4 md:p-6 pb-48">
+    <div className="min-h-screen cosmic-bg relative overflow-hidden p-3 sm:p-4 md:p-8 pb-48">
+      {/* 星雲背景エフェクト - 縮小 */}
+      <div className="fixed inset-0 overflow-hidden pointer-events-none">
+        <div className="nebula-bg absolute top-0 left-1/4 w-[400px] h-[400px] rounded-full blur-3xl opacity-20"
+          style={{
+            background: `radial-gradient(ellipse at center, ${teamColor}20, transparent 70%)`
+          }}
+        />
+      </div>
+
       <div className="max-w-2xl mx-auto relative">
-        {/* 星雲背景エフェクト - 縮小 */}
-        <div className="fixed inset-0 overflow-hidden pointer-events-none">
-          <div className="nebula-bg absolute top-0 left-1/4 w-[400px] h-[400px] rounded-full blur-3xl opacity-20"
-            style={{
-              background: `radial-gradient(ellipse at center, ${teamColor}20, transparent 70%)`
-            }}
-          />
+        {/* Header - コンパクト */}
+        <div className="flex items-center justify-between mb-4">
+          <h1
+            className="text-xl sm:text-2xl font-bold bg-clip-text text-transparent"
+            style={{ backgroundImage: `linear-gradient(to right, ${teamColor}, #a855f7)` }}
+          >
+            📊 日報
+          </h1>
+          <div className="text-xs text-slate-400">
+            {new Date(date).toLocaleDateString('ja-JP', { month: 'short', day: 'numeric' })}
+          </div>
         </div>
 
-        <div className="max-w-2xl mx-auto relative">
-          {/* Header - コンパクト */}
-          <div className="flex items-center justify-between mb-4">
-            <h1
-              className="text-xl sm:text-2xl font-bold bg-clip-text text-transparent"
-              style={{ backgroundImage: `linear-gradient(to right, ${teamColor}, #a855f7)` }}
-            >
-              📊 日報
-            </h1>
-            <div className="text-xs text-slate-400">
-              {new Date(date).toLocaleDateString('ja-JP', { month: 'short', day: 'numeric' })}
-            </div>
-          </div>
+        <Card
+          className="backdrop-blur-xl border transition-all"
+          style={{
+            backgroundColor: 'rgba(255,255,255,0.03)',
+            borderColor: selectedTeam ? `${teamColor}30` : 'rgba(255,255,255,0.1)',
+          }}
+        >
+          <CardContent className="p-3 sm:p-4">
+            <form onSubmit={handleSubmit} className="space-y-4">
+              {/* Success Message（シンプル版） */}
+              {success && !showCelebration && (
+                <div
+                  className="p-6 rounded-2xl border-2 relative overflow-hidden"
+                  style={{
+                    backgroundColor: `${teamColor}10`,
+                    borderColor: teamColor,
+                    boxShadow: `0 0 40px ${teamColor}40`
+                  }}
+                >
+                  <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent animate-pulse" />
 
-          <Card
-            className="backdrop-blur-xl border transition-all"
-            style={{
-              backgroundColor: 'rgba(255,255,255,0.03)',
-              borderColor: selectedTeam ? `${teamColor}30` : 'rgba(255,255,255,0.1)',
-            }}
-          >
-            <CardContent className="p-3 sm:p-4">
-              <form onSubmit={handleSubmit} className="space-y-4">
-                {/* Success Message（シンプル版） */}
-                {success && !showCelebration && (
-                  <div
-                    className="p-6 rounded-2xl border-2 relative overflow-hidden"
+                  <div className="relative z-10 text-center">
+                    <div className="text-6xl mb-4 animate-bounce">✅</div>
+                    <h3 className="text-2xl font-bold mb-2" style={{ color: teamColor }}>
+                      {isEditMode ? "更新完了！" : "送信完了！"}
+                    </h3>
+                    <p className="text-sm text-muted-foreground">
+                      レポートが正常に{isEditMode ? "更新" : "送信"}されました
+                    </p>
+                  </div>
+                </div>
+              )}
+              {error && (
+                <div className="p-4 rounded-lg bg-red-500/10 border border-red-500/20 flex items-center gap-3 text-red-400">
+                  <AlertCircle className="w-5 h-5" />
+                  {error}
+                </div>
+              )}
+
+              {/* チーム未設定の場合のエラー */}
+              {!selectedTeam && userProfile && (
+                <div className="p-6 rounded-lg bg-orange-500/10 border border-orange-500/20 text-orange-400 text-center">
+                  <AlertCircle className="w-12 h-12 mx-auto mb-4" />
+                  <p className="font-medium text-lg mb-2">所属チームが設定されていません</p>
+                  <p className="text-sm">管理者に連絡してチームを設定してもらってください</p>
+                </div>
+              )}
+
+              {/* 所属チーム表示 & フォーム */}
+              {selectedTeam && userProfile && selectedTeamData && (
+                <>
+                  {/* 所属チーム表示 */}
+                  <div className="p-4 rounded-xl border-2 bg-white/10"
                     style={{
-                      backgroundColor: `${teamColor}10`,
                       borderColor: teamColor,
-                      boxShadow: `0 0 40px ${teamColor}40`
+                      boxShadow: `0 0 25px ${teamColor}40`
                     }}
                   >
-                    <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent animate-pulse" />
-
-                    <div className="relative z-10 text-center">
-                      <div className="text-6xl mb-4 animate-bounce">✅</div>
-                      <h3 className="text-2xl font-bold mb-2" style={{ color: teamColor }}>
-                        {isEditMode ? "更新完了！" : "送信完了！"}
-                      </h3>
-                      <p className="text-sm text-muted-foreground">
-                        レポートが正常に{isEditMode ? "更新" : "送信"}されました
-                      </p>
-                    </div>
-                  </div>
-                )}
-                {error && (
-                  <div className="p-4 rounded-lg bg-red-500/10 border border-red-500/20 flex items-center gap-3 text-red-400">
-                    <AlertCircle className="w-5 h-5" />
-                    {error}
-                  </div>
-                )}
-
-                {/* チーム未設定の場合のエラー */}
-                {!selectedTeam && userProfile && (
-                  <div className="p-6 rounded-lg bg-orange-500/10 border border-orange-500/20 text-orange-400 text-center">
-                    <AlertCircle className="w-12 h-12 mx-auto mb-4" />
-                    <p className="font-medium text-lg mb-2">所属チームが設定されていません</p>
-                    <p className="text-sm">管理者に連絡してチームを設定してもらってください</p>
-                  </div>
-                )}
-
-                {/* 所属チーム表示 & フォーム */}
-                {selectedTeam && userProfile && selectedTeamData && (
-                  <>
-                    {/* 所属チーム表示 */}
-                    <div className="p-4 rounded-xl border-2 bg-white/10"
-                      style={{
-                        borderColor: teamColor,
-                        boxShadow: `0 0 25px ${teamColor}40`
-                      }}
-                    >
-                      <div className="flex items-center gap-3">
-                        <span
-                          className="w-4 h-4 rounded-full animate-pulse"
-                          style={{ backgroundColor: teamColor, boxShadow: `0 0 10px ${teamColor}` }}
-                        />
-                        <div>
-                          <p className="text-sm text-slate-400">所属チーム</p>
-                          <p className="font-bold text-lg text-white">{selectedTeamData.name}</p>
-                        </div>
+                    <div className="flex items-center gap-3">
+                      <span
+                        className="w-4 h-4 rounded-full animate-pulse"
+                        style={{ backgroundColor: teamColor, boxShadow: `0 0 10px ${teamColor}` }}
+                      />
+                      <div>
+                        <p className="text-sm text-slate-400">所属チーム</p>
+                        <p className="font-bold text-lg text-white">{selectedTeamData.name}</p>
                       </div>
                     </div>
+                  </div>
 
-                    {/* ログインユーザー表示 & 日付 */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div className="space-y-2">
-                        <Label className="flex items-center gap-2 text-white">
-                          <User className="w-4 h-4" />
-                          報告者
-                        </Label>
-                        <div
-                          className="px-3 py-2 rounded-md bg-white/10 border text-white"
-                          style={{ borderColor: `${teamColor}30` }}
-                        >
-                          {userProfile.displayName}
-                        </div>
-                      </div>
-                      <div className="space-y-2">
-                        <Label className="flex items-center gap-2 text-white">
-                          <Calendar className="w-4 h-4" />
-                          日付
-                        </Label>
-                        <div
-                          className="px-3 py-2 rounded-md bg-white/10 border text-white"
-                          style={{ borderColor: `${teamColor}30` }}
-                        >
-                          {new Date(date).toLocaleDateString('ja-JP', { year: 'numeric', month: 'long', day: 'numeric', weekday: 'short' })}
-                        </div>
+                  {/* ログインユーザー表示 & 日付 */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label className="flex items-center gap-2 text-white">
+                        <User className="w-4 h-4" />
+                        報告者
+                      </Label>
+                      <div
+                        className="px-3 py-2 rounded-md bg-white/10 border text-white"
+                        style={{ borderColor: `${teamColor}30` }}
+                      >
+                        {userProfile.displayName}
                       </div>
                     </div>
+                    <div className="space-y-2">
+                      <Label className="flex items-center gap-2 text-white">
+                        <Calendar className="w-4 h-4" />
+                        日付
+                      </Label>
+                      <div
+                        className="px-3 py-2 rounded-md bg-white/10 border text-white"
+                        style={{ borderColor: `${teamColor}30` }}
+                      >
+                        {new Date(date).toLocaleDateString('ja-JP', { year: 'numeric', month: 'long', day: 'numeric', weekday: 'short' })}
+                      </div>
+                    </div>
+                  </div>
 
-                    {/* X運用チーム用フォーム */}
-                    {isXTeam ? (
-                      <div className="space-y-6 pt-4 border-t border-yellow-500/20">
-                        <div className="flex items-center gap-2 text-yellow-400">
-                          <Twitter className="w-5 h-5" />
-                          <span className="font-semibold">X (Twitter) 活動報告</span>
-                        </div>
+                  {/* X運用チーム用フォーム */}
+                  {isXTeam ? (
+                    <div className="space-y-6 pt-4 border-t border-yellow-500/20">
+                      <div className="flex items-center gap-2 text-yellow-400">
+                        <Twitter className="w-5 h-5" />
+                        <span className="font-semibold">X (Twitter) 活動報告</span>
+                      </div>
 
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                          <div className="space-y-2">
-                            <Label className="flex items-center gap-2 text-sm text-white">
-                              <FileText className="w-4 h-4 text-yellow-500" />
-                              本日の投稿数
-                            </Label>
-                            <Input
-                              type="number"
-                              inputMode="numeric"
-                              placeholder="0"
-                              value={xPostCount}
-                              onChange={(e) => setXPostCount(e.target.value)}
-                              className="bg-white/5 border-yellow-500/30 focus:border-yellow-500"
-                              min="0"
-                            />
-                          </div>
-                          <div className="space-y-2">
-                            <Label className="flex items-center gap-2 text-sm text-white">
-                              <Heart className="w-4 h-4 text-yellow-500" />
-                              いいね回り数
-                            </Label>
-                            <Input
-                              type="number"
-                              inputMode="numeric"
-                              placeholder="0"
-                              value={xLikeCount}
-                              onChange={(e) => setXLikeCount(e.target.value)}
-                              className="bg-white/5 border-yellow-500/30 focus:border-yellow-500"
-                              min="0"
-                            />
-                          </div>
-                          <div className="space-y-2">
-                            <Label className="flex items-center gap-2 text-sm text-white">
-                              <MessageCircle className="w-4 h-4 text-yellow-500" />
-                              リプライ回り数
-                            </Label>
-                            <Input
-                              type="number"
-                              inputMode="numeric"
-                              placeholder="0"
-                              value={xReplyCount}
-                              onChange={(e) => setXReplyCount(e.target.value)}
-                              className="bg-white/5 border-yellow-500/30 focus:border-yellow-500"
-                              min="0"
-                            />
-                          </div>
-                        </div>
-
-                        {/* 🆕 Xフォロワー数 */}
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                         <div className="space-y-2">
-                          <Label className="flex items-center gap-2 text-white">
-                            <Users className="w-4 h-4 text-yellow-500" />
-                            現在のXフォロワー数
+                          <Label className="flex items-center gap-2 text-sm text-white">
+                            <FileText className="w-4 h-4 text-yellow-500" />
+                            本日の投稿数
                           </Label>
                           <Input
                             type="number"
+                            inputMode="numeric"
                             placeholder="0"
-                            value={xFollowers}
-                            onChange={(e) => setXFollowers(e.target.value)}
+                            value={xPostCount}
+                            onChange={(e) => setXPostCount(e.target.value)}
                             className="bg-white/5 border-yellow-500/30 focus:border-yellow-500"
                             min="0"
                           />
                         </div>
+                        <div className="space-y-2">
+                          <Label className="flex items-center gap-2 text-sm text-white">
+                            <Heart className="w-4 h-4 text-yellow-500" />
+                            いいね回り数
+                          </Label>
+                          <Input
+                            type="number"
+                            inputMode="numeric"
+                            placeholder="0"
+                            value={xLikeCount}
+                            onChange={(e) => setXLikeCount(e.target.value)}
+                            className="bg-white/5 border-yellow-500/30 focus:border-yellow-500"
+                            min="0"
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label className="flex items-center gap-2 text-sm text-white">
+                            <MessageCircle className="w-4 h-4 text-yellow-500" />
+                            リプライ回り数
+                          </Label>
+                          <Input
+                            type="number"
+                            inputMode="numeric"
+                            placeholder="0"
+                            value={xReplyCount}
+                            onChange={(e) => setXReplyCount(e.target.value)}
+                            className="bg-white/5 border-yellow-500/30 focus:border-yellow-500"
+                            min="0"
+                          />
+                        </div>
+                      </div>
 
-                        {/* 投稿URL + 投稿内容 */}
-                        <div className="space-y-4">
-                          <div>
-                            <Label className="flex items-center gap-2 text-white">
-                              <Link2 className="w-4 h-4 text-yellow-500" />
-                              投稿したポスト
-                            </Label>
-                            <p className="text-xs text-slate-400 mt-1">
-                              💬 投稿内容を入力すると、運営からフィードバックがDMで届きます
-                            </p>
+                      {/* 🆕 Xフォロワー数 */}
+                      <div className="space-y-2">
+                        <Label className="flex items-center gap-2 text-white">
+                          <Users className="w-4 h-4 text-yellow-500" />
+                          現在のXフォロワー数
+                        </Label>
+                        <Input
+                          type="number"
+                          placeholder="0"
+                          value={xFollowers}
+                          onChange={(e) => setXFollowers(e.target.value)}
+                          className="bg-white/5 border-yellow-500/30 focus:border-yellow-500"
+                          min="0"
+                        />
+                      </div>
+
+                      {/* 投稿URL + 投稿内容 */}
+                      <div className="space-y-4">
+                        <div>
+                          <Label className="flex items-center gap-2 text-white">
+                            <Link2 className="w-4 h-4 text-yellow-500" />
+                            投稿したポスト
+                          </Label>
+                          <p className="text-xs text-slate-400 mt-1">
+                            💬 投稿内容を入力すると、運営からフィードバックがDMで届きます
+                          </p>
+                        </div>
+
+                        {xPosts.map((post, index) => (
+                          <div key={index} className="p-4 rounded-xl border border-yellow-500/20 bg-yellow-500/5 space-y-3">
+                            <div className="flex items-center justify-between">
+                              <span className="text-sm text-yellow-400 font-medium">投稿 {index + 1}</span>
+                              {xPosts.length > 1 && (
+                                <Button
+                                  type="button"
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => removePostField(index)}
+                                  className="text-red-400 hover:text-red-300 h-7 px-2"
+                                >
+                                  <Trash2 className="w-4 h-4 mr-1" />
+                                  削除
+                                </Button>
+                              )}
+                            </div>
+
+                            {/* 投稿URL */}
+                            <div className="space-y-1">
+                              <Label className="text-xs text-slate-300">投稿URL</Label>
+                              <Input
+                                placeholder="https://x.com/..."
+                                value={post.url}
+                                onChange={(e) => updatePostUrl(index, e.target.value)}
+                                className="bg-white/5 border-yellow-500/30 focus:border-yellow-500"
+                              />
+                            </div>
+
+                            {/* 投稿内容 */}
+                            <div className="space-y-1">
+                              <Label className="text-xs text-slate-300">
+                                投稿内容
+                              </Label>
+                              <textarea
+                                placeholder="投稿のテキストをコピペしてください..."
+                                value={post.content}
+                                onChange={(e) => updatePostContent(index, e.target.value)}
+                                className="w-full h-24 px-3 py-2 rounded-md bg-white/5 border border-yellow-500/30 focus:border-yellow-500 focus:outline-none resize-none text-sm"
+                              />
+                            </div>
                           </div>
+                        ))}
 
-                          {xPosts.map((post, index) => (
-                            <div key={index} className="p-4 rounded-xl border border-yellow-500/20 bg-yellow-500/5 space-y-3">
-                              <div className="flex items-center justify-between">
-                                <span className="text-sm text-yellow-400 font-medium">投稿 {index + 1}</span>
-                                {xPosts.length > 1 && (
-                                  <Button
-                                    type="button"
-                                    variant="ghost"
-                                    size="sm"
-                                    onClick={() => removePostField(index)}
-                                    className="text-red-400 hover:text-red-300 h-7 px-2"
-                                  >
-                                    <Trash2 className="w-4 h-4 mr-1" />
-                                    削除
-                                  </Button>
-                                )}
-                              </div>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={addPostField}
+                          className="border-yellow-500/30 text-yellow-400 hover:bg-yellow-500/10"
+                        >
+                          <Plus className="w-4 h-4 mr-2" />
+                          投稿を追加
+                        </Button>
+                      </div>
 
-                              {/* 投稿URL */}
+                      {/* 今日の一言 */}
+                      <div className="space-y-2">
+                        <Label className="flex items-center gap-2 text-white">
+                          <Sparkles className="w-4 h-4 text-yellow-500" />
+                          今日の一言
+                        </Label>
+                        <textarea
+                          placeholder="今日の振り返りや気づきを書いてください..."
+                          value={xTodayComment}
+                          onChange={(e) => setXTodayComment(e.target.value)}
+                          className="w-full h-24 px-3 py-2 rounded-md bg-white/5 border border-yellow-500/30 focus:border-yellow-500 focus:outline-none resize-none"
+                        />
+                      </div>
+                    </div>
+                  ) : (
+                    /* Shorts系チーム用フォーム - 折りたたみセクション */
+                    <div className="space-y-3 pt-4 border-t" style={{ borderColor: `${teamColor}20` }}>
+                      <div className="flex items-center gap-2" style={{ color: teamColor }}>
+                        <Instagram className="w-5 h-5" />
+                        <span className="font-semibold">Instagram / TikTok / YouTube 活動報告</span>
+                      </div>
+
+                      {/* 📊 セクション1: Instagramメトリクス */}
+                      <div className="rounded-xl border overflow-hidden" style={{ borderColor: `${teamColor}30` }}>
+                        <button
+                          type="button"
+                          onClick={() => toggleSection('igMetrics')}
+                          className="w-full flex items-center justify-between p-3 bg-white/5 hover:bg-white/10 transition-colors"
+                        >
+                          <div className="flex items-center gap-2">
+                            <Eye className="w-4 h-4" style={{ color: teamColor }} />
+                            <span className="text-sm font-medium text-white">Instagramメトリクス</span>
+                            {!openSections.igMetrics && (igViews || igProfileAccess || igExternalTaps || igInteractions || weeklyStories) && (
+                              <span className="text-xs px-2 py-0.5 rounded-full bg-white/10 text-slate-300">入力済み</span>
+                            )}
+                          </div>
+                          {openSections.igMetrics ? (
+                            <ChevronUp className="w-4 h-4 text-slate-400" />
+                          ) : (
+                            <ChevronDown className="w-4 h-4 text-slate-400" />
+                          )}
+                        </button>
+                        {openSections.igMetrics && (
+                          <div className="p-3 space-y-3 bg-white/[0.02]">
+                            <div className="grid grid-cols-2 gap-3">
                               <div className="space-y-1">
-                                <Label className="text-xs text-slate-300">投稿URL</Label>
-                                <Input
-                                  placeholder="https://x.com/..."
-                                  value={post.url}
-                                  onChange={(e) => updatePostUrl(index, e.target.value)}
-                                  className="bg-white/5 border-yellow-500/30 focus:border-yellow-500"
-                                />
-                              </div>
-
-                              {/* 投稿内容 */}
-                              <div className="space-y-1">
-                                <Label className="text-xs text-slate-300">
-                                  投稿内容
+                                <Label className="flex items-center gap-1.5 text-xs text-slate-300">
+                                  <Eye className="w-3.5 h-3.5" style={{ color: teamColor }} />
+                                  閲覧数
                                 </Label>
-                                <textarea
-                                  placeholder="投稿のテキストをコピペしてください..."
-                                  value={post.content}
-                                  onChange={(e) => updatePostContent(index, e.target.value)}
-                                  className="w-full h-24 px-3 py-2 rounded-md bg-white/5 border border-yellow-500/30 focus:border-yellow-500 focus:outline-none resize-none text-sm"
+                                <Input
+                                  type="number"
+                                  inputMode="numeric"
+                                  placeholder="0"
+                                  value={igViews}
+                                  onChange={(e) => setIgViews(e.target.value)}
+                                  className="bg-white/5 h-9 text-sm"
+                                  style={{ borderColor: `${teamColor}30` }}
+                                  min="0"
+                                />
+                              </div>
+                              <div className="space-y-1">
+                                <Label className="flex items-center gap-1.5 text-xs text-slate-300">
+                                  <UserPlus className="w-3.5 h-3.5" style={{ color: teamColor }} />
+                                  プロフアクセス
+                                </Label>
+                                <Input
+                                  type="number"
+                                  inputMode="numeric"
+                                  placeholder="0"
+                                  value={igProfileAccess}
+                                  onChange={(e) => setIgProfileAccess(e.target.value)}
+                                  className="bg-white/5 h-9 text-sm"
+                                  style={{ borderColor: `${teamColor}30` }}
+                                  min="0"
+                                />
+                              </div>
+                              <div className="space-y-1">
+                                <Label className="flex items-center gap-1.5 text-xs text-slate-300">
+                                  <Link2 className="w-3.5 h-3.5" style={{ color: teamColor }} />
+                                  外部リンクタップ
+                                </Label>
+                                <Input
+                                  type="number"
+                                  inputMode="numeric"
+                                  placeholder="0"
+                                  value={igExternalTaps}
+                                  onChange={(e) => setIgExternalTaps(e.target.value)}
+                                  className="bg-white/5 h-9 text-sm"
+                                  style={{ borderColor: `${teamColor}30` }}
+                                  min="0"
+                                />
+                              </div>
+                              <div className="space-y-1">
+                                <Label className="flex items-center gap-1.5 text-xs text-slate-300">
+                                  <MousePointerClick className="w-3.5 h-3.5" style={{ color: teamColor }} />
+                                  インタラクション
+                                </Label>
+                                <Input
+                                  type="number"
+                                  inputMode="numeric"
+                                  placeholder="0"
+                                  value={igInteractions}
+                                  onChange={(e) => setIgInteractions(e.target.value)}
+                                  className="bg-white/5 h-9 text-sm"
+                                  style={{ borderColor: `${teamColor}30` }}
+                                  min="0"
+                                />
+                              </div>
+                              <div className="space-y-1 col-span-2">
+                                <Label className="flex items-center gap-1.5 text-xs text-slate-300">
+                                  <FileText className="w-3.5 h-3.5" style={{ color: teamColor }} />
+                                  今日のストーリー投稿数
+                                </Label>
+                                <Input
+                                  type="number"
+                                  inputMode="numeric"
+                                  placeholder="0"
+                                  value={weeklyStories}
+                                  onChange={(e) => setWeeklyStories(e.target.value)}
+                                  className="bg-white/5 h-9 text-sm"
+                                  style={{ borderColor: `${teamColor}30` }}
+                                  min="0"
                                 />
                               </div>
                             </div>
-                          ))}
-
-                          <Button
-                            type="button"
-                            variant="outline"
-                            size="sm"
-                            onClick={addPostField}
-                            className="border-yellow-500/30 text-yellow-400 hover:bg-yellow-500/10"
-                          >
-                            <Plus className="w-4 h-4 mr-2" />
-                            投稿を追加
-                          </Button>
-                        </div>
-
-                        {/* 今日の一言 */}
-                        <div className="space-y-2">
-                          <Label className="flex items-center gap-2 text-white">
-                            <Sparkles className="w-4 h-4 text-yellow-500" />
-                            今日の一言
-                          </Label>
-                          <textarea
-                            placeholder="今日の振り返りや気づきを書いてください..."
-                            value={xTodayComment}
-                            onChange={(e) => setXTodayComment(e.target.value)}
-                            className="w-full h-24 px-3 py-2 rounded-md bg-white/5 border border-yellow-500/30 focus:border-yellow-500 focus:outline-none resize-none"
-                          />
-                        </div>
+                          </div>
+                        )}
                       </div>
-                    ) : (
-                      /* Shorts系チーム用フォーム - 折りたたみセクション */
-                      <div className="space-y-3 pt-4 border-t" style={{ borderColor: `${teamColor}20` }}>
-                        <div className="flex items-center gap-2" style={{ color: teamColor }}>
-                          <Instagram className="w-5 h-5" />
-                          <span className="font-semibold">Instagram / TikTok / YouTube 活動報告</span>
-                        </div>
 
-                        {/* 📊 セクション1: Instagramメトリクス */}
-                        <div className="rounded-xl border overflow-hidden" style={{ borderColor: `${teamColor}30` }}>
-                          <button
-                            type="button"
-                            onClick={() => toggleSection('igMetrics')}
-                            className="w-full flex items-center justify-between p-3 bg-white/5 hover:bg-white/10 transition-colors"
-                          >
-                            <div className="flex items-center gap-2">
-                              <Eye className="w-4 h-4" style={{ color: teamColor }} />
-                              <span className="text-sm font-medium text-white">Instagramメトリクス</span>
-                              {!openSections.igMetrics && (igViews || igProfileAccess || igExternalTaps || igInteractions || weeklyStories) && (
-                                <span className="text-xs px-2 py-0.5 rounded-full bg-white/10 text-slate-300">入力済み</span>
-                              )}
-                            </div>
-                            {openSections.igMetrics ? (
-                              <ChevronUp className="w-4 h-4 text-slate-400" />
-                            ) : (
-                              <ChevronDown className="w-4 h-4 text-slate-400" />
+                      {/* 👥 セクション2: フォロワー数 */}
+                      <div className="rounded-xl border overflow-hidden" style={{ borderColor: `${teamColor}30` }}>
+                        <button
+                          type="button"
+                          onClick={() => toggleSection('followers')}
+                          className="w-full flex items-center justify-between p-3 bg-white/5 hover:bg-white/10 transition-colors"
+                        >
+                          <div className="flex items-center gap-2">
+                            <Users className="w-4 h-4" style={{ color: teamColor }} />
+                            <span className="text-sm font-medium text-white">フォロワー数</span>
+                            {!openSections.followers && (igFollowers || ytFollowers || tiktokFollowers) && (
+                              <span className="text-xs px-2 py-0.5 rounded-full bg-white/10 text-slate-300">入力済み</span>
                             )}
-                          </button>
-                          {openSections.igMetrics && (
-                            <div className="p-3 space-y-3 bg-white/[0.02]">
-                              <div className="grid grid-cols-2 gap-3">
-                                <div className="space-y-1">
-                                  <Label className="flex items-center gap-1.5 text-xs text-slate-300">
-                                    <Eye className="w-3.5 h-3.5" style={{ color: teamColor }} />
-                                    閲覧数
-                                  </Label>
-                                  <Input
-                                    type="number"
-                                    inputMode="numeric"
-                                    placeholder="0"
-                                    value={igViews}
-                                    onChange={(e) => setIgViews(e.target.value)}
-                                    className="bg-white/5 h-9 text-sm"
-                                    style={{ borderColor: `${teamColor}30` }}
-                                    min="0"
-                                  />
-                                </div>
-                                <div className="space-y-1">
-                                  <Label className="flex items-center gap-1.5 text-xs text-slate-300">
-                                    <UserPlus className="w-3.5 h-3.5" style={{ color: teamColor }} />
-                                    プロフアクセス
-                                  </Label>
-                                  <Input
-                                    type="number"
-                                    inputMode="numeric"
-                                    placeholder="0"
-                                    value={igProfileAccess}
-                                    onChange={(e) => setIgProfileAccess(e.target.value)}
-                                    className="bg-white/5 h-9 text-sm"
-                                    style={{ borderColor: `${teamColor}30` }}
-                                    min="0"
-                                  />
-                                </div>
-                                <div className="space-y-1">
-                                  <Label className="flex items-center gap-1.5 text-xs text-slate-300">
-                                    <Link2 className="w-3.5 h-3.5" style={{ color: teamColor }} />
-                                    外部リンクタップ
-                                  </Label>
-                                  <Input
-                                    type="number"
-                                    inputMode="numeric"
-                                    placeholder="0"
-                                    value={igExternalTaps}
-                                    onChange={(e) => setIgExternalTaps(e.target.value)}
-                                    className="bg-white/5 h-9 text-sm"
-                                    style={{ borderColor: `${teamColor}30` }}
-                                    min="0"
-                                  />
-                                </div>
-                                <div className="space-y-1">
-                                  <Label className="flex items-center gap-1.5 text-xs text-slate-300">
-                                    <MousePointerClick className="w-3.5 h-3.5" style={{ color: teamColor }} />
-                                    インタラクション
-                                  </Label>
-                                  <Input
-                                    type="number"
-                                    inputMode="numeric"
-                                    placeholder="0"
-                                    value={igInteractions}
-                                    onChange={(e) => setIgInteractions(e.target.value)}
-                                    className="bg-white/5 h-9 text-sm"
-                                    style={{ borderColor: `${teamColor}30` }}
-                                    min="0"
-                                  />
-                                </div>
-                                <div className="space-y-1 col-span-2">
-                                  <Label className="flex items-center gap-1.5 text-xs text-slate-300">
-                                    <FileText className="w-3.5 h-3.5" style={{ color: teamColor }} />
-                                    今日のストーリー投稿数
-                                  </Label>
-                                  <Input
-                                    type="number"
-                                    inputMode="numeric"
-                                    placeholder="0"
-                                    value={weeklyStories}
-                                    onChange={(e) => setWeeklyStories(e.target.value)}
-                                    className="bg-white/5 h-9 text-sm"
-                                    style={{ borderColor: `${teamColor}30` }}
-                                    min="0"
-                                  />
-                                </div>
+                          </div>
+                          {openSections.followers ? (
+                            <ChevronUp className="w-4 h-4 text-slate-400" />
+                          ) : (
+                            <ChevronDown className="w-4 h-4 text-slate-400" />
+                          )}
+                        </button>
+                        {openSections.followers && (
+                          <div className="p-3 space-y-3 bg-white/[0.02]">
+                            <div className="grid grid-cols-3 gap-3">
+                              <div className="space-y-1">
+                                <Label className="flex items-center gap-1.5 text-xs text-slate-300">
+                                  <Instagram className="w-3.5 h-3.5" style={{ color: teamColor }} />
+                                  IG
+                                </Label>
+                                <Input
+                                  type="number"
+                                  inputMode="numeric"
+                                  placeholder="0"
+                                  value={igFollowers}
+                                  onChange={(e) => setIgFollowers(e.target.value)}
+                                  className="bg-white/5 h-9 text-sm"
+                                  style={{ borderColor: `${teamColor}30` }}
+                                  min="0"
+                                />
+                              </div>
+                              <div className="space-y-1">
+                                <Label className="flex items-center gap-1.5 text-xs text-slate-300">
+                                  <Youtube className="w-3.5 h-3.5 text-red-500" />
+                                  YT
+                                </Label>
+                                <Input
+                                  type="number"
+                                  inputMode="numeric"
+                                  placeholder="0"
+                                  value={ytFollowers}
+                                  onChange={(e) => setYtFollowers(e.target.value)}
+                                  className="bg-white/5 h-9 text-sm"
+                                  style={{ borderColor: `${teamColor}30` }}
+                                  min="0"
+                                />
+                              </div>
+                              <div className="space-y-1">
+                                <Label className="flex items-center gap-1.5 text-xs text-slate-300">
+                                  <svg className="w-3.5 h-3.5" style={{ color: teamColor }} viewBox="0 0 24 24" fill="currentColor">
+                                    <path d="M12.525.02c1.31-.02 2.61-.01 3.91-.02.08 1.53.63 3.09 1.75 4.17 1.12 1.11 2.7 1.62 4.24 1.79v4.03c-1.44-.05-2.89-.35-4.2-.97-.57-.26-1.1-.59-1.62-.93-.01 2.92.01 5.84-.02 8.75-.08 1.4-.54 2.79-1.35 3.94-1.31 1.92-3.58 3.17-5.91 3.21-1.43.08-2.86-.31-4.08-1.03-2.02-1.19-3.44-3.37-3.65-5.71-.02-.5-.03-1-.01-1.49.18-1.9 1.12-3.72 2.58-4.96 1.66-1.44 3.98-2.13 6.15-1.72.02 1.48-.04 2.96-.04 4.44-.99-.32-2.15-.23-3.02.37-.63.41-1.11 1.04-1.36 1.75-.21.51-.15 1.07-.14 1.61.24 1.64 1.82 3.02 3.5 2.87 1.12-.01 2.19-.66 2.77-1.61.19-.33.4-.67.41-1.06.1-1.79.06-3.57.07-5.36.01-4.03-.01-8.05.02-12.07z" />
+                                  </svg>
+                                  TT
+                                </Label>
+                                <Input
+                                  type="number"
+                                  inputMode="numeric"
+                                  placeholder="0"
+                                  value={tiktokFollowers}
+                                  onChange={(e) => setTiktokFollowers(e.target.value)}
+                                  className="bg-white/5 h-9 text-sm"
+                                  style={{ borderColor: `${teamColor}30` }}
+                                  min="0"
+                                />
                               </div>
                             </div>
-                          )}
-                        </div>
-
-                        {/* 👥 セクション2: フォロワー数 */}
-                        <div className="rounded-xl border overflow-hidden" style={{ borderColor: `${teamColor}30` }}>
-                          <button
-                            type="button"
-                            onClick={() => toggleSection('followers')}
-                            className="w-full flex items-center justify-between p-3 bg-white/5 hover:bg-white/10 transition-colors"
-                          >
-                            <div className="flex items-center gap-2">
-                              <Users className="w-4 h-4" style={{ color: teamColor }} />
-                              <span className="text-sm font-medium text-white">フォロワー数</span>
-                              {!openSections.followers && (igFollowers || ytFollowers || tiktokFollowers) && (
-                                <span className="text-xs px-2 py-0.5 rounded-full bg-white/10 text-slate-300">入力済み</span>
-                              )}
-                            </div>
-                            {openSections.followers ? (
-                              <ChevronUp className="w-4 h-4 text-slate-400" />
-                            ) : (
-                              <ChevronDown className="w-4 h-4 text-slate-400" />
-                            )}
-                          </button>
-                          {openSections.followers && (
-                            <div className="p-3 space-y-3 bg-white/[0.02]">
-                              <div className="grid grid-cols-3 gap-3">
-                                <div className="space-y-1">
-                                  <Label className="flex items-center gap-1.5 text-xs text-slate-300">
-                                    <Instagram className="w-3.5 h-3.5" style={{ color: teamColor }} />
-                                    IG
-                                  </Label>
-                                  <Input
-                                    type="number"
-                                    inputMode="numeric"
-                                    placeholder="0"
-                                    value={igFollowers}
-                                    onChange={(e) => setIgFollowers(e.target.value)}
-                                    className="bg-white/5 h-9 text-sm"
-                                    style={{ borderColor: `${teamColor}30` }}
-                                    min="0"
-                                  />
-                                </div>
-                                <div className="space-y-1">
-                                  <Label className="flex items-center gap-1.5 text-xs text-slate-300">
-                                    <Youtube className="w-3.5 h-3.5 text-red-500" />
-                                    YT
-                                  </Label>
-                                  <Input
-                                    type="number"
-                                    inputMode="numeric"
-                                    placeholder="0"
-                                    value={ytFollowers}
-                                    onChange={(e) => setYtFollowers(e.target.value)}
-                                    className="bg-white/5 h-9 text-sm"
-                                    style={{ borderColor: `${teamColor}30` }}
-                                    min="0"
-                                  />
-                                </div>
-                                <div className="space-y-1">
-                                  <Label className="flex items-center gap-1.5 text-xs text-slate-300">
-                                    <svg className="w-3.5 h-3.5" style={{ color: teamColor }} viewBox="0 0 24 24" fill="currentColor">
-                                      <path d="M12.525.02c1.31-.02 2.61-.01 3.91-.02.08 1.53.63 3.09 1.75 4.17 1.12 1.11 2.7 1.62 4.24 1.79v4.03c-1.44-.05-2.89-.35-4.2-.97-.57-.26-1.1-.59-1.62-.93-.01 2.92.01 5.84-.02 8.75-.08 1.4-.54 2.79-1.35 3.94-1.31 1.92-3.58 3.17-5.91 3.21-1.43.08-2.86-.31-4.08-1.03-2.02-1.19-3.44-3.37-3.65-5.71-.02-.5-.03-1-.01-1.49.18-1.9 1.12-3.72 2.58-4.96 1.66-1.44 3.98-2.13 6.15-1.72.02 1.48-.04 2.96-.04 4.44-.99-.32-2.15-.23-3.02.37-.63.41-1.11 1.04-1.36 1.75-.21.51-.15 1.07-.14 1.61.24 1.64 1.82 3.02 3.5 2.87 1.12-.01 2.19-.66 2.77-1.61.19-.33.4-.67.41-1.06.1-1.79.06-3.57.07-5.36.01-4.03-.01-8.05.02-12.07z" />
-                                    </svg>
-                                    TT
-                                  </Label>
-                                  <Input
-                                    type="number"
-                                    inputMode="numeric"
-                                    placeholder="0"
-                                    value={tiktokFollowers}
-                                    onChange={(e) => setTiktokFollowers(e.target.value)}
-                                    className="bg-white/5 h-9 text-sm"
-                                    style={{ borderColor: `${teamColor}30` }}
-                                    min="0"
-                                  />
-                                </div>
-                              </div>
-                            </div>
-                          )}
-                        </div>
-
-                        {/* 📝 セクション3: 投稿数（常に開く - 必須項目） */}
-                        <div className="rounded-xl border-2 overflow-hidden" style={{ borderColor: `${teamColor}40`, backgroundColor: `${teamColor}05` }}>
-                          <button
-                            type="button"
-                            onClick={() => toggleSection('posts')}
-                            className="w-full flex items-center justify-between p-3 hover:bg-white/5 transition-colors"
-                          >
-                            <div className="flex items-center gap-2">
-                              <FileText className="w-4 h-4" style={{ color: teamColor }} />
-                              <span className="text-sm font-medium" style={{ color: teamColor }}>SNS別投稿数（必須）</span>
-                              {(igPosts || ytPosts || tiktokPosts) && (
-                                <span className="text-xs px-2 py-0.5 rounded-full font-medium" style={{ backgroundColor: `${teamColor}20`, color: teamColor }}>
-                                  合計: {(parseInt(igPosts) || 0) + (parseInt(ytPosts) || 0) + (parseInt(tiktokPosts) || 0)}
-                                </span>
-                              )}
-                            </div>
-                            {openSections.posts ? (
-                              <ChevronUp className="w-4 h-4 text-slate-400" />
-                            ) : (
-                              <ChevronDown className="w-4 h-4 text-slate-400" />
-                            )}
-                          </button>
-                          {openSections.posts && (
-                            <div className="p-3 space-y-3 border-t" style={{ borderColor: `${teamColor}20` }}>
-                              <p className="text-xs text-muted-foreground">
-                                各SNSで投稿した数を入力してください。
-                              </p>
-                              <div className="grid grid-cols-3 gap-3">
-                                <div className="space-y-1">
-                                  <Label className="flex items-center gap-1.5 text-xs text-slate-300">
-                                    <Instagram className="w-3.5 h-3.5" style={{ color: teamColor }} />
-                                    IG
-                                  </Label>
-                                  <Input
-                                    type="number"
-                                    placeholder="0"
-                                    value={igPosts}
-                                    onChange={(e) => setIgPosts(e.target.value)}
-                                    className="bg-white/5 h-9 text-sm"
-                                    style={{ borderColor: `${teamColor}30` }}
-                                    min="0"
-                                  />
-                                </div>
-                                <div className="space-y-1">
-                                  <Label className="flex items-center gap-1.5 text-xs text-slate-300">
-                                    <Youtube className="w-3.5 h-3.5 text-red-500" />
-                                    YT
-                                  </Label>
-                                  <Input
-                                    type="number"
-                                    placeholder="0"
-                                    value={ytPosts}
-                                    onChange={(e) => setYtPosts(e.target.value)}
-                                    className="bg-white/5 h-9 text-sm"
-                                    style={{ borderColor: `${teamColor}30` }}
-                                    min="0"
-                                  />
-                                </div>
-                                <div className="space-y-1">
-                                  <Label className="flex items-center gap-1.5 text-xs text-slate-300">
-                                    <svg className="w-3.5 h-3.5" style={{ color: teamColor }} viewBox="0 0 24 24" fill="currentColor">
-                                      <path d="M12.525.02c1.31-.02 2.61-.01 3.91-.02.08 1.53.63 3.09 1.75 4.17 1.12 1.11 2.7 1.62 4.24 1.79v4.03c-1.44-.05-2.89-.35-4.2-.97-.57-.26-1.10-.59-1.62-.93-.01 2.92.01 5.84-.02 8.75-.08 1.4-.54 2.79-1.35 3.94-1.31 1.92-3.58 3.17-5.91 3.21-1.43.08-2.86-.31-4.08-1.03-2.02-1.19-3.44-3.37-3.65-5.71-.02-.5-.03-1-.01-1.49.18-1.9 1.12-3.72 2.58-4.96 1.66-1.44 3.98-2.13 6.15-1.72.02 1.48-.04 2.96-.04 4.44-.99-.32-2.15-.23-3.02.37-.63.41-1.11 1.04-1.36 1.75-.21.51-.15 1.07-.14 1.61.24 1.64 1.82 3.02 3.5 2.87 1.12-.01 2.19-.66 2.77-1.61.19-.33.4-.67.41-1.06.1-1.79.06-3.57.07-5.36.01-4.03-.01-8.05.02-12.07z" />
-                                    </svg>
-                                    TT
-                                  </Label>
-                                  <Input
-                                    type="number"
-                                    placeholder="0"
-                                    value={tiktokPosts}
-                                    onChange={(e) => setTiktokPosts(e.target.value)}
-                                    className="bg-white/5 h-9 text-sm"
-                                    style={{ borderColor: `${teamColor}30` }}
-                                    min="0"
-                                  />
-                                </div>
-                              </div>
-                            </div>
-                          )}
-                        </div>
-
-                        {/* 今日の一言 */}
-                        <div className="space-y-2">
-                          <Label className="flex items-center gap-2 text-white">
-                            <Sparkles className="w-4 h-4" style={{ color: teamColor }} />
-                            今日の一言
-                          </Label>
-                          <textarea
-                            placeholder="今日の振り返りや気づきを書いてください..."
-                            value={todayComment}
-                            onChange={(e) => setTodayComment(e.target.value)}
-                            className="w-full h-20 px-3 py-2 rounded-md bg-white/5 focus:outline-none resize-none text-sm"
-                            style={{ borderColor: `${teamColor}30`, borderWidth: '1px', borderStyle: 'solid' }}
-                          />
-                        </div>
+                          </div>
+                        )}
                       </div>
-                    )}
 
-                    {/* Submit Button は固定フッターに移動 */}
-                  </>
-                )}
-              </form>
-            </CardContent>
-          </Card>
+                      {/* 📝 セクション3: 投稿数（常に開く - 必須項目） */}
+                      <div className="rounded-xl border-2 overflow-hidden" style={{ borderColor: `${teamColor}40`, backgroundColor: `${teamColor}05` }}>
+                        <button
+                          type="button"
+                          onClick={() => toggleSection('posts')}
+                          className="w-full flex items-center justify-between p-3 hover:bg-white/5 transition-colors"
+                        >
+                          <div className="flex items-center gap-2">
+                            <FileText className="w-4 h-4" style={{ color: teamColor }} />
+                            <span className="text-sm font-medium" style={{ color: teamColor }}>SNS別投稿数（必須）</span>
+                            {(igPosts || ytPosts || tiktokPosts) && (
+                              <span className="text-xs px-2 py-0.5 rounded-full font-medium" style={{ backgroundColor: `${teamColor}20`, color: teamColor }}>
+                                合計: {(parseInt(igPosts) || 0) + (parseInt(ytPosts) || 0) + (parseInt(tiktokPosts) || 0)}
+                              </span>
+                            )}
+                          </div>
+                          {openSections.posts ? (
+                            <ChevronUp className="w-4 h-4 text-slate-400" />
+                          ) : (
+                            <ChevronDown className="w-4 h-4 text-slate-400" />
+                          )}
+                        </button>
+                        {openSections.posts && (
+                          <div className="p-3 space-y-3 border-t" style={{ borderColor: `${teamColor}20` }}>
+                            <p className="text-xs text-muted-foreground">
+                              各SNSで投稿した数を入力してください。
+                            </p>
+                            <div className="grid grid-cols-3 gap-3">
+                              <div className="space-y-1">
+                                <Label className="flex items-center gap-1.5 text-xs text-slate-300">
+                                  <Instagram className="w-3.5 h-3.5" style={{ color: teamColor }} />
+                                  IG
+                                </Label>
+                                <Input
+                                  type="number"
+                                  placeholder="0"
+                                  value={igPosts}
+                                  onChange={(e) => setIgPosts(e.target.value)}
+                                  className="bg-white/5 h-9 text-sm"
+                                  style={{ borderColor: `${teamColor}30` }}
+                                  min="0"
+                                />
+                              </div>
+                              <div className="space-y-1">
+                                <Label className="flex items-center gap-1.5 text-xs text-slate-300">
+                                  <Youtube className="w-3.5 h-3.5 text-red-500" />
+                                  YT
+                                </Label>
+                                <Input
+                                  type="number"
+                                  placeholder="0"
+                                  value={ytPosts}
+                                  onChange={(e) => setYtPosts(e.target.value)}
+                                  className="bg-white/5 h-9 text-sm"
+                                  style={{ borderColor: `${teamColor}30` }}
+                                  min="0"
+                                />
+                              </div>
+                              <div className="space-y-1">
+                                <Label className="flex items-center gap-1.5 text-xs text-slate-300">
+                                  <svg className="w-3.5 h-3.5" style={{ color: teamColor }} viewBox="0 0 24 24" fill="currentColor">
+                                    <path d="M12.525.02c1.31-.02 2.61-.01 3.91-.02.08 1.53.63 3.09 1.75 4.17 1.12 1.11 2.7 1.62 4.24 1.79v4.03c-1.44-.05-2.89-.35-4.2-.97-.57-.26-1.10-.59-1.62-.93-.01 2.92.01 5.84-.02 8.75-.08 1.4-.54 2.79-1.35 3.94-1.31 1.92-3.58 3.17-5.91 3.21-1.43.08-2.86-.31-4.08-1.03-2.02-1.19-3.44-3.37-3.65-5.71-.02-.5-.03-1-.01-1.49.18-1.9 1.12-3.72 2.58-4.96 1.66-1.44 3.98-2.13 6.15-1.72.02 1.48-.04 2.96-.04 4.44-.99-.32-2.15-.23-3.02.37-.63.41-1.11 1.04-1.36 1.75-.21.51-.15 1.07-.14 1.61.24 1.64 1.82 3.02 3.5 2.87 1.12-.01 2.19-.66 2.77-1.61.19-.33.4-.67.41-1.06.1-1.79.06-3.57.07-5.36.01-4.03-.01-8.05.02-12.07z" />
+                                  </svg>
+                                  TT
+                                </Label>
+                                <Input
+                                  type="number"
+                                  placeholder="0"
+                                  value={tiktokPosts}
+                                  onChange={(e) => setTiktokPosts(e.target.value)}
+                                  className="bg-white/5 h-9 text-sm"
+                                  style={{ borderColor: `${teamColor}30` }}
+                                  min="0"
+                                />
+                              </div>
+                            </div>
+                          </div>
+                        )}
+                      </div>
 
-        </div>
+                      {/* 今日の一言 */}
+                      <div className="space-y-2">
+                        <Label className="flex items-center gap-2 text-white">
+                          <Sparkles className="w-4 h-4" style={{ color: teamColor }} />
+                          今日の一言
+                        </Label>
+                        <textarea
+                          placeholder="今日の振り返りや気づきを書いてください..."
+                          value={todayComment}
+                          onChange={(e) => setTodayComment(e.target.value)}
+                          className="w-full h-20 px-3 py-2 rounded-md bg-white/5 focus:outline-none resize-none text-sm"
+                          style={{ borderColor: `${teamColor}30`, borderWidth: '1px', borderStyle: 'solid' }}
+                        />
+                      </div>
+                    </div>
+                  )}
 
-        {/* 🚀 固定送信ボタン */}
-        {selectedTeam && userProfile && selectedTeamData && (
-          <div
-            className="fixed bottom-24 md:bottom-4 left-0 right-0 px-3 py-2 z-40"
-            style={{
-              background: 'linear-gradient(to top, rgba(10, 10, 30, 0.98) 80%, transparent)',
-              paddingBottom: 'env(safe-area-inset-bottom)',
-            }}
-          >
-            <div className="max-w-2xl mx-auto">
-              <Button
-                type="button"
-                onClick={(e) => {
-                  const form = document.querySelector('form');
-                  if (form) {
-                    form.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }));
-                  }
-                }}
-                className="w-full h-12 text-lg text-white hover:opacity-90 transition-all shadow-2xl"
-                style={{
-                  background: `linear-gradient(to right, ${teamColor}, #a855f7)`,
-                  boxShadow: `0 0 30px ${teamColor}40, 0 4px 20px rgba(0,0,0,0.5)`
-                }}
-                disabled={submitting}
-              >
-                {submitting ? (
-                  <div className="flex items-center gap-2">
-                    <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                    送信中...
-                  </div>
-                ) : (
-                  <div className="flex items-center gap-2">
-                    <Send className="w-5 h-5" />
-                    {isEditMode ? 'レポートを更新' : 'レポートを送信'}
-                  </div>
-                )}
-              </Button>
-            </div>
-          </div>
-        )}
+                  {/* Submit Button は固定フッターに移動 */}
+                </>
+              )}
+            </form>
+          </CardContent>
+        </Card>
 
-        {/* 🎉 セレブレーションモーダル */}
-        <ReportSuccessCelebration
-          isOpen={showCelebration}
-          onClose={() => {
-            setShowCelebration(false);
-            // レベルアップした場合は、セレブレーション終了後にレベルアップ演出を表示
-            if (levelUpInfo) {
-              setTimeout(() => {
-                setShowLevelUp(true);
-              }, 300);
-            }
-          }}
-          earnedEnergy={earnedXP}
-          guardianData={guardianData}
-          teamColor={teamColor}
-        />
-
-        {/* 🎊 レベルアップ演出 */}
-        {levelUpInfo && (
-          <LevelUpCelebration
-            isOpen={showLevelUp}
-            onClose={() => {
-              setShowLevelUp(false);
-              setLevelUpInfo(null);
-            }}
-            beforeLevel={levelUpInfo.before}
-            afterLevel={levelUpInfo.after}
-          />
-        )}
       </div>
-    </MemberLayout>
+
+      {/* 🚀 固定送信ボタン */}
+      {selectedTeam && userProfile && selectedTeamData && (
+        <div
+          className="fixed bottom-24 md:bottom-4 left-0 right-0 px-3 py-2 z-40"
+          style={{
+            background: 'linear-gradient(to top, rgba(10, 10, 30, 0.98) 80%, transparent)',
+            paddingBottom: 'env(safe-area-inset-bottom)',
+          }}
+        >
+          <div className="max-w-2xl mx-auto">
+            <Button
+              type="button"
+              onClick={(e) => {
+                const form = document.querySelector('form');
+                if (form) {
+                  form.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }));
+                }
+              }}
+              className="w-full h-12 text-lg text-white hover:opacity-90 transition-all shadow-2xl"
+              style={{
+                background: `linear-gradient(to right, ${teamColor}, #a855f7)`,
+                boxShadow: `0 0 30px ${teamColor}40, 0 4px 20px rgba(0,0,0,0.5)`
+              }}
+              disabled={submitting}
+            >
+              {submitting ? (
+                <div className="flex items-center gap-2">
+                  <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                  送信中...
+                </div>
+              ) : (
+                <div className="flex items-center gap-2">
+                  <Send className="w-5 h-5" />
+                  {isEditMode ? 'レポートを更新' : 'レポートを送信'}
+                </div>
+              )}
+            </Button>
+          </div>
+        </div>
+      )}
+
+      {/* 🎉 セレブレーションモーダル */}
+      <ReportSuccessCelebration
+        isOpen={showCelebration}
+        onClose={() => {
+          setShowCelebration(false);
+          // レベルアップした場合は、セレブレーション終了後にレベルアップ演出を表示
+          if (levelUpInfo) {
+            setTimeout(() => {
+              setShowLevelUp(true);
+            }, 300);
+          }
+        }}
+        earnedEnergy={earnedXP}
+        guardianData={guardianData}
+        teamColor={teamColor}
+      />
+
+      {/* 🎊 レベルアップ演出 */}
+      {levelUpInfo && (
+        <LevelUpCelebration
+          isOpen={showLevelUp}
+          onClose={() => {
+            setShowLevelUp(false);
+            setLevelUpInfo(null);
+          }}
+          beforeLevel={levelUpInfo.before}
+          afterLevel={levelUpInfo.after}
+        />
+      )}
+    </div>
   );
 }
