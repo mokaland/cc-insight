@@ -8,9 +8,15 @@ import type { TeamId } from "./user";
 
 /**
  * チームごとのファネル定義
+ * Shorts系（副業・退職）: 12ステップ
+ * X系（物販）: 9ステップ
  */
 export const TEAM_FUNNEL_LABELS: Record<TeamId, Record<string, string>> = {
     fukugyou: {
+        igViews: "閲覧数",
+        igInteractions: "インタラクション数",
+        igProfileAccess: "プロフアクセス数",
+        igExternalTaps: "外部リンクタップ数",
         pv: "PV数",
         uu: "UU数",
         lineRegistration: "LINE登録数",
@@ -21,6 +27,10 @@ export const TEAM_FUNNEL_LABELS: Record<TeamId, Record<string, string>> = {
         activeOrPaid: "実働数",
     },
     taishoku: {
+        igViews: "閲覧数",
+        igInteractions: "インタラクション数",
+        igProfileAccess: "プロフアクセス数",
+        igExternalTaps: "外部リンクタップ数",
         pv: "PV数",
         uu: "UU数",
         lineRegistration: "LINE登録数",
@@ -31,6 +41,7 @@ export const TEAM_FUNNEL_LABELS: Record<TeamId, Record<string, string>> = {
         activeOrPaid: "着金数",
     },
     buppan: {
+        xFollowers: "フォロワー数",
         pv: "PV数",
         uu: "UU数",
         lineRegistration: "LINE登録数",
@@ -43,9 +54,27 @@ export const TEAM_FUNNEL_LABELS: Record<TeamId, Record<string, string>> = {
 };
 
 /**
- * ファネルKPIデータ（8ステップ）
+ * ファネルKPIのキー一覧取得
+ */
+export function getFunnelKeys(teamId: TeamId): string[] {
+    return Object.keys(TEAM_FUNNEL_LABELS[teamId]);
+}
+
+/**
+ * ファネルKPIデータ
+ * チームタイプによりオプショナルフィールドが異なる
  */
 export interface FunnelKPI {
+    // SNS Top-Funnel (Shorts系: 副業・退職)
+    igViews?: number;
+    igInteractions?: number;
+    igProfileAccess?: number;
+    igExternalTaps?: number;
+
+    // SNS Top-Funnel (X系: 物販)
+    xFollowers?: number;
+
+    // Business Bottom-Funnel (共通)
     pv: number;
     uu: number;
     lineRegistration: number;
@@ -107,6 +136,11 @@ export interface TeamWeeklyKPI {
 }
 
 /**
+ * 日次進捗ステータス
+ */
+export type DailyProgressStatus = "on_track" | "warning" | "critical";
+
+/**
  * ファネル集計結果（累計 + 目標 + 達成率）
  */
 export interface FunnelSummary {
@@ -121,15 +155,16 @@ export interface FunnelSummary {
     };
     actual: FunnelKPI;      // 実績
     target: FunnelKPI | null;  // 目標（目標がない場合はnull）
-    achievementRate: Partial<Record<keyof FunnelKPI, number>>; // 達成率（%）
-    conversionRate: {       // 転換率（%）
-        pvToUu: number;
-        uuToLine: number;
-        lineToBooking: number;
-        bookingToDone: number;
-        doneToYes: number;
-        yesToFinal: number;
-        finalToActive: number;
+    achievementRate: Record<string, number>; // 達成率（%）- 動的キー
+    conversionRate: Record<string, number>;  // 転換率（%）- 動的キー（例: "igViewsToIgInteractions"）
+
+    // 日次進捗（リアルタイム達成率把握用）
+    dailyProgress?: {
+        dayOfMonth: number;          // 今日が何日目か
+        daysInMonth: number;         // 月の日数
+        expectedRate: number;        // 期待達成率（%）
+        actualRate: Record<string, number>;      // 各KPIの実際達成率
+        status: Record<string, DailyProgressStatus>;  // 各KPIのステータス
     };
 }
 

@@ -25,6 +25,9 @@ import {
     WeeklyTrend,
     GoalStatus,
     WeeklyKPIStatus,
+    TEAM_FUNNEL_LABELS,
+    getFunnelKeys,
+    DailyProgressStatus,
 } from "@/lib/types";
 
 // ============================================
@@ -121,6 +124,57 @@ export async function getQuarterlyGoal(
 ): Promise<TeamGoal | null> {
     const id = `${teamId}_${year}_Q${quarter}`;
     return getGoal(id);
+}
+
+/**
+ * クォーター目標を自動算出（月次目標の合計）
+ */
+export interface QuarterlyGoalSummary {
+    monthlyGoals: (TeamGoal | null)[];  // 3ヶ月分の目標（null = 未設定）
+    quarterlyTotal: FunnelKPI;           // 自動算出された合計
+    confirmedMonths: number;             // 設定済み月数（0-3）
+    status: "complete" | "partial" | "none";
+}
+
+export async function getQuarterlyGoalSummary(
+    teamId: TeamId,
+    year: number,
+    quarter: number
+): Promise<QuarterlyGoalSummary> {
+    // クオーターに属する月を計算
+    const startMonth = (quarter - 1) * 3 + 1; // Q1=1, Q2=4, Q3=7, Q4=10
+    const months = [startMonth, startMonth + 1, startMonth + 2];
+
+    // 各月の目標を取得
+    const monthlyGoals = await Promise.all(
+        months.map((month) => getMonthlyGoal(teamId, year, month))
+    );
+
+    // 設定済み月数をカウント
+    const confirmedMonths = monthlyGoals.filter((g) => g !== null).length;
+
+    // 合計を計算
+    const validGoals = monthlyGoals.filter((g): g is TeamGoal => g !== null);
+    const quarterlyTotal = validGoals.length > 0
+        ? sumFunnelKPIs(validGoals.map((g) => g.goals), teamId)
+        : emptyFunnelKPI(teamId);
+
+    // ステータスを判定
+    let status: "complete" | "partial" | "none";
+    if (confirmedMonths === 3) {
+        status = "complete";
+    } else if (confirmedMonths > 0) {
+        status = "partial";
+    } else {
+        status = "none";
+    }
+
+    return {
+        monthlyGoals,
+        quarterlyTotal,
+        confirmedMonths,
+        status,
+    };
 }
 
 /**
@@ -284,10 +338,10 @@ export async function getWeeklyKPIsByMonth(
 // ============================================
 
 /**
- * 空のファネルKPI
+ * 空のファネルKPI（チーム別対応）
  */
-export function emptyFunnelKPI(): FunnelKPI {
-    return {
+export function emptyFunnelKPI(teamId?: TeamId): FunnelKPI {
+    const base: FunnelKPI = {
         pv: 0,
         uu: 0,
         lineRegistration: 0,
@@ -297,58 +351,87 @@ export function emptyFunnelKPI(): FunnelKPI {
         finalConversion: 0,
         activeOrPaid: 0,
     };
+
+    // チーム別SNSフィールド初期化
+    if (teamId) {
+        const keys = getFunnelKeys(teamId);
+        if (keys.includes("igViews")) {
+            base.igViews = 0;
+            base.igInteractions = 0;
+            base.igProfileAccess = 0;
+            base.igExternalTaps = 0;
+        }
+        if (keys.includes("xFollowers")) {
+            base.xFollowers = 0;
+        }
+    }
+
+    return base;
 }
 
 /**
- * ファネルKPIを合計
+ * ファネルKPIを合計（動的フィールド対応）
  */
-export function sumFunnelKPIs(kpis: FunnelKPI[]): FunnelKPI {
-    return kpis.reduce((acc, kpi) => ({
-        pv: acc.pv + kpi.pv,
-        uu: acc.uu + kpi.uu,
-        lineRegistration: acc.lineRegistration + kpi.lineRegistration,
-        consultationBooking: acc.consultationBooking + kpi.consultationBooking,
-        consultationDone: acc.consultationDone + kpi.consultationDone,
-        yesAcquired: acc.yesAcquired + kpi.yesAcquired,
-        finalConversion: acc.finalConversion + kpi.finalConversion,
-        activeOrPaid: acc.activeOrPaid + kpi.activeOrPaid,
-    }), emptyFunnelKPI());
+export function sumFunnelKPIs(kpis: FunnelKPI[], teamId?: TeamId): FunnelKPI {
+    const empty = emptyFunnelKPI(teamId);
+
+    return kpis.reduce((acc, kpi) => {
+        const result = { ...acc };
+
+        // 全キーを動的に合計
+        const allKeys = Object.keys(acc) as (keyof FunnelKPI)[];
+        for (const key of allKeys) {
+            const accVal = acc[key] ?? 0;
+            const kpiVal = kpi[key] ?? 0;
+            (result as Record<string, number>)[key] = accVal + kpiVal;
+        }
+
+        return result;
+    }, empty);
 }
 
 /**
- * 転換率を計算
+ * 転換率を計算（動的・チーム別対応）
  */
-export function calculateConversionRates(kpi: FunnelKPI) {
+export function calculateConversionRates(kpi: FunnelKPI, teamId: TeamId): Record<string, number> {
     const safeRate = (num: number, denom: number) =>
         denom > 0 ? Math.round((num / denom) * 1000) / 10 : 0;
 
-    return {
-        pvToUu: safeRate(kpi.uu, kpi.pv),
-        uuToLine: safeRate(kpi.lineRegistration, kpi.uu),
-        lineToBooking: safeRate(kpi.consultationBooking, kpi.lineRegistration),
-        bookingToDone: safeRate(kpi.consultationDone, kpi.consultationBooking),
-        doneToYes: safeRate(kpi.yesAcquired, kpi.consultationDone),
-        yesToFinal: safeRate(kpi.finalConversion, kpi.yesAcquired),
-        finalToActive: safeRate(kpi.activeOrPaid, kpi.finalConversion),
-    };
+    const keys = getFunnelKeys(teamId);
+    const result: Record<string, number> = {};
+
+    // 連続するキー間の転換率を計算
+    for (let i = 0; i < keys.length - 1; i++) {
+        const fromKey = keys[i];
+        const toKey = keys[i + 1];
+        const fromVal = (kpi as unknown as Record<string, number | undefined>)[fromKey] ?? 0;
+        const toVal = (kpi as unknown as Record<string, number | undefined>)[toKey] ?? 0;
+
+        // キー名をキャメルケースで連結（例: igViewsToIgInteractions）
+        const rateKey = `${fromKey}To${toKey.charAt(0).toUpperCase()}${toKey.slice(1)}`;
+        result[rateKey] = safeRate(toVal, fromVal);
+    }
+
+    return result;
 }
 
 /**
- * 達成率を計算
+ * 達成率を計算（動的・チーム別対応）
  */
 export function calculateAchievementRate(
     actual: FunnelKPI,
-    target: FunnelKPI
-): Partial<Record<keyof FunnelKPI, number>> {
-    const result: Partial<Record<keyof FunnelKPI, number>> = {};
-    const keys: (keyof FunnelKPI)[] = [
-        "pv", "uu", "lineRegistration", "consultationBooking",
-        "consultationDone", "yesAcquired", "finalConversion", "activeOrPaid"
-    ];
+    target: FunnelKPI,
+    teamId: TeamId
+): Record<string, number> {
+    const result: Record<string, number> = {};
+    const keys = getFunnelKeys(teamId);
 
     for (const key of keys) {
-        if (target[key] > 0) {
-            result[key] = Math.round((actual[key] / target[key]) * 100);
+        const actualVal = (actual as unknown as Record<string, number | undefined>)[key] ?? 0;
+        const targetVal = (target as unknown as Record<string, number | undefined>)[key] ?? 0;
+
+        if (targetVal > 0) {
+            result[key] = Math.round((actualVal / targetVal) * 100);
         }
     }
 
@@ -356,28 +439,141 @@ export function calculateAchievementRate(
 }
 
 /**
- * 月間ファネルサマリーを取得
+ * 日報からSNS指標を月間集計
+ */
+async function aggregateSNSMetricsFromReports(
+    teamId: TeamId,
+    year: number,
+    month: number
+): Promise<Partial<FunnelKPI>> {
+    const snapshot = await getDocs(collection(db, "reports"));
+
+    let igViews = 0;
+    let igInteractions = 0;
+    let igProfileAccess = 0;
+    let igExternalTaps = 0;
+    let xFollowers = 0;
+    let xFollowersCount = 0; // フォロワー数は最新値を取得するため
+
+    const startDate = `${year}-${String(month).padStart(2, "0")}-01`;
+    const endDate = `${year}-${String(month).padStart(2, "0")}-31`;
+
+    snapshot.docs.forEach((docSnap) => {
+        const data = docSnap.data();
+
+        // チームとユーザーステータスでフィルタリング
+        if (data.team !== teamId) return;
+
+        // 日付フィルタリング
+        const reportDate = data.date as string;
+        if (reportDate < startDate || reportDate > endDate) return;
+
+        // Shorts系 SNS指標を合計
+        if (data.igViews !== undefined) {
+            igViews += data.igViews || 0;
+            igInteractions += data.igInteractions || 0;
+            igProfileAccess += data.igProfileAccess || 0;
+            igExternalTaps += data.igExternalTaps || 0;
+        }
+
+        // X系 フォロワー数（最新値を保持）
+        if (data.xFollowers !== undefined && data.xFollowers > xFollowers) {
+            xFollowers = data.xFollowers;
+            xFollowersCount++;
+        }
+    });
+
+    const keys = getFunnelKeys(teamId);
+    const result: Partial<FunnelKPI> = {};
+
+    if (keys.includes("igViews")) {
+        result.igViews = igViews;
+        result.igInteractions = igInteractions;
+        result.igProfileAccess = igProfileAccess;
+        result.igExternalTaps = igExternalTaps;
+    }
+
+    if (keys.includes("xFollowers")) {
+        result.xFollowers = xFollowers;
+    }
+
+    return result;
+}
+
+/**
+ * 日次進捗ステータスを判定
+ */
+function calculateDailyProgressStatus(
+    actualRate: number,
+    expectedRate: number
+): DailyProgressStatus {
+    if (actualRate >= expectedRate) return "on_track";
+    if (actualRate >= expectedRate * 0.7) return "warning";
+    return "critical";
+}
+
+/**
+ * 月間ファネルサマリーを取得（SNS集計 + 日次進捗対応）
  */
 export async function getMonthlyFunnelSummary(
     teamId: TeamId,
     year: number,
     month: number
 ): Promise<FunnelSummary> {
-    // 週次KPIを取得して集計
+    // 1. 週次KPIを取得して集計（Bottom-Funnel: LINE登録以降）
     const weeklyKPIs = await getWeeklyKPIsByMonth(teamId, year, month);
-    const actual = sumFunnelKPIs(weeklyKPIs.map((w) => w.kpi));
+    const weeklyActual = sumFunnelKPIs(weeklyKPIs.map((w) => w.kpi), teamId);
 
-    // 目標を取得
+    // 2. 日報からSNS指標を集計（Top-Funnel）
+    const snsMetrics = await aggregateSNSMetricsFromReports(teamId, year, month);
+
+    // 3. SNS指標と週次KPIをマージ
+    const actual: FunnelKPI = {
+        ...weeklyActual,
+        ...snsMetrics,
+    };
+
+    // 4. 目標を取得
     const goal = await getMonthlyGoal(teamId, year, month);
     const target = goal?.goals || null;
 
-    // 達成率を計算
+    // 5. 達成率を計算
     const achievementRate = target
-        ? calculateAchievementRate(actual, target)
+        ? calculateAchievementRate(actual, target, teamId)
         : {};
 
-    // 転換率を計算
-    const conversionRate = calculateConversionRates(actual);
+    // 6. 転換率を計算
+    const conversionRate = calculateConversionRates(actual, teamId);
+
+    // 7. 日次進捗を計算
+    const now = new Date();
+    const isCurrentMonth = now.getFullYear() === year && now.getMonth() + 1 === month;
+
+    let dailyProgress: FunnelSummary["dailyProgress"];
+
+    if (isCurrentMonth && target) {
+        const dayOfMonth = now.getDate();
+        const daysInMonth = new Date(year, month, 0).getDate();
+        const expectedRate = Math.round((dayOfMonth / daysInMonth) * 100);
+
+        const actualRate: Record<string, number> = {};
+        const status: Record<string, DailyProgressStatus> = {};
+        const keys = getFunnelKeys(teamId);
+
+        for (const key of keys) {
+            const rate = achievementRate[key] ?? 0;
+            actualRate[key] = rate;
+            status[key] = calculateDailyProgressStatus(rate, expectedRate);
+        }
+
+        dailyProgress = {
+            dayOfMonth,
+            daysInMonth,
+            expectedRate,
+            actualRate,
+            status,
+        };
+    }
 
     return {
         teamId,
@@ -386,6 +582,7 @@ export async function getMonthlyFunnelSummary(
         target,
         achievementRate,
         conversionRate,
+        dailyProgress,
     };
 }
 
