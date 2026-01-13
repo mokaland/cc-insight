@@ -476,7 +476,7 @@ function GoalSettingTab({
     selectedYear: number;
     selectedMonth: number;
 }) {
-    const { user } = useAuth();
+    const { user, userProfile } = useAuth();
     const [goalType, setGoalType] = useState<"monthly" | "quarterly">("monthly");
     const [quarter, setQuarter] = useState(Math.ceil(selectedMonth / 3));
     const [goal, setGoal] = useState<TeamGoal | null>(null);
@@ -513,11 +513,30 @@ function GoalSettingTab({
         if (!user) return;
         setSaving(true);
         try {
-            if (goalType === "monthly") {
-                await setMonthlyGoal(teamId, selectedYear, selectedMonth, goalInput, user.uid);
-            } else {
-                await setQuarterlyGoal(teamId, selectedYear, quarter, goalInput, user.uid);
+            // API経由で目標を提出（Slack通知も自動送信）
+            const response = await fetch("/api/goals/submit", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify({
+                    teamId,
+                    goalType,
+                    year: selectedYear,
+                    month: goalType === "monthly" ? selectedMonth : undefined,
+                    quarter: goalType === "quarterly" ? quarter : undefined,
+                    goals: goalInput,
+                    submittedBy: user.uid,
+                    submittedByName: userProfile?.displayName || user.email || "Unknown",
+                }),
+            });
+
+            const data = await response.json();
+
+            if (!response.ok) {
+                throw new Error(data.error || "目標提出に失敗しました");
             }
+
             // 再読み込み
             let goalData: TeamGoal | null = null;
             if (goalType === "monthly") {
@@ -526,7 +545,7 @@ function GoalSettingTab({
                 goalData = await getQuarterlyGoal(teamId, selectedYear, quarter);
             }
             setGoal(goalData);
-            alert("目標を保存しました（承認待ち）");
+            alert("目標を提出しました！承認をお待ちください。");
         } catch (error) {
             console.error("目標保存エラー:", error);
             alert("保存に失敗しました");

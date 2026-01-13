@@ -39,15 +39,15 @@ export async function notifyDecadeJudgmentToCEO(
   const decadeLabel = decade === 1 ? "10日" : decade === 2 ? "20日" : "月末";
   const now = new Date();
   const month = now.getMonth() + 1;
-  
+
   // 危機的状況のチームを抽出
   const criticalTeams = judgments.filter(j => j.status === "critical");
   const needsAttentionTeams = judgments.filter(j => j.status === "needs_attention");
   const excellentTeams = judgments.filter(j => j.status === "excellent");
-  
+
   // 概要テキスト
   let summaryText = `🎯 *${month}月 ${decadeLabel}時点 ADAPT判定*\n\n`;
-  
+
   if (criticalTeams.length > 0) {
     summaryText += `🚨 *危機的: ${criticalTeams.length}チーム*\n`;
     criticalTeams.forEach(t => {
@@ -55,7 +55,7 @@ export async function notifyDecadeJudgmentToCEO(
     });
     summaryText += `\n`;
   }
-  
+
   if (needsAttentionTeams.length > 0) {
     summaryText += `⚠️ *要注意: ${needsAttentionTeams.length}チーム*\n`;
     needsAttentionTeams.forEach(t => {
@@ -63,7 +63,7 @@ export async function notifyDecadeJudgmentToCEO(
     });
     summaryText += `\n`;
   }
-  
+
   if (excellentTeams.length > 0) {
     summaryText += `🌟 *優秀: ${excellentTeams.length}チーム*\n`;
     excellentTeams.forEach(t => {
@@ -71,15 +71,15 @@ export async function notifyDecadeJudgmentToCEO(
     });
     summaryText += `\n`;
   }
-  
+
   // リーダー対応状況
   const awaitingResponse = judgments.filter(j => !j.leaderResponse).length;
   if (awaitingResponse > 0) {
     summaryText += `⏳ *リーダー対応待ち: ${awaitingResponse}チーム*\n`;
   }
-  
+
   summaryText += `\n📊 詳細: https://cc-insight.vercel.app/admin/adapt`;
-  
+
   const message: SlackMessage = {
     text: summaryText,
     blocks: [
@@ -115,7 +115,7 @@ export async function notifyDecadeJudgmentToCEO(
       },
     ],
   };
-  
+
   await sendSlackMessage(SLACK_WEBHOOK_URLS.ceo, message);
 }
 
@@ -129,12 +129,12 @@ export async function notifyDecadeJudgmentToAdminChannel(
   const decadeLabel = decade === 1 ? "10日" : decade === 2 ? "20日" : "月末";
   const now = new Date();
   const month = now.getMonth() + 1;
-  
+
   // 各チームの詳細をAttachmentとして追加
   const attachments = judgments.map(j => {
     const teamConfig = getTeamConfig(j.teamId);
     const color = getStatusColorCode(j.status);
-    
+
     return {
       color,
       title: `${j.teamName} ${getStatusLabel(j.status)}`,
@@ -156,7 +156,7 @@ export async function notifyDecadeJudgmentToAdminChannel(
         },
         {
           title: "リーダー対応",
-          value: j.leaderResponse 
+          value: j.leaderResponse
             ? `✅ 対応済み (${j.leaderResponse.actionType})`
             : "⏳ 対応待ち",
           short: true,
@@ -165,12 +165,12 @@ export async function notifyDecadeJudgmentToAdminChannel(
       footer: `判定日時: ${j.judgedAt.toLocaleString("ja-JP")}`,
     };
   });
-  
+
   const message: SlackMessage = {
     text: `📊 ${month}月 ${decadeLabel}時点 ADAPT判定結果（詳細）`,
     attachments,
   };
-  
+
   await sendSlackMessage(SLACK_WEBHOOK_URLS.admin, message);
 }
 
@@ -186,7 +186,7 @@ export async function notifyEscalation(
   const hoursSinceJudgment = Math.floor(
     (Date.now() - judgment.judgedAt.getTime()) / (1000 * 60 * 60)
   );
-  
+
   const message: SlackMessage = {
     text: `🚨 *エスカレーション通知*\n\n${judgment.teamName}の10日判定に${hoursSinceJudgment}時間対応がありません。`,
     blocks: [
@@ -235,7 +235,7 @@ export async function notifyEscalation(
       },
     ],
   };
-  
+
   // 菅原副社長DMと管理者チャンネルの両方に通知
   await Promise.all([
     sendSlackMessage(SLACK_WEBHOOK_URLS.ceo, message),
@@ -252,10 +252,10 @@ export async function notifyLeaderResponse(
   judgment: DecadeJudgment
 ): Promise<void> {
   if (!judgment.leaderResponse) return;
-  
+
   const action = judgment.leaderResponse;
   const teamConfig = getTeamConfig(judgment.teamId);
-  
+
   const message: SlackMessage = {
     text: `✅ ${judgment.teamName}のリーダーが対応しました`,
     blocks: [
@@ -305,7 +305,7 @@ export async function notifyLeaderResponse(
       },
     ],
   };
-  
+
   await sendSlackMessage(SLACK_WEBHOOK_URLS.admin, message);
 }
 
@@ -323,7 +323,7 @@ export async function notifyDangerMembers(
   }>
 ): Promise<void> {
   if (members.length === 0) return;
-  
+
   const message: SlackMessage = {
     text: `🚨 *離脱リスクメンバー検出: ${members.length}名*`,
     blocks: [
@@ -372,7 +372,7 @@ export async function notifyDangerMembers(
       },
     ],
   };
-  
+
   await sendSlackMessage(SLACK_WEBHOOK_URLS.ceo, message);
 }
 
@@ -391,7 +391,7 @@ export async function sendDailySummary(data: {
   const activeRate = data.totalMembers > 0
     ? Math.round((data.activeToday / data.totalMembers) * 100)
     : 0;
-  
+
   const message: SlackMessage = {
     text: `☀️ *本日のサマリー*`,
     blocks: [
@@ -441,7 +441,7 @@ export async function sendDailySummary(data: {
       },
     ],
   };
-  
+
   await sendSlackMessage(SLACK_WEBHOOK_URLS.ceo, message);
 }
 
@@ -475,7 +475,7 @@ async function sendSlackMessage(webhookUrl: string, message: SlackMessage): Prom
     console.warn("Slack Webhook URL not configured");
     return;
   }
-  
+
   try {
     const response = await fetch(webhookUrl, {
       method: "POST",
@@ -484,11 +484,11 @@ async function sendSlackMessage(webhookUrl: string, message: SlackMessage): Prom
       },
       body: JSON.stringify(message),
     });
-    
+
     if (!response.ok) {
       throw new Error(`Slack API error: ${response.status}`);
     }
-    
+
     console.log("✅ Slack通知送信成功:", message.text);
   } catch (error) {
     console.error("❌ Slack通知送信エラー:", error);
@@ -514,7 +514,199 @@ export async function sendTestNotification(): Promise<void> {
       },
     ],
   };
-  
+
+  await Promise.all([
+    sendSlackMessage(SLACK_WEBHOOK_URLS.ceo, message),
+    sendSlackMessage(SLACK_WEBHOOK_URLS.admin, message),
+  ]);
+}
+
+// ===== 目標承認通知 =====
+
+const TEAM_NAMES: Record<string, string> = {
+  fukugyou: "副業チーム",
+  taishoku: "退職サポートチーム",
+  buppan: "スマホ物販チーム",
+};
+
+/**
+ * 目標提出時の承認依頼通知を送信
+ */
+export async function notifyGoalSubmission(data: {
+  goalId: string;
+  teamId: string;
+  goalType: "monthly" | "quarterly";
+  year: number;
+  month?: number;
+  quarter?: number;
+  submittedBy: string;
+  goals: {
+    pv: number;
+    uu: number;
+    lineRegistration: number;
+    consultationBooking: number;
+    consultationDone: number;
+    yesAcquired: number;
+    finalConversion: number;
+    activeOrPaid: number;
+  };
+}): Promise<void> {
+  const teamName = TEAM_NAMES[data.teamId] || data.teamId;
+  const periodLabel = data.goalType === "monthly"
+    ? `${data.year}年${data.month}月`
+    : `${data.year}年 Q${data.quarter}`;
+
+  const message: SlackMessage = {
+    text: `📝 目標承認依頼: ${teamName} ${periodLabel}`,
+    blocks: [
+      {
+        type: "header",
+        text: {
+          type: "plain_text",
+          text: "📝 目標承認依頼",
+          emoji: true,
+        },
+      },
+      {
+        type: "section",
+        text: {
+          type: "mrkdwn",
+          text: `*${teamName}*から*${periodLabel}*の目標が提出されました。`,
+        },
+      },
+      {
+        type: "section",
+        fields: [
+          {
+            type: "mrkdwn",
+            text: `*PV*\n${data.goals.pv.toLocaleString()}`,
+          },
+          {
+            type: "mrkdwn",
+            text: `*UU*\n${data.goals.uu.toLocaleString()}`,
+          },
+          {
+            type: "mrkdwn",
+            text: `*LINE登録*\n${data.goals.lineRegistration.toLocaleString()}`,
+          },
+          {
+            type: "mrkdwn",
+            text: `*商談完了*\n${data.goals.consultationDone.toLocaleString()}`,
+          },
+          {
+            type: "mrkdwn",
+            text: `*YES獲得*\n${data.goals.yesAcquired.toLocaleString()}`,
+          },
+          {
+            type: "mrkdwn",
+            text: `*最終成約*\n${data.goals.finalConversion.toLocaleString()}`,
+          },
+        ],
+      },
+      {
+        type: "context",
+        elements: [
+          {
+            type: "mrkdwn",
+            text: `提出者: ${data.submittedBy} | 目標ID: ${data.goalId}`,
+          },
+        ],
+      },
+      {
+        type: "actions",
+        block_id: `goal_approval_${data.goalId}`,
+        elements: [
+          {
+            type: "button",
+            text: {
+              type: "plain_text",
+              text: "✅ 承認",
+              emoji: true,
+            },
+            style: "primary",
+            action_id: "approve_goal",
+            value: data.goalId,
+          },
+          {
+            type: "button",
+            text: {
+              type: "plain_text",
+              text: "❌ 却下",
+              emoji: true,
+            },
+            style: "danger",
+            action_id: "reject_goal",
+            value: data.goalId,
+          },
+          {
+            type: "button",
+            text: {
+              type: "plain_text",
+              text: "📊 詳細を確認",
+              emoji: true,
+            },
+            url: `https://cc-insight-app.vercel.app/team/${data.teamId}?tab=goal`,
+          },
+        ],
+      },
+    ],
+  };
+
+  await sendSlackMessage(SLACK_WEBHOOK_URLS.ceo, message);
+}
+
+/**
+ * 目標承認完了通知を送信
+ */
+export async function notifyGoalApproved(data: {
+  goalId: string;
+  teamId: string;
+  periodLabel: string;
+  approvedBy: string;
+}): Promise<void> {
+  const teamName = TEAM_NAMES[data.teamId] || data.teamId;
+
+  const message: SlackMessage = {
+    text: `✅ 目標承認完了: ${teamName} ${data.periodLabel}`,
+    blocks: [
+      {
+        type: "section",
+        text: {
+          type: "mrkdwn",
+          text: `✅ *${teamName}*の*${data.periodLabel}*目標が承認されました。\n\n承認者: ${data.approvedBy}`,
+        },
+      },
+    ],
+  };
+
+  await sendSlackMessage(SLACK_WEBHOOK_URLS.admin, message);
+}
+
+/**
+ * 目標却下通知を送信
+ */
+export async function notifyGoalRejected(data: {
+  goalId: string;
+  teamId: string;
+  periodLabel: string;
+  rejectedBy: string;
+  reason?: string;
+}): Promise<void> {
+  const teamName = TEAM_NAMES[data.teamId] || data.teamId;
+
+  const message: SlackMessage = {
+    text: `❌ 目標却下: ${teamName} ${data.periodLabel}`,
+    blocks: [
+      {
+        type: "section",
+        text: {
+          type: "mrkdwn",
+          text: `❌ *${teamName}*の*${data.periodLabel}*目標が却下されました。\n\n却下者: ${data.rejectedBy}${data.reason ? `\n理由: ${data.reason}` : ""}`,
+        },
+      },
+    ],
+  };
+
   await Promise.all([
     sendSlackMessage(SLACK_WEBHOOK_URLS.ceo, message),
     sendSlackMessage(SLACK_WEBHOOK_URLS.admin, message),
