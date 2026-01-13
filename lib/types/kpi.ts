@@ -177,3 +177,41 @@ export interface WeeklyTrend {
     endDate: string;
     kpi: FunnelKPI;
 }
+
+/**
+ * 月次推移データ（CEO Dashboard用）
+ */
+export interface MonthlyTrend {
+    year: number;
+    month: number;
+    actual: FunnelKPI;
+    target: FunnelKPI | null;
+    achievementRate: Record<string, number>;  // 達成率（%）
+    conversionRate: Record<string, number>;   // 転換率（%）
+    growthRate?: Record<string, number>;      // 前月比成長率（%）
+}
+
+/**
+ * クオーター比較データ
+ */
+export interface QuarterlyComparison {
+    year: number;
+    quarter: number;
+    actual: FunnelKPI;
+    target: FunnelKPI | null;
+    achievementRate: Record<string, number>;
+    conversionRate: Record<string, number>;
+    vsPreQuarter?: {
+        growthRate: Record<string, number>;   // 対前Q成長率
+    };
+    isInProgress: boolean;  // 進行中のQかどうか
+}
+
+/**
+ * チーム全体のトレンドデータ
+ */
+export interface TeamTrendData {
+    teamId: TeamId;
+    monthlyTrends: MonthlyTrend[];
+    quarterlyComparisons: QuarterlyComparison[];
+}
