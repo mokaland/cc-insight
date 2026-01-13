@@ -415,16 +415,6 @@ function BottomNavigation() {
       {/* ボトムナビゲーション - コンパクト */}
       <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50 glass-premium border-t border-white/10" style={{ paddingBottom: 'max(env(safe-area-inset-bottom, 0px), 8px)' }}>
         <div className="flex items-center justify-around h-12">
-          {/* 管理者用メニューボタン */}
-          {isAdmin && (
-            <button
-              onClick={() => setIsDrawerOpen(true)}
-              className="flex flex-col items-center justify-center p-2 transition-all active:scale-95"
-            >
-              <Menu className="w-5 h-5 text-slate-400" />
-            </button>
-          )}
-
           {bottomNavItems.map((item) => {
             const isActive = pathname === item.href || pathname.startsWith(item.href);
             const isDm = item.href === "/dm";

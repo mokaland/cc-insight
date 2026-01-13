@@ -1045,6 +1045,37 @@ function MemberPostsTab({
         }
     };
 
+    // PC用：メンバーのURLを専用ページで開く
+    const openMemberUrlsInPopup = (memberName: string) => {
+        const member = memberPosts.find(m => m.name === memberName);
+        if (!member || member.urls.length === 0) return;
+
+        const data = {
+            title: `${member.name}さんの投稿URL一覧`,
+            urls: member.urls.map(item => ({
+                date: item.date,
+                url: item.url
+            }))
+        };
+        sessionStorage.setItem("urlOpenerData", JSON.stringify(data));
+        window.open("/admin/url-opener?auto=true", "_blank");
+    };
+
+    // PC用：全URLを専用ページで開く
+    const openAllUrlsInPopup = () => {
+        const allUrlsWithInfo = memberPosts.flatMap(member =>
+            member.urls.map(({ date, url }) => ({ name: member.name, date, url }))
+        );
+        if (allUrlsWithInfo.length === 0) return;
+
+        const data = {
+            title: `投稿URL一覧（全${allUrlsWithInfo.length}件）`,
+            urls: allUrlsWithInfo
+        };
+        sessionStorage.setItem("urlOpenerData", JSON.stringify(data));
+        window.open("/admin/url-opener?auto=true", "_blank");
+    };
+
     const totalUrlCount = memberPosts.reduce((sum, m) => sum + m.urls.length, 0);
 
     if (loading) {
@@ -1075,13 +1106,23 @@ function MemberPostsTab({
                     <span className="text-sm text-muted-foreground">（{totalUrlCount}件）</span>
                 </div>
                 {totalUrlCount > 0 && (
-                    <Button
-                        onClick={copyAllUrls}
-                        className="bg-gradient-to-r from-blue-500 to-cyan-500 text-white"
-                    >
-                        <Copy className="h-4 w-4 mr-2" />
-                        全{totalUrlCount}件のURLをコピー
-                    </Button>
+                    <div className="flex flex-col md:flex-row gap-2 w-full md:w-auto">
+                        {/* PC用：URL一括で開く */}
+                        <Button
+                            onClick={openAllUrlsInPopup}
+                            className="hidden md:flex bg-gradient-to-r from-green-500 to-emerald-500 text-white hover:from-green-600 hover:to-emerald-600"
+                        >
+                            <Play className="h-4 w-4 mr-2" />
+                            全{totalUrlCount}件を開く
+                        </Button>
+                        <Button
+                            onClick={copyAllUrls}
+                            className="w-full md:w-auto bg-gradient-to-r from-blue-500 to-cyan-500 text-white hover:from-blue-600 hover:to-cyan-600"
+                        >
+                            <Copy className="h-4 w-4 mr-2" />
+                            全{totalUrlCount}件のURLをコピー
+                        </Button>
+                    </div>
                 )}
             </div>
 
@@ -1116,6 +1157,19 @@ function MemberPostsTab({
                                     </div>
                                 </div>
                                 <div className="flex items-center gap-2">
+                                    {/* PC用：個別メンバーのURL一覧を開くボタン */}
+                                    <Button
+                                        size="sm"
+                                        variant="outline"
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            openMemberUrlsInPopup(member.name);
+                                        }}
+                                        className="hidden md:flex text-green-400 border-green-400/30 hover:bg-green-400/10"
+                                    >
+                                        <Play className="h-3 w-3 mr-1" />
+                                        {member.urls.length}件を開く
+                                    </Button>
                                     <Button
                                         size="sm"
                                         variant="outline"
