@@ -16,6 +16,7 @@ import { DailyLoginModal } from "@/components/daily-login-modal";
 import { motion, AnimatePresence } from "framer-motion";
 import { subscribeToUnreadCount } from "@/lib/services/dm";
 import { PageTransition } from "@/components/page-transition";
+import { registerServiceWorker } from "@/lib/pwa";
 
 // 完全公開ページ（認証不要・サイドバー非表示・ボトムナビ非表示）
 const publicPages = ["/login", "/register", "/verify-email", "/pending-approval", "/admin/login"];
@@ -98,6 +99,11 @@ function LayoutContent({ children }: { children: React.ReactNode }) {
       isMounted = false;
     };
   }, [user, isPublicPage]);
+
+  // 📱 PWA Service Worker登録
+  useEffect(() => {
+    registerServiceWorker();
+  }, []);
 
   // 公開ページは認証なしで表示
   if (isPublicPage) {

@@ -9,6 +9,7 @@ import {
   subscribeToAdminDMWithUser,
   sendAdminDMToUser,
   markMessagesFromUserAsRead,
+  subscribeToAdminUnreadCounts,
 } from "@/lib/services/dm";
 import { getAllUsers } from "@/lib/firestore";
 import { motion, AnimatePresence } from "framer-motion";
@@ -71,6 +72,7 @@ export default function AdminDMPage() {
   const [sending, setSending] = useState(false);
   const [showScrollButton, setShowScrollButton] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
+  const [unreadCounts, setUnreadCounts] = useState<Map<string, number>>(new Map());
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -112,6 +114,15 @@ export default function AdminDMPage() {
       return;
     }
     loadUsers();
+
+    // 未読数の購読
+    const unsubscribeUnread = subscribeToAdminUnreadCounts((unreadMap) => {
+      setUnreadCounts(unreadMap);
+    });
+
+    return () => {
+      unsubscribeUnread();
+    };
   }, [user, userProfile, router, loadUsers]);
 
   useEffect(() => {
@@ -254,9 +265,17 @@ export default function AdminDMPage() {
                       }`}
                   >
                     <div className="flex items-center justify-between">
-                      <p className="font-medium text-sm truncate">{u.realName}（{u.displayName}）</p>
+                      <div className="flex items-center gap-2 min-w-0">
+                        <p className="font-medium text-sm truncate">{u.realName}（{u.displayName}）</p>
+                        {/* 未読バッジ */}
+                        {(unreadCounts.get(u.uid) || 0) > 0 && (
+                          <span className="flex-shrink-0 bg-red-500 text-white text-[10px] font-bold rounded-full min-w-[18px] h-[18px] flex items-center justify-center px-1">
+                            {unreadCounts.get(u.uid)! > 99 ? '99+' : unreadCounts.get(u.uid)}
+                          </span>
+                        )}
+                      </div>
                       <span
-                        className="text-xs px-2 py-0.5 rounded-full flex-shrink-0"
+                        className="text-xs px-2 py-0.5 rounded-full flex-shrink-0 ml-2"
                         style={{
                           backgroundColor: `${u.teamColor}20`,
                           color: u.teamColor

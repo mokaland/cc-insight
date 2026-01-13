@@ -328,3 +328,41 @@ export async function sendAdminDMToUser(
         participants: [adminUid, targetUserId],
     });
 }
+
+/**
+ * 管理者用：全メンバーからの未読メッセージ数をリアルタイム監視
+ * メンバーごとの未読数をMapで返す
+ */
+export function subscribeToAdminUnreadCounts(
+    callback: (unreadMap: Map<string, number>) => void
+): Unsubscribe {
+    // メンバーから管理者への全メッセージを監視（isAdmin === false のみ）
+    const q = query(
+        collection(db, "dm_messages"),
+        where("isAdmin", "==", false)
+    );
+
+    return onSnapshot(
+        q,
+        (snapshot) => {
+            const unreadMap = new Map<string, number>();
+
+            snapshot.docs.forEach((doc) => {
+                const data = doc.data();
+                // 未読のみカウント
+                if (data.read === true) return;
+
+                const fromUserId = data.fromUserId as string;
+                const currentCount = unreadMap.get(fromUserId) || 0;
+                unreadMap.set(fromUserId, currentCount + 1);
+            });
+
+            callback(unreadMap);
+        },
+        (error) => {
+            console.error("❌ [DM Service] 管理者未読カウントリスナーエラー:", error);
+            callback(new Map());
+        }
+    );
+}
+
