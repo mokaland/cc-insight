@@ -422,3 +422,243 @@ export async function getAllTeamsMonthlySummary(
     );
     return summaries;
 }
+
+// ============================================
+// メンバー管理
+// ============================================
+
+import { User } from "@/lib/types";
+
+/**
+ * チームメンバー一覧を取得
+ */
+export async function getTeamMembers(teamId: TeamId): Promise<User[]> {
+    const snapshot = await getDocs(collection(db, "users"));
+    const members: User[] = [];
+
+    snapshot.docs.forEach((docSnap) => {
+        const data = docSnap.data() as User;
+        if (data.team === teamId && data.status === "approved") {
+            members.push(data);
+        }
+    });
+
+    // 名前でソート
+    members.sort((a, b) => (a.displayName || "").localeCompare(b.displayName || ""));
+    return members;
+}
+
+/**
+ * メンバーの最新レポート日を取得
+ */
+export async function getMemberLastReportDates(
+    memberIds: string[]
+): Promise<Record<string, Timestamp | null>> {
+    const result: Record<string, Timestamp | null> = {};
+
+    // 初期化
+    memberIds.forEach(id => { result[id] = null; });
+
+    // レポートを取得
+    const snapshot = await getDocs(collection(db, "reports"));
+    snapshot.docs.forEach((docSnap) => {
+        const data = docSnap.data();
+        const userId = data.userId;
+        const createdAt = data.createdAt as Timestamp | undefined;
+
+        if (userId && memberIds.includes(userId) && createdAt) {
+            if (!result[userId] || createdAt.toMillis() > (result[userId]?.toMillis() || 0)) {
+                result[userId] = createdAt;
+            }
+        }
+    });
+
+    return result;
+}
+
+// ============================================
+// アラート判定
+// ============================================
+
+export interface MemberAlert {
+    userId: string;
+    displayName: string;
+    type: "unreported" | "low_activity" | "goal_at_risk";
+    message: string;
+    severity: "warning" | "critical";
+    daysWithoutReport?: number;
+}
+
+/**
+ * チームアラートを取得
+ */
+export async function getTeamAlerts(
+    teamId: TeamId,
+    year: number,
+    month: number
+): Promise<MemberAlert[]> {
+    const alerts: MemberAlert[] = [];
+
+    // メンバー取得
+    const members = await getTeamMembers(teamId);
+    if (members.length === 0) return alerts;
+
+    // 最終レポート日を取得
+    const lastReportDates = await getMemberLastReportDates(
+        members.map(m => m.uid)
+    );
+
+    const now = new Date();
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+
+    // 未報告アラート判定
+    members.forEach((member) => {
+        const lastReport = lastReportDates[member.uid];
+        if (!lastReport) {
+            // 一度も報告なし
+            alerts.push({
+                userId: member.uid,
+                displayName: member.displayName,
+                type: "unreported",
+                message: "まだ日報が提出されていません",
+                severity: "critical",
+            });
+        } else {
+            const lastDate = lastReport.toDate();
+            const diffDays = Math.floor(
+                (today.getTime() - lastDate.getTime()) / (1000 * 60 * 60 * 24)
+            );
+
+            if (diffDays >= 7) {
+                alerts.push({
+                    userId: member.uid,
+                    displayName: member.displayName,
+                    type: "unreported",
+                    message: `${diffDays}日間報告がありません`,
+                    severity: "critical",
+                    daysWithoutReport: diffDays,
+                });
+            } else if (diffDays >= 3) {
+                alerts.push({
+                    userId: member.uid,
+                    displayName: member.displayName,
+                    type: "unreported",
+                    message: `${diffDays}日間報告がありません`,
+                    severity: "warning",
+                    daysWithoutReport: diffDays,
+                });
+            }
+        }
+    });
+
+    // 目標達成率アラート
+    const summary = await getMonthlyFunnelSummary(teamId, year, month);
+    if (summary.target && summary.achievementRate.finalConversion !== undefined) {
+        const rate = summary.achievementRate.finalConversion;
+        const dayOfMonth = now.getDate();
+        const daysInMonth = new Date(year, month, 0).getDate();
+        const expectedRate = Math.round((dayOfMonth / daysInMonth) * 100);
+
+        if (rate < expectedRate * 0.7) {
+            alerts.push({
+                userId: "team",
+                displayName: "チーム全体",
+                type: "goal_at_risk",
+                message: `目標達成率 ${rate}% (期待値: ${expectedRate}%)`,
+                severity: "critical",
+            });
+        } else if (rate < expectedRate * 0.9) {
+            alerts.push({
+                userId: "team",
+                displayName: "チーム全体",
+                type: "goal_at_risk",
+                message: `目標達成率 ${rate}% (期待値: ${expectedRate}%)`,
+                severity: "warning",
+            });
+        }
+    }
+
+    // 重要度でソート
+    alerts.sort((a, b) => {
+        if (a.severity === "critical" && b.severity !== "critical") return -1;
+        if (a.severity !== "critical" && b.severity === "critical") return 1;
+        return 0;
+    });
+
+    return alerts;
+}
+
+// ============================================
+// 権限チェック
+// ============================================
+
+import { UserRole } from "@/lib/types";
+
+/**
+ * チームダッシュボードの編集権限をチェック
+ * @param userRole ユーザーのロール
+ * @param userTeam ユーザーの所属チーム
+ * @param targetTeam 対象のチーム
+ * @returns 編集可能かどうか
+ */
+export function canEditTeamDashboard(
+    userRole: UserRole | undefined,
+    userTeam: TeamId | undefined,
+    targetTeam: TeamId
+): boolean {
+    // 管理者は全チーム編集可能
+    if (userRole === "admin") {
+        return true;
+    }
+
+    // チーム統括は自チームのみ編集可能
+    if (userRole === "teamLead" && userTeam === targetTeam) {
+        return true;
+    }
+
+    // それ以外は編集不可
+    return false;
+}
+
+/**
+ * チームダッシュボードの閲覧権限をチェック
+ * @param userRole ユーザーのロール
+ * @param userTeam ユーザーの所属チーム
+ * @param targetTeam 対象のチーム
+ * @returns 閲覧可能かどうか
+ */
+export function canViewTeamDashboard(
+    userRole: UserRole | undefined,
+    userTeam: TeamId | undefined,
+    targetTeam: TeamId
+): boolean {
+    // 管理者は全チーム閲覧可能
+    if (userRole === "admin") {
+        return true;
+    }
+
+    // チーム統括は自チームのみ閲覧可能
+    if (userRole === "teamLead" && userTeam === targetTeam) {
+        return true;
+    }
+
+    // 一般メンバーは自チームのみ閲覧可能
+    if (userRole === "member" && userTeam === targetTeam) {
+        return true;
+    }
+
+    // それ以外は閲覧不可
+    return false;
+}
+
+/**
+ * 権限レベルを取得
+ */
+export function getPermissionLevel(
+    userRole: UserRole | undefined
+): "none" | "view" | "edit" | "admin" {
+    if (userRole === "admin") return "admin";
+    if (userRole === "teamLead") return "edit";
+    if (userRole === "member") return "view";
+    return "none";
+}

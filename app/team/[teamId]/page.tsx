@@ -31,12 +31,18 @@ import {
     getWeeklyKPIsByMonth,
     getMonthlyGoal,
     setMonthlyGoal,
+    getQuarterlyGoal,
+    setQuarterlyGoal,
     saveWeeklyKPI,
     confirmWeeklyKPI,
     getWeekNumber,
     emptyFunnelKPI,
     calculateConversionRates,
+    getTeamMembers,
+    getTeamAlerts,
+    MemberAlert,
 } from "@/lib/services/kpi";
+import { User } from "@/lib/types";
 
 // チーム設定
 const TEAM_CONFIG: Record<TeamId, { name: string; color: string }> = {
@@ -343,65 +349,13 @@ function TeamDashboardContent() {
             )}
 
             {activeTab === "goal" && (
-                <GlassCard glowColor={teamConfig.color} className="p-6">
-                    <h2 className="text-xl font-semibold mb-6 flex items-center gap-2">
-                        <Target className="h-5 w-5" style={{ color: teamConfig.color }} />
-                        {selectedYear}年{selectedMonth}月 目標設定
-                    </h2>
-                    {goal && (
-                        <div className="mb-4 flex items-center gap-2">
-                            <span
-                                className={`px-3 py-1 rounded-full text-sm ${goal.status === "approved"
-                                    ? "bg-green-500/20 text-green-400"
-                                    : goal.status === "pending"
-                                        ? "bg-yellow-500/20 text-yellow-400"
-                                        : "bg-gray-500/20 text-gray-400"
-                                    }`}
-                            >
-                                {goal.status === "approved"
-                                    ? "✓ 承認済み"
-                                    : goal.status === "pending"
-                                        ? "⏳ 承認待ち"
-                                        : "下書き"}
-                            </span>
-                        </div>
-                    )}
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                        {Object.entries(funnelLabels).map(([key, label]) => (
-                            <div key={key}>
-                                <label className="block text-sm text-muted-foreground mb-1">{label}</label>
-                                <input
-                                    type="text"
-                                    inputMode="numeric"
-                                    pattern="[0-9]*"
-                                    value={goalInput[key as keyof FunnelKPI] === 0 ? '' : goalInput[key as keyof FunnelKPI]}
-                                    onChange={(e) => {
-                                        const val = e.target.value;
-                                        setGoalInput((prev) => ({
-                                            ...prev,
-                                            [key]: val === '' ? 0 : parseInt(val, 10) || 0,
-                                        }));
-                                    }}
-                                    placeholder="0"
-                                    className="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-lg"
-                                />
-                            </div>
-                        ))}
-                    </div>
-                    <div className="mt-6 flex justify-end">
-                        <Button
-                            onClick={handleSaveGoal}
-                            disabled={savingGoal}
-                            className="gap-2"
-                            style={{
-                                background: `linear-gradient(to right, ${teamConfig.color}, #a855f7)`,
-                            }}
-                        >
-                            {savingGoal ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
-                            目標を保存（承認申請）
-                        </Button>
-                    </div>
-                </GlassCard>
+                <GoalSettingTab
+                    teamId={teamId}
+                    teamConfig={teamConfig}
+                    funnelLabels={funnelLabels}
+                    selectedYear={selectedYear}
+                    selectedMonth={selectedMonth}
+                />
             )}
 
             {activeTab === "input" && (
@@ -493,29 +447,401 @@ function TeamDashboardContent() {
             )}
 
             {activeTab === "members" && (
-                <GlassCard glowColor={teamConfig.color} className="p-6">
-                    <h2 className="text-xl font-semibold mb-6 flex items-center gap-2">
-                        <Users className="h-5 w-5" style={{ color: teamConfig.color }} />
-                        メンバー一覧
-                    </h2>
-                    <p className="text-muted-foreground text-center py-8">
-                        メンバー管理機能は次のフェーズで実装予定です
-                    </p>
-                </GlassCard>
+                <MembersTab teamId={teamId} teamConfig={teamConfig} />
             )}
 
             {activeTab === "alerts" && (
-                <GlassCard glowColor={teamConfig.color} className="p-6">
-                    <h2 className="text-xl font-semibold mb-6 flex items-center gap-2">
-                        <AlertTriangle className="h-5 w-5" style={{ color: teamConfig.color }} />
-                        アラート
-                    </h2>
-                    <p className="text-muted-foreground text-center py-8">
-                        アラート機能は次のフェーズで実装予定です
-                    </p>
-                </GlassCard>
+                <AlertsTab
+                    teamId={teamId}
+                    teamConfig={teamConfig}
+                    year={selectedYear}
+                    month={selectedMonth}
+                />
             )}
         </div>
+    );
+}
+
+// 目標設定タブコンポーネント（月間/クォーター対応）
+function GoalSettingTab({
+    teamId,
+    teamConfig,
+    funnelLabels,
+    selectedYear,
+    selectedMonth,
+}: {
+    teamId: TeamId;
+    teamConfig: { name: string; color: string };
+    funnelLabels: Record<string, string>;
+    selectedYear: number;
+    selectedMonth: number;
+}) {
+    const { user } = useAuth();
+    const [goalType, setGoalType] = useState<"monthly" | "quarterly">("monthly");
+    const [quarter, setQuarter] = useState(Math.ceil(selectedMonth / 3));
+    const [goal, setGoal] = useState<TeamGoal | null>(null);
+    const [goalInput, setGoalInput] = useState<FunnelKPI>(emptyFunnelKPI());
+    const [saving, setSaving] = useState(false);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        const load = async () => {
+            setLoading(true);
+            try {
+                let goalData: TeamGoal | null = null;
+                if (goalType === "monthly") {
+                    goalData = await getMonthlyGoal(teamId, selectedYear, selectedMonth);
+                } else {
+                    goalData = await getQuarterlyGoal(teamId, selectedYear, quarter);
+                }
+                setGoal(goalData);
+                if (goalData) {
+                    setGoalInput(goalData.goals);
+                } else {
+                    setGoalInput(emptyFunnelKPI());
+                }
+            } catch (error) {
+                console.error("目標取得エラー:", error);
+            } finally {
+                setLoading(false);
+            }
+        };
+        load();
+    }, [teamId, selectedYear, selectedMonth, quarter, goalType]);
+
+    const handleSave = async () => {
+        if (!user) return;
+        setSaving(true);
+        try {
+            if (goalType === "monthly") {
+                await setMonthlyGoal(teamId, selectedYear, selectedMonth, goalInput, user.uid);
+            } else {
+                await setQuarterlyGoal(teamId, selectedYear, quarter, goalInput, user.uid);
+            }
+            // 再読み込み
+            let goalData: TeamGoal | null = null;
+            if (goalType === "monthly") {
+                goalData = await getMonthlyGoal(teamId, selectedYear, selectedMonth);
+            } else {
+                goalData = await getQuarterlyGoal(teamId, selectedYear, quarter);
+            }
+            setGoal(goalData);
+            alert("目標を保存しました（承認待ち）");
+        } catch (error) {
+            console.error("目標保存エラー:", error);
+            alert("保存に失敗しました");
+        } finally {
+            setSaving(false);
+        }
+    };
+
+    if (loading) {
+        return (
+            <GlassCard glowColor={teamConfig.color} className="p-6">
+                <div className="flex items-center justify-center py-8">
+                    <Loader2 className="h-8 w-8 animate-spin" style={{ color: teamConfig.color }} />
+                </div>
+            </GlassCard>
+        );
+    }
+
+    return (
+        <GlassCard glowColor={teamConfig.color} className="p-6">
+            {/* タイプ選択 */}
+            <div className="flex items-center gap-4 mb-6">
+                <h2 className="text-xl font-semibold flex items-center gap-2">
+                    <Target className="h-5 w-5" style={{ color: teamConfig.color }} />
+                    目標設定
+                </h2>
+                <div className="flex gap-2 p-1 bg-white/5 rounded-lg">
+                    <button
+                        onClick={() => setGoalType("monthly")}
+                        className={`px-3 py-1 rounded-md text-sm transition-all ${goalType === "monthly"
+                            ? "bg-white/20 text-white"
+                            : "text-muted-foreground hover:bg-white/10"
+                            }`}
+                    >
+                        月間
+                    </button>
+                    <button
+                        onClick={() => setGoalType("quarterly")}
+                        className={`px-3 py-1 rounded-md text-sm transition-all ${goalType === "quarterly"
+                            ? "bg-white/20 text-white"
+                            : "text-muted-foreground hover:bg-white/10"
+                            }`}
+                    >
+                        クォーター
+                    </button>
+                </div>
+                {goalType === "quarterly" && (
+                    <select
+                        value={quarter}
+                        onChange={(e) => setQuarter(Number(e.target.value))}
+                        className="px-3 py-1 bg-white/5 border border-white/10 rounded-lg text-sm"
+                    >
+                        <option value={1}>Q1 (1-3月)</option>
+                        <option value={2}>Q2 (4-6月)</option>
+                        <option value={3}>Q3 (7-9月)</option>
+                        <option value={4}>Q4 (10-12月)</option>
+                    </select>
+                )}
+            </div>
+
+            {/* 期間表示 */}
+            <p className="text-muted-foreground text-sm mb-4">
+                {goalType === "monthly"
+                    ? `${selectedYear}年${selectedMonth}月`
+                    : `${selectedYear}年 Q${quarter}`}
+            </p>
+
+            {/* ステータス表示 */}
+            {goal && (
+                <div className="mb-4 flex items-center gap-2">
+                    <span
+                        className={`px-3 py-1 rounded-full text-sm ${goal.status === "approved"
+                            ? "bg-green-500/20 text-green-400"
+                            : goal.status === "pending"
+                                ? "bg-yellow-500/20 text-yellow-400"
+                                : "bg-gray-500/20 text-gray-400"
+                            }`}
+                    >
+                        {goal.status === "approved"
+                            ? "✓ 承認済み"
+                            : goal.status === "pending"
+                                ? "⏳ 承認待ち"
+                                : "下書き"}
+                    </span>
+                </div>
+            )}
+
+            {/* 入力フォーム */}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                {Object.entries(funnelLabels).map(([key, label]) => (
+                    <div key={key}>
+                        <label className="block text-sm text-muted-foreground mb-1">{label}</label>
+                        <input
+                            type="text"
+                            inputMode="numeric"
+                            pattern="[0-9]*"
+                            value={goalInput[key as keyof FunnelKPI] === 0 ? "" : goalInput[key as keyof FunnelKPI]}
+                            onChange={(e) => {
+                                const val = e.target.value;
+                                setGoalInput((prev) => ({
+                                    ...prev,
+                                    [key]: val === "" ? 0 : parseInt(val, 10) || 0,
+                                }));
+                            }}
+                            placeholder="0"
+                            className="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-lg"
+                        />
+                    </div>
+                ))}
+            </div>
+
+            {/* 保存ボタン */}
+            <div className="mt-6 flex justify-end">
+                <Button
+                    onClick={handleSave}
+                    disabled={saving}
+                    className="gap-2"
+                    style={{
+                        background: `linear-gradient(to right, ${teamConfig.color}, #a855f7)`,
+                    }}
+                >
+                    {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
+                    目標を保存（承認申請）
+                </Button>
+            </div>
+        </GlassCard>
+    );
+}
+
+// メンバータブコンポーネント
+function MembersTab({
+    teamId,
+    teamConfig,
+}: {
+    teamId: TeamId;
+    teamConfig: { name: string; color: string };
+}) {
+    const [members, setMembers] = useState<User[]>([]);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        const load = async () => {
+            setLoading(true);
+            try {
+                const data = await getTeamMembers(teamId);
+                setMembers(data);
+            } catch (error) {
+                console.error("メンバー取得エラー:", error);
+            } finally {
+                setLoading(false);
+            }
+        };
+        load();
+    }, [teamId]);
+
+    if (loading) {
+        return (
+            <GlassCard glowColor={teamConfig.color} className="p-6">
+                <div className="flex items-center justify-center py-8">
+                    <Loader2 className="h-8 w-8 animate-spin" style={{ color: teamConfig.color }} />
+                </div>
+            </GlassCard>
+        );
+    }
+
+    return (
+        <GlassCard glowColor={teamConfig.color} className="p-6">
+            <h2 className="text-xl font-semibold mb-6 flex items-center gap-2">
+                <Users className="h-5 w-5" style={{ color: teamConfig.color }} />
+                メンバー一覧
+                <span className="text-sm text-muted-foreground ml-2">({members.length}名)</span>
+            </h2>
+            {members.length === 0 ? (
+                <p className="text-muted-foreground text-center py-8">
+                    このチームにはまだメンバーがいません
+                </p>
+            ) : (
+                <div className="space-y-3">
+                    {members.map((member) => (
+                        <div
+                            key={member.uid}
+                            className="flex items-center gap-4 p-4 rounded-lg bg-white/5 border border-white/10 hover:bg-white/10 transition-colors"
+                        >
+                            <div
+                                className="w-10 h-10 rounded-full flex items-center justify-center text-lg font-bold"
+                                style={{ backgroundColor: `${teamConfig.color}40` }}
+                            >
+                                {member.displayName?.charAt(0) || "?"}
+                            </div>
+                            <div className="flex-1">
+                                <p className="font-medium">{member.displayName}</p>
+                                <p className="text-sm text-muted-foreground">
+                                    {member.realName && `(${member.realName})`}
+                                </p>
+                            </div>
+                            <div className="text-right text-sm">
+                                {member.currentStreak && member.currentStreak > 0 ? (
+                                    <span className="text-green-400">🔥 {member.currentStreak}日連続</span>
+                                ) : (
+                                    <span className="text-muted-foreground">ストリークなし</span>
+                                )}
+                            </div>
+                        </div>
+                    ))}
+                </div>
+            )}
+        </GlassCard>
+    );
+}
+
+// アラートタブコンポーネント
+function AlertsTab({
+    teamId,
+    teamConfig,
+    year,
+    month,
+}: {
+    teamId: TeamId;
+    teamConfig: { name: string; color: string };
+    year: number;
+    month: number;
+}) {
+    const [alerts, setAlerts] = useState<MemberAlert[]>([]);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        const load = async () => {
+            setLoading(true);
+            try {
+                const data = await getTeamAlerts(teamId, year, month);
+                setAlerts(data);
+            } catch (error) {
+                console.error("アラート取得エラー:", error);
+            } finally {
+                setLoading(false);
+            }
+        };
+        load();
+    }, [teamId, year, month]);
+
+    if (loading) {
+        return (
+            <GlassCard glowColor={teamConfig.color} className="p-6">
+                <div className="flex items-center justify-center py-8">
+                    <Loader2 className="h-8 w-8 animate-spin" style={{ color: teamConfig.color }} />
+                </div>
+            </GlassCard>
+        );
+    }
+
+    const criticalAlerts = alerts.filter((a) => a.severity === "critical");
+    const warningAlerts = alerts.filter((a) => a.severity === "warning");
+
+    return (
+        <GlassCard glowColor={teamConfig.color} className="p-6">
+            <h2 className="text-xl font-semibold mb-6 flex items-center gap-2">
+                <AlertTriangle className="h-5 w-5" style={{ color: teamConfig.color }} />
+                アラート
+                {alerts.length > 0 && (
+                    <span className="px-2 py-0.5 rounded-full text-sm bg-red-500/20 text-red-400">
+                        {alerts.length}件
+                    </span>
+                )}
+            </h2>
+            {alerts.length === 0 ? (
+                <div className="text-center py-8">
+                    <div className="text-4xl mb-2">✨</div>
+                    <p className="text-green-400 font-medium">問題なし！</p>
+                    <p className="text-muted-foreground text-sm">すべてのメンバーが正常に活動しています</p>
+                </div>
+            ) : (
+                <div className="space-y-4">
+                    {criticalAlerts.length > 0 && (
+                        <div>
+                            <h3 className="text-sm font-medium text-red-400 mb-2 flex items-center gap-2">
+                                🚨 重要 ({criticalAlerts.length}件)
+                            </h3>
+                            <div className="space-y-2">
+                                {criticalAlerts.map((alert, i) => (
+                                    <div
+                                        key={i}
+                                        className="p-4 rounded-lg bg-red-500/10 border border-red-500/30"
+                                    >
+                                        <div className="flex items-center justify-between">
+                                            <span className="font-medium">{alert.displayName}</span>
+                                            <span className="text-sm text-red-400">{alert.message}</span>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    )}
+                    {warningAlerts.length > 0 && (
+                        <div>
+                            <h3 className="text-sm font-medium text-yellow-400 mb-2 flex items-center gap-2">
+                                ⚠️ 注意 ({warningAlerts.length}件)
+                            </h3>
+                            <div className="space-y-2">
+                                {warningAlerts.map((alert, i) => (
+                                    <div
+                                        key={i}
+                                        className="p-4 rounded-lg bg-yellow-500/10 border border-yellow-500/30"
+                                    >
+                                        <div className="flex items-center justify-between">
+                                            <span className="font-medium">{alert.displayName}</span>
+                                            <span className="text-sm text-yellow-400">{alert.message}</span>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    )}
+                </div>
+            )}
+        </GlassCard>
     );
 }
 
