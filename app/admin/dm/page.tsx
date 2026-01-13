@@ -4,7 +4,7 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { useAuth } from "@/lib/auth-context";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
-import { MessageSquare, Send, Users, User, ArrowDown } from "lucide-react";
+import { MessageSquare, Send, Users, ArrowDown, ChevronLeft } from "lucide-react";
 import {
   subscribeToAdminDMWithUser,
   sendAdminDMToUser,
@@ -195,10 +195,20 @@ export default function AdminDMPage() {
 
   const groupedMessages = groupMessagesByDate(messages);
 
+  // メンバー選択時にチャットに切り替え
+  const handleSelectUser = (u: UserInfo) => {
+    setSelectedUser(u);
+  };
+
+  // モバイルでチャットからメンバーリストに戻る
+  const handleBackToList = () => {
+    setSelectedUser(null);
+  };
+
   return (
-    <div className="h-[calc(100vh-100px)] flex gap-4">
-      {/* 左サイドバー: メンバーリスト */}
-      <div className="w-80 flex-shrink-0 bg-white/5 backdrop-blur-sm rounded-2xl border border-white/10 flex flex-col overflow-hidden">
+    <div className="h-[calc(100vh-100px)] flex flex-col md:flex-row gap-0 md:gap-4">
+      {/* 左サイドバー: メンバーリスト - モバイルではselectedUserがいない時のみ表示 */}
+      <div className={`${selectedUser ? 'hidden md:flex' : 'flex'} w-full md:w-80 flex-shrink-0 bg-white/5 backdrop-blur-sm rounded-2xl border border-white/10 flex-col overflow-hidden`}>
         <div className="p-4 border-b border-white/10">
           <h2 className="font-semibold flex items-center gap-2">
             <Users className="w-5 h-5 text-purple-400" />
@@ -216,10 +226,10 @@ export default function AdminDMPage() {
               {users.map((u) => (
                 <button
                   key={u.uid}
-                  onClick={() => setSelectedUser(u)}
+                  onClick={() => handleSelectUser(u)}
                   className={`w-full text-left px-4 py-3 hover:bg-white/10 transition-colors border-l-4 ${selectedUser?.uid === u.uid
-                      ? 'bg-white/10 border-l-purple-500'
-                      : 'border-l-transparent'
+                    ? 'bg-white/10 border-l-purple-500'
+                    : 'border-l-transparent'
                     }`}
                 >
                   <div className="flex items-center justify-between">
@@ -241,9 +251,9 @@ export default function AdminDMPage() {
         </div>
       </div>
 
-      {/* 右側: チャットエリア */}
+      {/* 右側: チャットエリア - モバイルではselectedUserがいる時のみ表示 */}
       <div
-        className="flex-1 rounded-2xl overflow-hidden flex flex-col"
+        className={`${selectedUser ? 'flex' : 'hidden md:flex'} flex-1 rounded-2xl overflow-hidden flex-col`}
         style={{
           background: 'linear-gradient(180deg, #7ec8e3 0%, #a8d8ea 50%, #c8e6f0 100%)',
         }}
@@ -257,8 +267,15 @@ export default function AdminDMPage() {
           </div>
         ) : (
           <>
-            {/* チャットヘッダー */}
+            {/* チャットヘッダー - モバイルでは戻るボタン付き */}
             <header className="flex-shrink-0 flex items-center gap-3 px-4 py-3 bg-white/90 backdrop-blur-sm border-b border-slate-200">
+              {/* モバイル：戻るボタン */}
+              <button
+                onClick={handleBackToList}
+                className="md:hidden p-1 -ml-1 rounded-full hover:bg-slate-200 transition-colors"
+              >
+                <ChevronLeft className="w-6 h-6 text-slate-600" />
+              </button>
               <div
                 className="w-10 h-10 rounded-full flex items-center justify-center text-white font-bold"
                 style={{ backgroundColor: selectedUser.teamColor }}
@@ -322,8 +339,8 @@ export default function AdminDMPage() {
                           <div className={`flex items-end gap-1.5 max-w-[70%] ${msg.isAdmin ? 'flex-row-reverse' : ''}`}>
                             <div
                               className={`rounded-2xl px-3 py-2 shadow-sm ${msg.isAdmin
-                                  ? 'bg-[#5ac463] text-white rounded-tr-md'
-                                  : 'bg-white text-slate-800 rounded-tl-md'
+                                ? 'bg-[#5ac463] text-white rounded-tr-md'
+                                : 'bg-white text-slate-800 rounded-tl-md'
                                 }`}
                             >
                               <p className="text-[15px] leading-relaxed whitespace-pre-wrap break-words">
@@ -368,7 +385,7 @@ export default function AdminDMPage() {
             </AnimatePresence>
 
             {/* 入力エリア */}
-            <footer className="flex-shrink-0 bg-slate-100 border-t border-slate-300 px-3 py-2 flex items-center gap-2">
+            <footer className="flex-shrink-0 bg-slate-100 border-t border-slate-300 px-3 py-2 flex items-center gap-2" style={{ paddingBottom: 'max(env(safe-area-inset-bottom, 0px), 8px)' }}>
               <input
                 ref={inputRef}
                 type="text"
@@ -407,3 +424,4 @@ export default function AdminDMPage() {
     </div>
   );
 }
+
