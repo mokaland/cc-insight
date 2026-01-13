@@ -513,31 +513,39 @@ function GoalSettingTab({
         if (!user) return;
         setSaving(true);
         try {
-            // API経由で目標を提出（Slack通知も自動送信）
-            const response = await fetch("/api/goals/submit", {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                },
-                body: JSON.stringify({
-                    teamId,
-                    goalType,
-                    year: selectedYear,
-                    month: goalType === "monthly" ? selectedMonth : undefined,
-                    quarter: goalType === "quarterly" ? quarter : undefined,
-                    goals: goalInput,
-                    submittedBy: user.uid,
-                    submittedByName: userProfile?.displayName || user.email || "Unknown",
-                }),
-            });
-
-            const data = await response.json();
-
-            if (!response.ok) {
-                throw new Error(data.error || "目標提出に失敗しました");
+            // 1. クライアント側でFirestoreに保存
+            let goalId: string;
+            if (goalType === "monthly") {
+                const result = await setMonthlyGoal(teamId, selectedYear, selectedMonth, goalInput, user.uid);
+                goalId = result.id;
+            } else {
+                const result = await setQuarterlyGoal(teamId, selectedYear, quarter, goalInput, user.uid);
+                goalId = result.id;
             }
 
-            // 再読み込み
+            // 2. Slack通知API呼び出し（バックグラウンドで実行、失敗しても無視）
+            try {
+                await fetch("/api/goals/submit", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                    },
+                    body: JSON.stringify({
+                        goalId,
+                        teamId,
+                        goalType,
+                        year: selectedYear,
+                        month: goalType === "monthly" ? selectedMonth : undefined,
+                        quarter: goalType === "quarterly" ? quarter : undefined,
+                        submittedBy: userProfile?.displayName || user.email || "Unknown",
+                        goals: goalInput,
+                    }),
+                });
+            } catch (slackError) {
+                console.warn("Slack通知送信エラー（無視）:", slackError);
+            }
+
+            // 3. 再読み込み
             let goalData: TeamGoal | null = null;
             if (goalType === "monthly") {
                 goalData = await getMonthlyGoal(teamId, selectedYear, selectedMonth);
