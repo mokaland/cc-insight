@@ -4,7 +4,7 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { useAuth } from "@/lib/auth-context";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
-import { MessageSquare, Send, Users, ArrowDown, ChevronLeft } from "lucide-react";
+import { MessageSquare, Send, Users, ArrowDown, ChevronLeft, Search } from "lucide-react";
 import {
   subscribeToAdminDMWithUser,
   sendAdminDMToUser,
@@ -70,6 +70,7 @@ export default function AdminDMPage() {
   const [newMessage, setNewMessage] = useState("");
   const [sending, setSending] = useState(false);
   const [showScrollButton, setShowScrollButton] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -215,6 +216,17 @@ export default function AdminDMPage() {
             メンバー一覧
           </h2>
           <p className="text-xs text-muted-foreground mt-1">{users.length}人のメンバー</p>
+          {/* 検索欄 */}
+          <div className="mt-3 relative">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-slate-400" />
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="名前で検索..."
+              className="w-full pl-9 pr-3 py-2 bg-white/5 border border-white/10 rounded-lg text-sm placeholder:text-slate-500 focus:outline-none focus:border-purple-500/50"
+            />
+          </div>
         </div>
         <div className="flex-1 overflow-y-auto">
           {users.length === 0 ? (
@@ -223,29 +235,38 @@ export default function AdminDMPage() {
             </div>
           ) : (
             <div className="space-y-px">
-              {users.map((u) => (
-                <button
-                  key={u.uid}
-                  onClick={() => handleSelectUser(u)}
-                  className={`w-full text-left px-4 py-3 hover:bg-white/10 transition-colors border-l-4 ${selectedUser?.uid === u.uid
-                    ? 'bg-white/10 border-l-purple-500'
-                    : 'border-l-transparent'
-                    }`}
-                >
-                  <div className="flex items-center justify-between">
-                    <p className="font-medium text-sm truncate">{u.realName}（{u.displayName}）</p>
-                    <span
-                      className="text-xs px-2 py-0.5 rounded-full flex-shrink-0"
-                      style={{
-                        backgroundColor: `${u.teamColor}20`,
-                        color: u.teamColor
-                      }}
-                    >
-                      {u.teamName.replace('チーム', '')}
-                    </span>
-                  </div>
-                </button>
-              ))}
+              {users
+                .filter(u => {
+                  if (!searchQuery.trim()) return true;
+                  const query = searchQuery.toLowerCase();
+                  return (
+                    u.realName.toLowerCase().includes(query) ||
+                    u.displayName.toLowerCase().includes(query)
+                  );
+                })
+                .map((u) => (
+                  <button
+                    key={u.uid}
+                    onClick={() => handleSelectUser(u)}
+                    className={`w-full text-left px-4 py-3 hover:bg-white/10 transition-colors border-l-4 ${selectedUser?.uid === u.uid
+                      ? 'bg-white/10 border-l-purple-500'
+                      : 'border-l-transparent'
+                      }`}
+                  >
+                    <div className="flex items-center justify-between">
+                      <p className="font-medium text-sm truncate">{u.realName}（{u.displayName}）</p>
+                      <span
+                        className="text-xs px-2 py-0.5 rounded-full flex-shrink-0"
+                        style={{
+                          backgroundColor: `${u.teamColor}20`,
+                          color: u.teamColor
+                        }}
+                      >
+                        {u.teamName.replace('チーム', '')}
+                      </span>
+                    </div>
+                  </button>
+                ))}
             </div>
           )}
         </div>

@@ -218,14 +218,14 @@ function BottomNavigation() {
       href: "/admin/monitor",
     },
     {
-      label: "メンバー",
-      icon: Users,
-      href: "/admin/users",
+      label: "DM",
+      icon: MessageSquare,
+      href: "/admin/dm",
     },
     {
-      label: "ランキング",
-      icon: Trophy,
-      href: "/ranking",
+      label: "招待",
+      icon: Ticket,
+      href: "/admin/invitations",
     },
   ];
 
