@@ -72,76 +72,47 @@ const memberMobileNavItems = [
   },
 ];
 
-// 管理者専用ナビゲーション
+// 管理者専用ナビゲーション（整理後）
 const adminNavItems = [
   {
-    title: "Active Monitor",
-    subtitle: "離脱防止監視",
+    title: "📊 ダッシュボード",
+    subtitle: "監視・監査",
     href: "/admin/monitor",
     icon: Shield,
   },
   {
-    title: "監査ダッシュボード",
-    subtitle: "異常値・言行一致",
-    href: "/admin/audit",
-    icon: Search,
+    title: "👥 チーム",
+    subtitle: "副業・退職・スマホ",
+    href: "/dashboard?team=fukugyou",
+    icon: Briefcase,
   },
   {
-    title: "DMチャット",
+    title: "💬 DM",
     subtitle: "メンバーとやり取り",
     href: "/admin/dm",
     icon: MessageSquare,
   },
   {
-    title: "副業チーム",
-    subtitle: "IG / TT / YT",
-    href: "/dashboard/side-job",
-    icon: Briefcase,
-  },
-  {
-    title: "退職サポートチーム",
-    subtitle: "IG / TT / YT",
-    href: "/dashboard/resignation",
-    icon: LogOut,
-  },
-  {
-    title: "スマホ物販チーム",
-    subtitle: "X",
-    href: "/dashboard/smartphone",
-    icon: Smartphone,
-  },
-  {
-    title: "ランキング",
+    title: "🏆 ランキング",
+    subtitle: "全チーム比較",
     href: "/ranking",
     icon: Trophy,
   },
   {
-    title: "ユーザー管理",
-    subtitle: "承認・検索",
+    title: "👤 メンバー管理",
+    subtitle: "ユーザー・SNS",
     href: "/admin/users",
     icon: Users,
   },
   {
-    title: "招待コード",
+    title: "🎟️ 招待コード",
     subtitle: "発行・管理",
     href: "/admin/invitations",
     icon: Ticket,
   },
   {
-    title: "SNS承認",
-    subtitle: "アカウント確認",
-    href: "/admin/sns-approvals",
-    icon: CheckSquare,
-  },
-  {
-    title: "SNS検索",
-    subtitle: "メンバーのSNS確認",
-    href: "/admin/sns-search",
-    icon: Smartphone,
-  },
-  {
-    title: "AIフィードバック設定",
-    subtitle: "プロンプト編集",
+    title: "⚙️ 設定",
+    subtitle: "AI・システム",
     href: "/admin/prompts",
     icon: Sparkles,
   },
