@@ -95,3 +95,117 @@ export async function sendLocalNotification(
         tag: 'local-notification',
     });
 }
+
+/**
+ * プッシュ通知に購読（バックエンド通知用）
+ */
+export async function subscribeToPush(userId: string): Promise<boolean> {
+    try {
+        // 通知許可を確認
+        const permission = await requestNotificationPermission();
+        if (permission !== 'granted') {
+            console.log('🔔 [PWA] Push subscription failed - permission not granted');
+            return false;
+        }
+
+        // Service Worker取得
+        const registration = await navigator.serviceWorker.ready;
+
+        // VAPID公開キーを取得
+        const response = await fetch('/api/push/subscribe');
+        if (!response.ok) {
+            console.error('🔔 [PWA] Failed to get VAPID key');
+            return false;
+        }
+        const { vapidPublicKey } = await response.json();
+
+        if (!vapidPublicKey) {
+            console.error('🔔 [PWA] VAPID public key not available');
+            return false;
+        }
+
+        // URLSafe Base64をUint8Arrayに変換
+        const urlBase64ToUint8Array = (base64String: string) => {
+            const padding = '='.repeat((4 - base64String.length % 4) % 4);
+            const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
+            const rawData = window.atob(base64);
+            const outputArray = new Uint8Array(rawData.length);
+            for (let i = 0; i < rawData.length; ++i) {
+                outputArray[i] = rawData.charCodeAt(i);
+            }
+            return outputArray;
+        };
+
+        // Push Managerで購読
+        const subscription = await registration.pushManager.subscribe({
+            userVisibleOnly: true,
+            applicationServerKey: urlBase64ToUint8Array(vapidPublicKey),
+        });
+
+        // バックエンドに保存
+        const saveResponse = await fetch('/api/push/subscribe', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                userId,
+                subscription: subscription.toJSON(),
+                userAgent: navigator.userAgent,
+            }),
+        });
+
+        if (!saveResponse.ok) {
+            console.error('🔔 [PWA] Failed to save subscription');
+            return false;
+        }
+
+        console.log('🔔 [PWA] Push subscription successful');
+        return true;
+    } catch (error) {
+        console.error('🔔 [PWA] Push subscription error:', error);
+        return false;
+    }
+}
+
+/**
+ * プッシュ通知の購読を解除
+ */
+export async function unsubscribeFromPush(): Promise<boolean> {
+    try {
+        const registration = await navigator.serviceWorker.ready;
+        const subscription = await registration.pushManager.getSubscription();
+
+        if (!subscription) {
+            console.log('🔔 [PWA] No active subscription');
+            return true;
+        }
+
+        await subscription.unsubscribe();
+        console.log('🔔 [PWA] Unsubscribed from push');
+        return true;
+    } catch (error) {
+        console.error('🔔 [PWA] Unsubscribe error:', error);
+        return false;
+    }
+}
+
+/**
+ * 現在のプッシュ購読状態を取得
+ */
+export async function getPushSubscriptionStatus(): Promise<'subscribed' | 'not-subscribed' | 'denied' | 'unsupported'> {
+    if (typeof window === 'undefined' || !('serviceWorker' in navigator) || !('PushManager' in window)) {
+        return 'unsupported';
+    }
+
+    if (Notification.permission === 'denied') {
+        return 'denied';
+    }
+
+    try {
+        const registration = await navigator.serviceWorker.ready;
+        const subscription = await registration.pushManager.getSubscription();
+        return subscription ? 'subscribed' : 'not-subscribed';
+    } catch {
+        return 'not-subscribed';
+    }
+}
+
