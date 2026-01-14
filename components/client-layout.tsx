@@ -16,6 +16,7 @@ import { DailyLoginModal } from "@/components/daily-login-modal";
 import { motion, AnimatePresence } from "framer-motion";
 import { subscribeToUnreadCount } from "@/lib/services/dm";
 import { PageTransition } from "@/components/page-transition";
+import { BGMProvider } from "@/components/bgm-provider";
 
 // 完全公開ページ（認証不要・サイドバー非表示・ボトムナビ非表示）
 const publicPages = ["/login", "/register", "/verify-email", "/pending-approval", "/admin/login"];
@@ -505,7 +506,9 @@ function BottomNavigation() {
 export function ClientLayout({ children }: { children: React.ReactNode }) {
   return (
     <AuthProvider>
-      <LayoutContent>{children}</LayoutContent>
+      <BGMProvider>
+        <LayoutContent>{children}</LayoutContent>
+      </BGMProvider>
     </AuthProvider>
   );
 }
