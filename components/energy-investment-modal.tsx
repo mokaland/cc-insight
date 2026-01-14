@@ -229,6 +229,32 @@ export default function EnergyInvestmentModal({
   const [currentEvolutionIndex, setCurrentEvolutionIndex] = useState(0);
   const [finalNewStage, setFinalNewStage] = useState<number | null>(null);
 
+  // ボディスクロールロック（成功アニメーション・進化アニメーション表示中）
+  useEffect(() => {
+    if (showSuccessAnimation || showEvolutionAnimation) {
+      // スクロールをロック
+      const originalOverflow = document.body.style.overflow;
+      const originalPosition = document.body.style.position;
+      const originalWidth = document.body.style.width;
+      const originalTop = document.body.style.top;
+      const scrollY = window.scrollY;
+
+      document.body.style.overflow = 'hidden';
+      document.body.style.position = 'fixed';
+      document.body.style.width = '100%';
+      document.body.style.top = `-${scrollY}px`;
+
+      return () => {
+        // スクロールを復元
+        document.body.style.overflow = originalOverflow;
+        document.body.style.position = originalPosition;
+        document.body.style.width = originalWidth;
+        document.body.style.top = originalTop;
+        window.scrollTo(0, scrollY);
+      };
+    }
+  }, [showSuccessAnimation, showEvolutionAnimation]);
+
   // タップで花火を追加
   const handleTapFirework = (e: React.MouseEvent<HTMLDivElement>) => {
     if (evolutionPhase !== "finale") return;
@@ -379,8 +405,17 @@ export default function EnergyInvestmentModal({
 
     return (
       <div
-        className="fixed inset-0 bg-gradient-to-b from-slate-950 via-indigo-950/95 to-slate-950 flex flex-col items-center justify-center z-[9999]"
-        style={{ width: "100vw", left: 0, right: 0 }}
+        className="fixed inset-0 bg-gradient-to-b from-slate-950 via-indigo-950/95 to-slate-950 flex flex-col items-center justify-center z-[9999] overflow-hidden"
+        style={{
+          width: "100vw",
+          height: "100dvh",
+          minHeight: "100vh",
+          left: 0,
+          right: 0,
+          top: 0,
+          paddingTop: "env(safe-area-inset-top, 0px)",
+          touchAction: "none"
+        }}
         onClick={handleSkip}
       >
         {/* スキップボタン（右下に配置） */}
