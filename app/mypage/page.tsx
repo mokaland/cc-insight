@@ -461,20 +461,13 @@ export default function MyPage() {
 
       {/* 🎯 レベル & 称号 - リデザイン */}
       <div className="bg-gradient-to-r from-yellow-500/10 via-amber-500/10 to-orange-500/10 border border-yellow-500/30 rounded-xl p-4">
-        <div className="flex items-center justify-between mb-2">
-          <div className="flex items-baseline gap-2">
-            <span className="text-3xl font-extrabold bg-gradient-to-r from-yellow-400 via-amber-400 to-orange-400 bg-clip-text text-transparent">
-              Lv.{currentLevel}
-            </span>
-            <span className="text-sm font-medium text-purple-400">
-              {levelTitle}
-            </span>
-          </div>
-          {todayReported && todayEnergy > 0 && (
-            <span className="text-sm font-bold text-yellow-400">
-              +{todayEnergy}E
-            </span>
-          )}
+        <div className="flex items-baseline gap-2 mb-2">
+          <span className="text-3xl font-extrabold bg-gradient-to-r from-yellow-400 via-amber-400 to-orange-400 bg-clip-text text-transparent">
+            Lv.{currentLevel}
+          </span>
+          <span className="text-sm font-medium text-purple-400">
+            {levelTitle}
+          </span>
         </div>
         {levelProgress && (
           <div className="space-y-1">
@@ -488,7 +481,7 @@ export default function MyPage() {
               />
             </div>
             <p className="text-xs text-slate-400 text-right">
-              {levelProgress.currentEnergy}E / {levelProgress.requiredForNext}E
+              あと <span className="text-yellow-400 font-medium">{levelProgress.remaining}E</span> でLv.{currentLevel + 1}
             </p>
           </div>
         )}
