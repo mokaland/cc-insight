@@ -720,60 +720,6 @@ export default function MyPage() {
         </div >
       </GlassCard >
 
-      {/* 🏅 獲得バッジ */}
-      {profile && (
-        <GlassCard className="p-3">
-          <div className="flex items-center gap-2 mb-3">
-            <Crown className="w-4 h-4 text-yellow-400" />
-            <h3 className="text-sm font-bold text-slate-200">獲得バッジ</h3>
-          </div>
-          <div className="flex flex-wrap gap-2">
-            {/* レベルバッジ */}
-            {currentLevel >= 5 && (
-              <div className="px-2 py-1 rounded-lg bg-purple-500/20 border border-purple-500/30 flex items-center gap-1">
-                <span className="text-xs">⭐</span>
-                <span className="text-[10px] text-purple-300 font-medium">Lv.{currentLevel}達成</span>
-              </div>
-            )}
-
-            {/* ストリークバッジ */}
-            {profile.streak.current >= 7 && (
-              <div className="px-2 py-1 rounded-lg bg-orange-500/20 border border-orange-500/30 flex items-center gap-1">
-                <span className="text-xs">🔥</span>
-                <span className="text-[10px] text-orange-300 font-medium">{profile.streak.current}日連続</span>
-              </div>
-            )}
-            {profile.streak.max >= 30 && (
-              <div className="px-2 py-1 rounded-lg bg-red-500/20 border border-red-500/30 flex items-center gap-1">
-                <span className="text-xs">💪</span>
-                <span className="text-[10px] text-red-300 font-medium">継続マスター</span>
-              </div>
-            )}
-
-            {/* 守護神コンプリートバッジ */}
-            {Object.values(profile.guardians).filter(g => g?.unlocked).length >= 3 && (
-              <div className="px-2 py-1 rounded-lg bg-cyan-500/20 border border-cyan-500/30 flex items-center gap-1">
-                <span className="text-xs">🛡️</span>
-                <span className="text-[10px] text-cyan-300 font-medium">守護神収集家</span>
-              </div>
-            )}
-
-            {/* 究極体バッジ */}
-            {Object.values(profile.guardians).some(g => g?.stage === 4) && (
-              <div className="px-2 py-1 rounded-lg bg-gradient-to-r from-yellow-500/20 to-amber-500/20 border border-yellow-500/30 flex items-center gap-1">
-                <span className="text-xs">👑</span>
-                <span className="text-[10px] text-yellow-300 font-medium">究極体持ち</span>
-              </div>
-            )}
-
-            {/* バッジがない場合 */}
-            {currentLevel < 5 && profile.streak.current < 7 && (
-              <p className="text-[10px] text-slate-500">まだバッジがありません。報告を続けてバッジを獲得しよう！</p>
-            )}
-          </div>
-        </GlassCard>
-      )}
-
       {/* 📊 6カード統合グリッド（3x2） - PWAモバイル対応・同サイズ統一 */}
       <div className="grid gap-2" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)' }}>
         {/* 保有エナジー */}
@@ -848,6 +794,60 @@ export default function MyPage() {
           </p>
         </motion.div>
       </div>
+
+      {/* 🏅 獲得バッジ */}
+      {profile && (
+        <GlassCard className="p-3">
+          <div className="flex items-center gap-2 mb-3">
+            <Crown className="w-4 h-4 text-yellow-400" />
+            <h3 className="text-sm font-bold text-slate-200">獲得バッジ</h3>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            {/* レベルバッジ */}
+            {currentLevel >= 5 && (
+              <div className="px-2 py-1 rounded-lg bg-purple-500/20 border border-purple-500/30 flex items-center gap-1">
+                <span className="text-xs">⭐</span>
+                <span className="text-[10px] text-purple-300 font-medium">Lv.{currentLevel}達成</span>
+              </div>
+            )}
+
+            {/* ストリークバッジ */}
+            {profile.streak.current >= 7 && (
+              <div className="px-2 py-1 rounded-lg bg-orange-500/20 border border-orange-500/30 flex items-center gap-1">
+                <span className="text-xs">🔥</span>
+                <span className="text-[10px] text-orange-300 font-medium">{profile.streak.current}日連続</span>
+              </div>
+            )}
+            {profile.streak.max >= 30 && (
+              <div className="px-2 py-1 rounded-lg bg-red-500/20 border border-red-500/30 flex items-center gap-1">
+                <span className="text-xs">💪</span>
+                <span className="text-[10px] text-red-300 font-medium">継続マスター</span>
+              </div>
+            )}
+
+            {/* 守護神コンプリートバッジ */}
+            {Object.values(profile.guardians).filter(g => g?.unlocked).length >= 3 && (
+              <div className="px-2 py-1 rounded-lg bg-cyan-500/20 border border-cyan-500/30 flex items-center gap-1">
+                <span className="text-xs">🛡️</span>
+                <span className="text-[10px] text-cyan-300 font-medium">守護神収集家</span>
+              </div>
+            )}
+
+            {/* 究極体バッジ */}
+            {Object.values(profile.guardians).some(g => g?.stage === 4) && (
+              <div className="px-2 py-1 rounded-lg bg-gradient-to-r from-yellow-500/20 to-amber-500/20 border border-yellow-500/30 flex items-center gap-1">
+                <span className="text-xs">👑</span>
+                <span className="text-[10px] text-yellow-300 font-medium">究極体持ち</span>
+              </div>
+            )}
+
+            {/* バッジがない場合 */}
+            {currentLevel < 5 && profile.streak.current < 7 && (
+              <p className="text-[10px] text-slate-500">まだバッジがありません。報告を続けてバッジを獲得しよう！</p>
+            )}
+          </div>
+        </GlassCard>
+      )}
 
       {/* 📱 SNSアカウント設定 - 折りたたみ式 */}
       <div className="glass-bg rounded-xl border border-blue-500/20 overflow-hidden">
