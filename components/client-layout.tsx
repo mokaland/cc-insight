@@ -463,20 +463,15 @@ function BottomNavigation() {
                     </motion.span>
                   )}
                 </motion.div>
-                {/* ラベル - アクティブ時のみ表示 */}
-                <AnimatePresence>
-                  {isActive && (
-                    <motion.span
-                      initial={{ opacity: 0, y: 5 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      exit={{ opacity: 0, y: 5 }}
-                      transition={{ duration: 0.15 }}
-                      className="text-[10px] font-medium text-pink-400 mt-0.5"
-                    >
-                      {item.label}
-                    </motion.span>
+                {/* ラベル - 常時表示 */}
+                <span
+                  className={cn(
+                    "text-[10px] font-medium mt-0.5 transition-colors",
+                    isActive ? "text-pink-400" : "text-slate-400"
                   )}
-                </AnimatePresence>
+                >
+                  {item.label}
+                </span>
               </motion.button>
             );
           })}
