@@ -1,10 +1,10 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useAuth } from "@/lib/auth-context";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
-import { ArrowLeft, Crown, Star, Target, Zap, Trophy, Sparkles } from "lucide-react";
+import { ArrowLeft, Crown, Target, Zap, Trophy, Sparkles, ChevronRight, MapPin } from "lucide-react";
 import Link from "next/link";
 import { getUserGuardianProfile } from "@/lib/firestore";
 import {
@@ -14,27 +14,19 @@ import {
     MAX_LEVEL,
     ENERGY_PER_LEVEL,
 } from "@/lib/guardian-collection";
+import {
+    MILESTONE_DEFINITIONS,
+    getMilestoneByLevel,
+    getNextMilestone,
+} from "@/lib/level-milestones";
 import { PageLoader } from "@/components/ui/loading-spinner";
 
-// 称号マイルストーン定義
-const LEVEL_MILESTONES = [
-    { level: 1, title: "ルーキー", emoji: "🌱", description: "冒険の始まり", color: "#94a3b8" },
-    { level: 5, title: "見習い", emoji: "🔰", description: "少しずつ成長中", color: "#22c55e" },
-    { level: 10, title: "冒険者", emoji: "⚔️", description: "本格的な冒険者", color: "#3b82f6" },
-    { level: 25, title: "チャレンジャー", emoji: "🎯", description: "挑戦を恐れない", color: "#8b5cf6" },
-    { level: 50, title: "ベテラン", emoji: "🛡️", description: "経験豊富な実力者", color: "#f59e0b" },
-    { level: 100, title: "エキスパート", emoji: "⭐", description: "100の壁を突破", color: "#ef4444" },
-    { level: 200, title: "マスター", emoji: "👑", description: "真のマスター", color: "#ec4899" },
-    { level: 300, title: "英雄", emoji: "🦸", description: "伝説への道を歩む", color: "#14b8a6" },
-    { level: 500, title: "伝説の勇者", emoji: "🌟", description: "伝説に名を刻む者", color: "#fbbf24" },
-    { level: 999, title: "神", emoji: "✨", description: "究極の存在", color: "#a855f7" },
-];
-
 export default function LevelPage() {
-    const { user, userProfile, loading: authLoading } = useAuth();
+    const { user, loading: authLoading } = useAuth();
     const router = useRouter();
     const [guardianProfile, setGuardianProfile] = useState<any>(null);
     const [loading, setLoading] = useState(true);
+    const currentMilestoneRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
         async function loadData() {
@@ -51,6 +43,18 @@ export default function LevelPage() {
         loadData();
     }, [user?.uid]);
 
+    // 現在のマイルストーンにスクロール
+    useEffect(() => {
+        if (!loading && currentMilestoneRef.current) {
+            setTimeout(() => {
+                currentMilestoneRef.current?.scrollIntoView({
+                    behavior: "smooth",
+                    block: "center",
+                });
+            }, 500);
+        }
+    }, [loading]);
+
     if (authLoading || loading) {
         return <PageLoader text="レベル情報を読み込み中..." />;
     }
@@ -66,12 +70,12 @@ export default function LevelPage() {
     const currentTitle = getLevelTitle(currentLevel);
 
     // 全体の進捗率を計算（レベル999まで）
-    const maxEnergy = (MAX_LEVEL - 1) * ENERGY_PER_LEVEL; // 199,800E
+    const maxEnergy = (MAX_LEVEL - 1) * ENERGY_PER_LEVEL;
     const overallProgress = Math.min(100, (totalEarned / maxEnergy) * 100);
 
-    // 現在のマイルストーンを取得
-    const currentMilestone = LEVEL_MILESTONES.filter((m) => currentLevel >= m.level).pop();
-    const nextMilestone = LEVEL_MILESTONES.find((m) => currentLevel < m.level);
+    // 現在と次のマイルストーン
+    const currentMilestone = getMilestoneByLevel(currentLevel);
+    const nextMilestone = getNextMilestone(currentLevel);
 
     return (
         <div className="space-y-6 pb-24">
@@ -152,136 +156,143 @@ export default function LevelPage() {
 
             {/* 次のマイルストーンまで */}
             {nextMilestone && (
-                <div className="glass-card rounded-xl p-4 border-2" style={{ borderColor: `${nextMilestone.color}40` }}>
-                    <div className="flex items-center justify-between mb-3">
-                        <div className="flex items-center gap-2">
-                            <Trophy className="w-4 h-4" style={{ color: nextMilestone.color }} />
-                            <span className="text-sm font-medium text-white">次の称号まで</span>
+                <Link href={`/level/${nextMilestone.id}`}>
+                    <div
+                        className="glass-card rounded-xl p-4 border-2 cursor-pointer hover:bg-white/5 transition-all"
+                        style={{ borderColor: `${nextMilestone.color}40` }}
+                    >
+                        <div className="flex items-center justify-between mb-3">
+                            <div className="flex items-center gap-2">
+                                <Trophy className="w-4 h-4" style={{ color: nextMilestone.color }} />
+                                <span className="text-sm font-medium text-white">次の称号まで</span>
+                            </div>
+                            <div className="flex items-center gap-1">
+                                <span className="text-lg">{nextMilestone.emoji}</span>
+                                <span className="text-sm font-bold" style={{ color: nextMilestone.color }}>
+                                    {nextMilestone.title}
+                                </span>
+                                <ChevronRight className="w-4 h-4 text-slate-400" />
+                            </div>
                         </div>
-                        <div className="flex items-center gap-1">
-                            <span className="text-lg">{nextMilestone.emoji}</span>
-                            <span className="text-sm font-bold" style={{ color: nextMilestone.color }}>
-                                {nextMilestone.title}
-                            </span>
+                        <div className="h-3 bg-slate-700/50 rounded-full overflow-hidden mb-2">
+                            <motion.div
+                                initial={{ width: 0 }}
+                                animate={{
+                                    width: `${Math.min(100, (currentLevel / nextMilestone.level) * 100)}%`,
+                                }}
+                                transition={{ duration: 1, ease: "easeOut" }}
+                                className="h-full rounded-full"
+                                style={{ background: `linear-gradient(90deg, ${nextMilestone.color}80, ${nextMilestone.color})` }}
+                            />
                         </div>
+                        <p className="text-xs text-slate-400 text-right">
+                            あと <span className="font-bold" style={{ color: nextMilestone.color }}>
+                                {nextMilestone.level - currentLevel}レベル
+                            </span>（{((nextMilestone.level - currentLevel) * ENERGY_PER_LEVEL).toLocaleString()}E）
+                        </p>
                     </div>
-                    <div className="h-3 bg-slate-700/50 rounded-full overflow-hidden mb-2">
-                        <motion.div
-                            initial={{ width: 0 }}
-                            animate={{
-                                width: `${Math.min(100, (currentLevel / nextMilestone.level) * 100)}%`,
-                            }}
-                            transition={{ duration: 1, ease: "easeOut" }}
-                            className="h-full rounded-full"
-                            style={{ background: `linear-gradient(90deg, ${nextMilestone.color}80, ${nextMilestone.color})` }}
-                        />
-                    </div>
-                    <p className="text-xs text-slate-400 text-right">
-                        あと <span className="font-bold" style={{ color: nextMilestone.color }}>
-                            {nextMilestone.level - currentLevel}レベル
-                        </span>（{((nextMilestone.level - currentLevel) * ENERGY_PER_LEVEL).toLocaleString()}E）
-                    </p>
-                </div>
+                </Link>
             )}
 
-            {/* 全体の進捗 */}
+            {/* 全体の進捗 - ビジュアルマップ */}
             <div className="glass-card rounded-xl p-4">
-                <div className="flex items-center justify-between mb-3">
+                <div className="flex items-center justify-between mb-4">
                     <div className="flex items-center gap-2">
                         <Sparkles className="w-4 h-4 text-purple-400" />
-                        <span className="text-sm font-medium text-white">MAXレベルへの道</span>
+                        <span className="text-sm font-medium text-white">冒険の地図</span>
                     </div>
-                    <span className="text-sm text-slate-400">Lv.{MAX_LEVEL}</span>
+                    <span className="text-xs text-slate-400">Lv.{MAX_LEVEL}まで {overallProgress.toFixed(1)}%</span>
                 </div>
-                <div className="h-2 bg-slate-700/50 rounded-full overflow-hidden mb-2">
-                    <motion.div
-                        initial={{ width: 0 }}
-                        animate={{ width: `${overallProgress}%` }}
-                        transition={{ duration: 1.5, ease: "easeOut" }}
-                        className="h-full bg-gradient-to-r from-purple-500 via-pink-500 to-amber-500 rounded-full"
-                    />
-                </div>
-                <p className="text-xs text-slate-400 text-right">
-                    全体の <span className="text-purple-400 font-bold">{overallProgress.toFixed(2)}%</span> 達成
-                </p>
-            </div>
 
-            {/* レベルロードマップ */}
-            <div className="space-y-3">
-                <h3 className="text-lg font-bold text-white flex items-center gap-2">
-                    <Crown className="w-5 h-5 text-yellow-400" />
-                    称号ロードマップ
-                </h3>
+                {/* ビジュアルマップ */}
+                <div className="relative">
+                    {/* 道 */}
+                    <div className="absolute left-5 top-0 bottom-0 w-0.5 bg-gradient-to-b from-yellow-500 via-purple-500 to-slate-700" />
 
-                <div className="space-y-2">
-                    {LEVEL_MILESTONES.map((milestone, index) => {
-                        const isAchieved = currentLevel >= milestone.level;
-                        const isCurrent = currentMilestone?.level === milestone.level;
-                        const isNext = nextMilestone?.level === milestone.level;
+                    <div className="space-y-0">
+                        {MILESTONE_DEFINITIONS.map((milestone, index) => {
+                            const isAchieved = currentLevel >= milestone.level;
+                            const isCurrent = currentMilestone?.id === milestone.id;
+                            const isNext = nextMilestone?.id === milestone.id;
 
-                        return (
-                            <motion.div
-                                key={milestone.level}
-                                initial={{ opacity: 0, x: -20 }}
-                                animate={{ opacity: 1, x: 0 }}
-                                transition={{ delay: index * 0.05 }}
-                                className={`flex items-center gap-3 p-3 rounded-lg border transition-all ${isCurrent
-                                        ? "bg-gradient-to-r from-yellow-500/20 to-amber-500/10 border-yellow-500/50"
-                                        : isAchieved
-                                            ? "bg-green-500/10 border-green-500/30"
-                                            : isNext
-                                                ? "bg-white/5 border-white/20"
-                                                : "bg-slate-800/30 border-slate-700/30 opacity-60"
-                                    }`}
-                            >
-                                {/* マイルストーンマーカー */}
-                                <div
-                                    className={`w-10 h-10 rounded-full flex items-center justify-center text-lg ${isAchieved
-                                            ? "bg-gradient-to-br"
-                                            : "bg-slate-700/50"
-                                        }`}
-                                    style={
-                                        isAchieved
-                                            ? { background: `linear-gradient(135deg, ${milestone.color}40, ${milestone.color}20)`, borderColor: milestone.color, borderWidth: 2 }
-                                            : {}
-                                    }
-                                >
-                                    {isAchieved ? milestone.emoji : "🔒"}
-                                </div>
-
-                                {/* テキスト */}
-                                <div className="flex-1">
-                                    <div className="flex items-center gap-2">
-                                        <span
-                                            className={`font-bold ${isAchieved ? "" : "text-slate-500"}`}
-                                            style={{ color: isAchieved ? milestone.color : undefined }}
-                                        >
-                                            {milestone.title}
-                                        </span>
-                                        {isCurrent && (
-                                            <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-yellow-500/20 text-yellow-400">
-                                                NOW
-                                            </span>
-                                        )}
-                                    </div>
-                                    <p className="text-xs text-slate-400">{milestone.description}</p>
-                                </div>
-
-                                {/* レベル */}
-                                <div className="text-right">
-                                    <span
-                                        className={`text-sm font-bold ${isAchieved ? "" : "text-slate-500"}`}
-                                        style={{ color: isAchieved ? milestone.color : undefined }}
+                            return (
+                                <Link key={milestone.id} href={`/level/${milestone.id}`}>
+                                    <motion.div
+                                        ref={isCurrent ? currentMilestoneRef : null}
+                                        initial={{ opacity: 0, x: -20 }}
+                                        animate={{ opacity: 1, x: 0 }}
+                                        transition={{ delay: index * 0.03 }}
+                                        className={`relative flex items-center gap-3 py-3 px-2 rounded-lg cursor-pointer transition-all hover:bg-white/5 ${isCurrent ? "bg-gradient-to-r from-yellow-500/15 to-transparent" : ""
+                                            }`}
                                     >
-                                        Lv.{milestone.level}
-                                    </span>
-                                    <p className="text-[10px] text-slate-500">
-                                        {((milestone.level - 1) * ENERGY_PER_LEVEL).toLocaleString()}E
-                                    </p>
-                                </div>
-                            </motion.div>
-                        );
-                    })}
+                                        {/* マーカー */}
+                                        <div className="relative z-10">
+                                            {isCurrent ? (
+                                                <motion.div
+                                                    animate={{ scale: [1, 1.2, 1] }}
+                                                    transition={{ repeat: Infinity, duration: 2 }}
+                                                    className="w-10 h-10 rounded-full flex items-center justify-center"
+                                                    style={{
+                                                        background: `linear-gradient(135deg, ${milestone.color}, ${milestone.color}80)`,
+                                                        boxShadow: `0 0 20px ${milestone.color}60`,
+                                                    }}
+                                                >
+                                                    <MapPin className="w-5 h-5 text-white" />
+                                                </motion.div>
+                                            ) : (
+                                                <div
+                                                    className={`w-10 h-10 rounded-full flex items-center justify-center text-lg border-2 ${isAchieved
+                                                            ? ""
+                                                            : "bg-slate-800 border-slate-600"
+                                                        }`}
+                                                    style={
+                                                        isAchieved
+                                                            ? {
+                                                                background: `linear-gradient(135deg, ${milestone.color}30, ${milestone.color}10)`,
+                                                                borderColor: milestone.color,
+                                                            }
+                                                            : {}
+                                                    }
+                                                >
+                                                    {isAchieved ? milestone.emoji : "🔒"}
+                                                </div>
+                                            )}
+                                        </div>
+
+                                        {/* コンテンツ */}
+                                        <div className="flex-1 min-w-0">
+                                            <div className="flex items-center gap-2">
+                                                <span
+                                                    className={`font-bold text-sm truncate ${isAchieved ? "" : "text-slate-500"
+                                                        }`}
+                                                    style={{ color: isAchieved ? milestone.color : undefined }}
+                                                >
+                                                    {milestone.title}
+                                                </span>
+                                                {isCurrent && (
+                                                    <span className="flex-shrink-0 text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-yellow-500/20 text-yellow-400 border border-yellow-500/40">
+                                                        現在地
+                                                    </span>
+                                                )}
+                                            </div>
+                                            <p className="text-[11px] text-slate-400 truncate">{milestone.theme}</p>
+                                        </div>
+
+                                        {/* レベル */}
+                                        <div className="flex items-center gap-1">
+                                            <span
+                                                className={`text-xs font-bold ${isAchieved ? "" : "text-slate-500"}`}
+                                                style={{ color: isAchieved ? milestone.color : undefined }}
+                                            >
+                                                {milestone.levelRange}
+                                            </span>
+                                            <ChevronRight className="w-4 h-4 text-slate-500" />
+                                        </div>
+                                    </motion.div>
+                                </Link>
+                            );
+                        })}
+                    </div>
                 </div>
             </div>
 
@@ -293,7 +304,7 @@ export default function LevelPage() {
                         <p className="font-bold text-purple-400 mb-1">レベルアップのコツ</p>
                         <p className="text-xs text-slate-300 leading-relaxed">
                             毎日の日報報告でエナジーを獲得！ストリーク（連続報告）を維持すると
-                            ボーナスエナジーがもらえます。守護神の特性も活用しよう！
+                            ボーナスエナジーがもらえます。各称号をタップして詳細を確認しよう！
                         </p>
                     </div>
                 </div>
