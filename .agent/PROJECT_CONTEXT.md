@@ -1,6 +1,6 @@
 # CC-Insight プロジェクト状態ドキュメント
 
-**最終更新**: 2026-01-15 05:30 JST
+**最終更新**: 2026-01-15 06:20 JST
 **現在のブランチ**: `staging` (メジャーアップデート作業中)
 
 > ⚠️ **重要**: 現在は`staging`ブランチで大幅な改修を行っています。`main`へのマージ前にこのドキュメントを確認してください。
@@ -41,8 +41,31 @@
 | ファイル | 変更内容 |
 |----------|----------|
 | `firestore.rules` | energy_history adminwrite許可、scheduled_feedbacksルール追加 |
-| `vercel.json` | process-feedbacks Cronスケジュール追加（毎分） |
+| `vercel.json` | process-feedbacks Cronスケジュール追加（毎分）、month-end-judgment追加 |
 | `.agent/workflows/絶対遵守ルール.md` | 第0章追加（新チャット開始時のコンテキスト確認） |
+
+#### 追加作業（06:00以降）
+
+| カテゴリ | 内容 |
+|----------|------|
+| **month-end-judgment修正** | vercel.jsonにスケジュール追加（28-31日）、コード内で実際の月末かチェック |
+| **スラッシュコマンド追加** | 9つのワークフロー作成（ヘルプ, 新機能, バグ修正, 調整, 確認, 反映, 本番リリース, 記録, 状況） |
+| **グローバルルール更新** | `~/.gemini/絶対遵守ルール.md` に「ワークフローセットアップ」セクション追加 |
+| **継続性確保** | 新プロジェクトで「スラッシュコマンドを追加して」と言えばワークフローが追加される仕組み |
+
+#### 新規作成ワークフロー
+
+| ファイル | 用途 |
+|----------|------|
+| `.agent/workflows/ヘルプ.md` | コマンド一覧を表示 |
+| `.agent/workflows/新機能.md` | 新しい機能を追加するフロー |
+| `.agent/workflows/バグ修正.md` | バグを修正するフロー |
+| `.agent/workflows/調整.md` | 見た目や細かい変更 |
+| `.agent/workflows/確認.md` | ビルドチェック |
+| `.agent/workflows/反映.md` | stagingにデプロイ |
+| `.agent/workflows/本番リリース.md` | mainにマージ |
+| `.agent/workflows/記録.md` | 今日の作業を記録 |
+| `.agent/workflows/状況.md` | プロジェクトの現状確認 |
 
 ---
 
