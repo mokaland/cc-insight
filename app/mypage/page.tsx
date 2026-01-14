@@ -25,7 +25,7 @@ import {
   PROFILE_COMPLETION_BONUS
 } from "@/lib/guardian-collection";
 import { getUserSnsAccounts, saveSnsAccount, saveSnsAccounts } from "@/lib/firestore";
-import { Sparkles, Crown, Settings, Check, Gift, Clock, AlertCircle, Zap, ArrowRight, ChevronDown } from "lucide-react";
+import { Sparkles, Crown, Settings, Check, Gift, Clock, AlertCircle, Zap, ArrowRight, ChevronDown, ChevronRight } from "lucide-react";
 import EnergyInvestmentModal from "@/components/energy-investment-modal";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -459,33 +459,38 @@ export default function MyPage() {
         isFirstDay={isFirstDay}
       />
 
-      {/* 🎯 レベル & 称号 - リデザイン */}
-      <div className="bg-gradient-to-r from-yellow-500/10 via-amber-500/10 to-orange-500/10 border border-yellow-500/30 rounded-xl p-4">
-        <div className="flex items-baseline gap-2 mb-2">
-          <span className="text-3xl font-extrabold bg-gradient-to-r from-yellow-400 via-amber-400 to-orange-400 bg-clip-text text-transparent">
-            Lv.{currentLevel}
-          </span>
-          <span className="text-sm font-medium text-purple-400">
-            {levelTitle}
-          </span>
-        </div>
-        {levelProgress && (
-          <div className="space-y-1">
-            <div className="h-3 bg-slate-700/50 rounded-full overflow-hidden">
-              <motion.div
-                initial={{ width: 0 }}
-                animate={{ width: `${levelProgress.progress}%` }}
-                transition={{ duration: 1, ease: "easeOut" }}
-                className="h-full bg-gradient-to-r from-yellow-500 via-amber-500 to-orange-500 rounded-full"
-                style={{ boxShadow: '0 0 10px rgba(251, 191, 36, 0.5)' }}
-              />
+      {/* 🎯 レベル & 称号 - クリックで詳細ページへ */}
+      <Link href="/level">
+        <div className="bg-gradient-to-r from-yellow-500/10 via-amber-500/10 to-orange-500/10 border border-yellow-500/30 rounded-xl p-4 cursor-pointer hover:border-yellow-500/50 hover:bg-yellow-500/5 transition-all active:scale-[0.98]">
+          <div className="flex items-center justify-between mb-2">
+            <div className="flex items-baseline gap-2">
+              <span className="text-3xl font-extrabold bg-gradient-to-r from-yellow-400 via-amber-400 to-orange-400 bg-clip-text text-transparent">
+                Lv.{currentLevel}
+              </span>
+              <span className="text-sm font-medium text-purple-400">
+                {levelTitle}
+              </span>
             </div>
-            <p className="text-xs text-slate-400 text-right">
-              あと <span className="text-yellow-400 font-medium">{levelProgress.remaining}E</span> でLv.{currentLevel + 1}
-            </p>
+            <ChevronRight className="w-5 h-5 text-yellow-400/60" />
           </div>
-        )}
-      </div>
+          {levelProgress && (
+            <div className="space-y-1">
+              <div className="h-3 bg-slate-700/50 rounded-full overflow-hidden">
+                <motion.div
+                  initial={{ width: 0 }}
+                  animate={{ width: `${levelProgress.progress}%` }}
+                  transition={{ duration: 1, ease: "easeOut" }}
+                  className="h-full bg-gradient-to-r from-yellow-500 via-amber-500 to-orange-500 rounded-full"
+                  style={{ boxShadow: '0 0 10px rgba(251, 191, 36, 0.5)' }}
+                />
+              </div>
+              <p className="text-xs text-slate-400 text-right">
+                あと <span className="text-yellow-400 font-medium">{levelProgress.remaining}E</span> でLv.{currentLevel + 1}
+              </p>
+            </div>
+          )}
+        </div>
+      </Link>
 
       {/* 守護神エリア - コンパクト */}
       <GlassCard glowColor={attr.color} className="p-3 sm:p-4">
