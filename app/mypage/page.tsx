@@ -108,8 +108,7 @@ export default function MyPage() {
   // SNS設定の折りたたみ状態
   const [snsExpanded, setSnsExpanded] = useState(false);
 
-  // エナジー内訳の折りたたみ状態
-  const [energyBreakdownExpanded, setEnergyBreakdownExpanded] = useState(false);
+
 
   useEffect(() => {
     const loadData = async () => {
@@ -883,62 +882,6 @@ export default function MyPage() {
           <p className="text-xs font-bold text-yellow-400">確認</p>
         </Link>
       </div>
-
-      {/* 💎 エナジー獲得の内訳 - 折りたたみ式 */}
-      <div className="glass-bg rounded-xl border border-yellow-500/20 overflow-hidden">
-        <button
-          onClick={() => setEnergyBreakdownExpanded(!energyBreakdownExpanded)}
-          className="w-full p-3 flex items-center justify-between hover:bg-white/5 transition-colors"
-        >
-          <div className="flex items-center gap-2">
-            <Sparkles className="w-4 h-4 text-yellow-400" />
-            <h3 className="text-sm font-bold text-white">エナジー獲得の内訳</h3>
-          </div>
-          <ChevronDown
-            className={`w-4 h-4 text-gray-400 transition-transform ${energyBreakdownExpanded ? 'rotate-180' : ''}`}
-          />
-        </button>
-
-        {energyBreakdownExpanded && (
-          <div className="p-3 pt-0 border-t border-white/10">
-            <div className="grid grid-cols-2 gap-2">
-              {/* 日報提出 */}
-              <div className="flex items-center justify-between p-2 rounded-lg bg-green-500/10 border border-green-500/20">
-                <div className="flex items-center gap-2">
-                  <span className="text-lg">📝</span>
-                  <span className="text-xs text-white">日報提出</span>
-                </div>
-                <span className="text-sm font-bold text-green-400">+10E</span>
-              </div>
-              {/* ストリーク */}
-              <div className="flex items-center justify-between p-2 rounded-lg bg-orange-500/10 border border-orange-500/20">
-                <div className="flex items-center gap-2">
-                  <span className="text-lg">🔥</span>
-                  <span className="text-xs text-white">ストリーク</span>
-                </div>
-                <span className="text-sm font-bold text-orange-400">+{Math.min((profile.streak.current || 0) * 2, 20)}E</span>
-              </div>
-              {/* 成果 */}
-              <div className="flex items-center justify-between p-2 rounded-lg bg-purple-500/10 border border-purple-500/20">
-                <div className="flex items-center gap-2">
-                  <span className="text-lg">💎</span>
-                  <span className="text-xs text-white">成果</span>
-                </div>
-                <span className="text-sm font-bold text-purple-400">変動</span>
-              </div>
-              {/* 週次 */}
-              <div className="flex items-center justify-between p-2 rounded-lg bg-blue-500/10 border border-blue-500/20">
-                <div className="flex items-center gap-2">
-                  <span className="text-lg">🏆</span>
-                  <span className="text-xs text-white">週次目標</span>
-                </div>
-                <span className="text-sm font-bold text-blue-400">+50E</span>
-              </div>
-            </div>
-          </div>
-        )}
-      </div>
-
 
       {/* 📱 SNSアカウント設定 - 折りたたみ式 */}
       <div className="glass-bg rounded-xl border border-blue-500/20 overflow-hidden">
