@@ -143,16 +143,18 @@ export async function claimMissionReward(
         updatedAt: serverTimestamp(),
     });
 
-    // ユーザーのエナジーを増加（プロファイル更新）
-    const userRef = doc(db, "users", userId);
-    const userSnap = await getDoc(userRef);
-    if (userSnap.exists()) {
-        const userData = userSnap.data();
-        const currentEnergy = userData.energy || 0;
-        await updateDoc(userRef, {
-            energy: currentEnergy + reward,
-            updatedAt: serverTimestamp(),
-        });
+    // ユーザーのエナジーを増加（guardianProfileを更新）
+    try {
+        const { getUserGuardianProfile, updateUserGuardianProfile } = await import("@/lib/firestore");
+        const profile = await getUserGuardianProfile(userId);
+        if (profile) {
+            profile.energy.current += reward;
+            profile.energy.totalEarned += reward;
+            await updateUserGuardianProfile(userId, profile);
+            console.log(`✅ ミッション報酬 ${reward}E を付与しました（保有: ${profile.energy.current}, 累計: ${profile.energy.totalEarned}）`);
+        }
+    } catch (error) {
+        console.error("ミッション報酬のエナジー更新エラー:", error);
     }
 
     return { success: true, reward };
@@ -186,16 +188,18 @@ export async function claimAllCompletedBonus(
         updatedAt: serverTimestamp(),
     });
 
-    // ユーザーのエナジーを増加
-    const userRef = doc(db, "users", userId);
-    const userSnap = await getDoc(userRef);
-    if (userSnap.exists()) {
-        const userData = userSnap.data();
-        const currentEnergy = userData.energy || 0;
-        await updateDoc(userRef, {
-            energy: currentEnergy + ALL_COMPLETE_BONUS,
-            updatedAt: serverTimestamp(),
-        });
+    // ユーザーのエナジーを増加（guardianProfileを更新）
+    try {
+        const { getUserGuardianProfile, updateUserGuardianProfile } = await import("@/lib/firestore");
+        const profile = await getUserGuardianProfile(userId);
+        if (profile) {
+            profile.energy.current += ALL_COMPLETE_BONUS;
+            profile.energy.totalEarned += ALL_COMPLETE_BONUS;
+            await updateUserGuardianProfile(userId, profile);
+            console.log(`✅ 全完了ボーナス ${ALL_COMPLETE_BONUS}E を付与しました（保有: ${profile.energy.current}, 累計: ${profile.energy.totalEarned}）`);
+        }
+    } catch (error) {
+        console.error("全完了ボーナスのエナジー更新エラー:", error);
     }
 
     return { success: true, reward: ALL_COMPLETE_BONUS };

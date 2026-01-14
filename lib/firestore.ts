@@ -922,6 +922,15 @@ export async function investGuardianEnergy(
 
     await updateUserGuardianProfile(userId, profile);
 
+    // 🎯 デイリーミッション: 守護神にエナジーを投資
+    try {
+      const { triggerMissionComplete } = await import("./services/mission");
+      await triggerMissionComplete(userId, "guardian_feed");
+      console.log("✅ 守護神投資ミッション完了トリガー");
+    } catch (missionError) {
+      console.error("ミッショントリガーエラー:", missionError);
+    }
+
     return {
       success: true,
       evolved: result.evolved,
