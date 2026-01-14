@@ -33,26 +33,83 @@ class SoundService {
     private enabled: boolean = true;
     private volume: number = 0.5;
     private initialized: boolean = false;
+    private isIOS: boolean = false;
 
     constructor() {
         // ブラウザ環境でのみ初期化
         if (typeof window !== "undefined") {
             this.loadSettings();
+            // iOS検出
+            this.isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !(window as any).MSStream;
         }
     }
 
     /**
      * AudioContextを初期化（ユーザー操作後に呼び出し必要）
+     * iOS Safari対応: ユーザー操作内で呼び出す必要がある
      */
     async initialize(): Promise<void> {
-        if (this.initialized) return;
+        if (this.initialized && this.audioContext) {
+            // 既に初期化済みでも、suspendedなら再開を試みる
+            if (this.audioContext.state === "suspended") {
+                try {
+                    await this.audioContext.resume();
+                    console.log("🔊 AudioContext resumed (was suspended)");
+                } catch (e) {
+                    console.warn("🔇 AudioContext resume failed:", e);
+                }
+            }
+            return;
+        }
 
         try {
-            this.audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+            const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
+            if (!AudioContextClass) {
+                console.warn("🔇 Web Audio API not supported");
+                return;
+            }
+
+            this.audioContext = new AudioContextClass();
+
+            // iOS Safari: AudioContextがsuspendedで作成される場合がある
+            if (this.audioContext.state === "suspended") {
+                await this.audioContext.resume();
+            }
+
+            // iOS Safari対策: 無音を再生してオーディオエンジンを起動
+            if (this.isIOS) {
+                this.playUnlockSound();
+            }
+
             this.initialized = true;
-            console.log("🔊 SoundService initialized");
+            console.log(`🔊 SoundService initialized (iOS: ${this.isIOS}, state: ${this.audioContext.state})`);
         } catch (error) {
-            console.error("AudioContext initialization failed:", error);
+            console.error("🔇 AudioContext initialization failed:", error);
+        }
+    }
+
+    /**
+     * iOS Safari対策: 無音を再生してオーディオエンジンをアンロック
+     */
+    private playUnlockSound(): void {
+        if (!this.audioContext) return;
+
+        try {
+            const oscillator = this.audioContext.createOscillator();
+            const gainNode = this.audioContext.createGain();
+
+            oscillator.connect(gainNode);
+            gainNode.connect(this.audioContext.destination);
+
+            // 完全に無音
+            gainNode.gain.setValueAtTime(0, this.audioContext.currentTime);
+
+            oscillator.start(this.audioContext.currentTime);
+            oscillator.stop(this.audioContext.currentTime + 0.001);
+
+            console.log("🔓 iOS audio unlock attempted");
+        } catch (e) {
+            console.warn("🔇 iOS audio unlock failed:", e);
         }
     }
 
@@ -113,18 +170,37 @@ class SoundService {
      * サウンドエフェクトを再生（合成音）
      */
     async play(effect: SoundEffect): Promise<void> {
-        if (!this.enabled || !this.audioContext) {
-            // 初期化されていない場合は初期化を試みる
-            if (!this.audioContext) {
-                await this.initialize();
-            }
-            if (!this.enabled || !this.audioContext) return;
+        console.log(`🔊 play(${effect}) called - enabled: ${this.enabled}, hasContext: ${!!this.audioContext}`);
+
+        if (!this.enabled) {
+            console.log("🔇 Sound disabled by user setting");
+            return;
+        }
+
+        // 初期化されていない場合は初期化を試みる
+        if (!this.audioContext) {
+            console.log("🔊 AudioContext not initialized, initializing...");
+            await this.initialize();
+        }
+
+        if (!this.audioContext) {
+            console.warn("🔇 AudioContext still not available after init");
+            return;
         }
 
         // AudioContextが停止している場合は再開
         if (this.audioContext.state === "suspended") {
-            await this.audioContext.resume();
+            console.log("🔊 AudioContext suspended, resuming...");
+            try {
+                await this.audioContext.resume();
+                console.log(`🔊 AudioContext resumed, new state: ${this.audioContext.state}`);
+            } catch (e) {
+                console.warn("🔇 Failed to resume AudioContext:", e);
+                return;
+            }
         }
+
+        console.log(`🔊 Playing ${effect} (context state: ${this.audioContext.state})`);
 
         try {
             switch (effect) {
