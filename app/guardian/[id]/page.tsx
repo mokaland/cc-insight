@@ -292,7 +292,7 @@ export default function GuardianDetailPage() {
                       }
                     }}
                     disabled={!isThisUnlocked}
-                    className={`w-10 h-10 rounded-full font-bold transition-all ${selectedStage === stage
+                    className={`w-10 h-10 rounded-full font-bold transition-all flex items-center justify-center ${selectedStage === stage
                       ? "text-white scale-110"
                       : isThisUnlocked
                         ? "bg-slate-700 text-slate-300 hover:bg-slate-600"
@@ -343,25 +343,22 @@ export default function GuardianDetailPage() {
         </div>
       )}
 
-      {/* ステータス */}
+      {/* ステータス - コンパクト横並び */}
       {isUnlocked && (
-        <div className="grid grid-cols-3 gap-4">
-          <div className="glass-bg p-4 rounded-xl text-center">
-            <p className="text-xs text-slate-400 mb-1">現在Stage</p>
-            <p className="text-2xl font-bold text-white">{currentStage}</p>
-            <p className="text-xs text-slate-400">
-              {EVOLUTION_STAGES[currentStage]?.name}
-            </p>
+        <div className="flex items-center justify-center gap-6 py-3 glass-bg rounded-xl">
+          <div className="text-center">
+            <p className="text-2xl font-bold text-white">S{currentStage}</p>
+            <p className="text-[10px] text-slate-400">{EVOLUTION_STAGES[currentStage]?.name}</p>
           </div>
-          <div className="glass-bg p-4 rounded-xl text-center">
-            <p className="text-xs text-slate-400 mb-1">投資済み</p>
-            <p className="text-2xl font-bold text-purple-400">
-              {investedEnergy}E
-            </p>
+          <div className="w-px h-8 bg-slate-600" />
+          <div className="text-center">
+            <p className="text-2xl font-bold text-purple-400">{investedEnergy}E</p>
+            <p className="text-[10px] text-slate-400">投資済み</p>
           </div>
-          <div className="glass-bg p-4 rounded-xl text-center">
-            <p className="text-xs text-slate-400 mb-1">オーラLv</p>
+          <div className="w-px h-8 bg-slate-600" />
+          <div className="text-center">
             <p className="text-2xl font-bold text-pink-400">{auraLevel}%</p>
+            <p className="text-[10px] text-slate-400">オーラ</p>
           </div>
         </div>
       )}
