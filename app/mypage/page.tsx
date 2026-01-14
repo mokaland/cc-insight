@@ -504,6 +504,7 @@ export default function MyPage() {
         todayReported={todayReported}
         todayEnergy={todayEnergy}
         isFirstDay={isFirstDay}
+        onRewardClaimed={(reward) => setTodayEnergy(prev => prev + reward)}
       />
 
       {/* 🎯 レベル & 称号 - クリックで詳細ページへ */}
