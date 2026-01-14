@@ -148,7 +148,7 @@ export default function MemberDMPage() {
     <div
       className="fixed inset-0 flex flex-col"
       style={{
-        background: 'linear-gradient(180deg, #7ec8e3 0%, #a8d8ea 50%, #c8e6f0 100%)',
+        background: 'linear-gradient(180deg, #0f0a1e 0%, #1a1030 50%, #0f0a1e 100%)',
         // PWA safe-area対応
         paddingTop: 'env(safe-area-inset-top, 0px)',
         paddingLeft: 'env(safe-area-inset-left, 0px)',
@@ -156,17 +156,17 @@ export default function MemberDMPage() {
       }}
     >
       {/* ヘッダー（固定） */}
-      <header className="flex-shrink-0 flex items-center gap-3 px-4 py-3 bg-white/90 backdrop-blur-sm border-b border-slate-200">
+      <header className="flex-shrink-0 flex items-center gap-3 px-4 py-3 bg-slate-900/80 backdrop-blur-sm border-b border-purple-500/30">
         <Link href="/mypage" className="p-1 -ml-1">
-          <ArrowLeft className="w-6 h-6 text-slate-600" />
+          <ArrowLeft className="w-6 h-6 text-slate-300" />
         </Link>
         <div className="flex items-center gap-2 flex-1">
-          <div className="w-9 h-9 rounded-full bg-gradient-to-br from-purple-500 to-violet-600 flex items-center justify-center">
+          <div className="w-9 h-9 rounded-full bg-gradient-to-br from-purple-500 to-pink-600 flex items-center justify-center">
             <Shield className="w-5 h-5 text-white" />
           </div>
           <div>
-            <p className="font-semibold text-slate-800 text-sm">運営チーム</p>
-            <p className="text-xs text-green-600">オンライン</p>
+            <p className="font-semibold text-white text-sm">運営チーム</p>
+            <p className="text-xs text-green-400">オンライン</p>
           </div>
         </div>
       </header>
@@ -178,7 +178,7 @@ export default function MemberDMPage() {
       >
         {messages.length === 0 ? (
           <div className="text-center py-16">
-            <p className="text-slate-600 text-sm">
+            <p className="text-slate-400 text-sm">
               運営に質問や相談を送ってみましょう！
             </p>
           </div>
@@ -188,7 +188,7 @@ export default function MemberDMPage() {
               <div key={dateKey}>
                 {/* 日付ヘッダー */}
                 <div className="flex justify-center my-4">
-                  <span className="px-4 py-1.5 rounded-full bg-slate-500/40 text-xs text-white font-medium shadow-sm">
+                  <span className="px-4 py-1.5 rounded-full bg-purple-500/30 text-xs text-purple-200 font-medium shadow-sm border border-purple-500/30">
                     {getDateLabel(new Date(dateKey))}
                   </span>
                 </div>
@@ -212,8 +212,8 @@ export default function MemberDMPage() {
                     <div className={`flex items-end gap-1.5 max-w-[75%] ${!msg.isAdmin ? 'flex-row-reverse' : ''}`}>
                       <div
                         className={`rounded-2xl px-3 py-2 shadow-sm ${msg.isAdmin
-                          ? 'bg-white text-slate-800 rounded-tl-md'
-                          : 'bg-[#5ac463] text-white rounded-tr-md'
+                          ? 'bg-slate-800/80 text-white rounded-tl-md border border-slate-700'
+                          : 'bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-tr-md'
                           }`}
                       >
                         <p className="text-[15px] leading-relaxed whitespace-pre-wrap break-words">
@@ -221,7 +221,7 @@ export default function MemberDMPage() {
                         </p>
                       </div>
 
-                      <div className={`flex flex-col text-[10px] text-slate-600 flex-shrink-0 ${!msg.isAdmin ? 'items-end' : 'items-start'}`}>
+                      <div className={`flex flex-col text-[10px] text-slate-400 flex-shrink-0 ${!msg.isAdmin ? 'items-end' : 'items-start'}`}>
                         {!msg.isAdmin && msg.read && (
                           <span>既読</span>
                         )}
@@ -259,10 +259,10 @@ export default function MemberDMPage() {
 
       {/* 入力エリア（固定） */}
       <footer
-        className="flex-shrink-0 bg-slate-100 border-t border-slate-300 px-2 pt-2 pb-1 flex items-center gap-2"
+        className="flex-shrink-0 bg-slate-900/80 border-t border-purple-500/30 px-2 pt-2 pb-1 flex items-center gap-2"
         style={{ paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 4px)' }}
       >
-        <button className="w-10 h-10 flex items-center justify-center text-slate-500 hover:text-slate-700 flex-shrink-0">
+        <button className="w-10 h-10 flex items-center justify-center text-slate-400 hover:text-slate-200 flex-shrink-0">
           <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
           </svg>
@@ -280,14 +280,14 @@ export default function MemberDMPage() {
           }}
           placeholder="メッセージを入力"
           disabled={sending}
-          className="flex-1 bg-white border border-slate-300 rounded-full px-4 pt-2 pb-1.5 text-[15px] text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-slate-400"
+          className="flex-1 bg-slate-800 border border-slate-600 rounded-full px-4 pt-2 pb-1.5 text-[15px] text-white placeholder:text-slate-500 focus:outline-none focus:border-purple-500"
           style={{ WebkitAppearance: 'none' }}
         />
         <Button
           onClick={sendMessage}
           disabled={!newMessage.trim() || sending}
           size="icon"
-          className="w-10 h-10 rounded-full bg-[#5ac463] hover:bg-[#4db356] text-white disabled:opacity-50 flex-shrink-0"
+          className="w-10 h-10 rounded-full bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 text-white disabled:opacity-50 flex-shrink-0"
         >
           {sending ? (
             <motion.div
