@@ -1980,11 +1980,11 @@ export async function getPendingSnsApprovals(): Promise<PendingUserSns[]> {
       }
     });
 
-    // 最新の申請順にソート
+    // 古い申請順にソート（承認漏れ防止）
     results.sort((a, b) => {
       const aTime = a.pendingItems[0]?.submittedAt?.toMillis() || 0;
       const bTime = b.pendingItems[0]?.submittedAt?.toMillis() || 0;
-      return bTime - aTime;
+      return aTime - bTime;
     });
 
     return results;

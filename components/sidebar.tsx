@@ -25,7 +25,7 @@ import {
   ClipboardList,
   Target,
 } from "lucide-react";
-import { getUserGuardianProfile } from "@/lib/firestore";
+import { getUserGuardianProfile, getPendingSnsApprovals } from "@/lib/firestore";
 import { GUARDIANS, ATTRIBUTES, EVOLUTION_STAGES, getGuardianImagePath, GuardianId } from "@/lib/guardian-collection";
 
 // メンバー専用ナビゲーション（デスクトップ表示用）
@@ -135,10 +135,31 @@ export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
   const pathname = usePathname();
   const { user, userProfile } = useAuth();
   const [guardianInfo, setGuardianInfo] = useState<any>(null);
+  const [pendingSnsCount, setPendingSnsCount] = useState<number>(0);
 
   // 役割に応じてナビゲーションを切り替え
   const navItems = userProfile?.role === "admin" ? adminNavItems : memberNavItems;
   const roleLabel = userProfile?.role === "admin" ? "管理者" : "メンバー";
+
+  // SNS承認件数を取得（管理者のみ）
+  useEffect(() => {
+    if (!userProfile || userProfile.role !== "admin") return;
+
+    const loadPendingSnsCount = async () => {
+      try {
+        const pending = await getPendingSnsApprovals();
+        const count = pending.reduce((sum, user) => sum + user.pendingItems.length, 0);
+        setPendingSnsCount(count);
+      } catch (error) {
+        console.error("SNS承認件数取得エラー:", error);
+      }
+    };
+
+    loadPendingSnsCount();
+    // 30秒ごとに更新
+    const interval = setInterval(loadPendingSnsCount, 30000);
+    return () => clearInterval(interval);
+  }, [userProfile]);
 
   // ガーディアン情報取得（メンバーのみ - 新システム）
   useEffect(() => {
@@ -342,7 +363,15 @@ export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
                   isActive ? "text-pink-500" : ""
                 )} />
                 <div className="flex-1 min-w-0">
-                  <span className="block truncate">{item.title}</span>
+                  <div className="flex items-center gap-2">
+                    <span className="block truncate">{item.title}</span>
+                    {/* SNS承認バッジ */}
+                    {item.href === "/admin/sns-approvals" && pendingSnsCount > 0 && (
+                      <span className="flex-shrink-0 bg-red-500 text-white text-[10px] font-bold min-w-[18px] h-[18px] flex items-center justify-center rounded-full">
+                        {pendingSnsCount > 99 ? "99+" : pendingSnsCount}
+                      </span>
+                    )}
+                  </div>
                   {item.subtitle && (
                     <span className="text-xs text-muted-foreground truncate block">{item.subtitle}</span>
                   )}

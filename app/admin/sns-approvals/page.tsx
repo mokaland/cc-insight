@@ -29,6 +29,7 @@ export default function SnsApprovalsPage() {
   const [loading, setLoading] = useState(true);
   const [pendingApprovals, setPendingApprovals] = useState<PendingUserSns[]>([]);
   const [processingKey, setProcessingKey] = useState<string | null>(null); // userId_snsKey
+  const [bulkProcessingUserId, setBulkProcessingUserId] = useState<string | null>(null); // userId for bulk approve
   const [rejectingKey, setRejectingKey] = useState<string | null>(null); // userId_snsKey
   const [rejectionReason, setRejectionReason] = useState("");
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
@@ -127,6 +128,33 @@ export default function SnsApprovalsPage() {
     }
   };
 
+  // 全承認処理
+  const handleBulkApprove = async (userId: string, items: PendingSnsItem[]) => {
+    if (!user) return;
+    setBulkProcessingUserId(userId);
+    setMessage(null);
+
+    try {
+      let successCount = 0;
+      for (const item of items) {
+        const result = await approveSnsAccount(userId, item.snsKey, user.uid);
+        if (result.success) successCount++;
+      }
+
+      setMessage({
+        type: 'success',
+        text: `${successCount}件のSNSアカウントを承認しました`
+      });
+
+      // リストからユーザーを削除
+      setPendingApprovals(prev => prev.filter(a => a.userId !== userId));
+    } catch (error) {
+      setMessage({ type: 'error', text: '一括承認処理に失敗しました' });
+    } finally {
+      setBulkProcessingUserId(null);
+    }
+  };
+
   const formatDate = (timestamp: Timestamp | null) => {
     if (!timestamp) return "不明";
     const date = timestamp.toDate();
@@ -189,8 +217,8 @@ export default function SnsApprovalsPage() {
       {/* メッセージ */}
       {message && (
         <div className={`p-4 rounded-xl ${message.type === 'success'
-            ? 'bg-green-500/20 border border-green-500/30 text-green-300'
-            : 'bg-red-500/20 border border-red-500/30 text-red-300'
+          ? 'bg-green-500/20 border border-green-500/30 text-green-300'
+          : 'bg-red-500/20 border border-red-500/30 text-red-300'
           }`}>
           {message.text}
         </div>
@@ -203,75 +231,82 @@ export default function SnsApprovalsPage() {
           <p className="text-slate-400">承認待ちのリクエストはありません</p>
         </GlassCard>
       ) : (
-        <div className="space-y-4">
-          {pendingApprovals.map((approval) => (
-            <GlassCard key={approval.userId} className="p-6">
-              {/* ユーザー情報 */}
-              <div className="flex items-start justify-between mb-4">
-                <div>
-                  <h3 className="text-lg font-bold text-white">{approval.userName}</h3>
-                  <p className="text-sm text-slate-400">{approval.userEmail}</p>
-                  <p className="text-xs text-slate-500 mt-1">
-                    チーム: {approval.team}
-                  </p>
-                </div>
-                <div className="text-right">
-                  <span className="text-xs bg-yellow-500/20 text-yellow-300 px-2 py-1 rounded-full">
+        <div className="space-y-3">
+          {pendingApprovals.map((approval) => {
+            const isBulkProcessing = bulkProcessingUserId === approval.userId;
+
+            return (
+              <GlassCard key={approval.userId} className="p-4">
+                {/* ユーザーヘッダー（コンパクト） */}
+                <div className="flex items-center gap-3 mb-3">
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <h3 className="text-base font-bold text-white">{approval.userName}</h3>
+                      <span className="text-xs text-slate-400">{approval.userEmail}</span>
+                      <span className="text-xs bg-purple-500/20 text-purple-300 px-2 py-0.5 rounded">
+                        {approval.team}
+                      </span>
+                    </div>
+                  </div>
+                  <span className="text-xs bg-yellow-500/20 text-yellow-300 px-2 py-1 rounded-full flex-shrink-0">
                     {approval.pendingItems.length}件待ち
                   </span>
+                  <Button
+                    onClick={() => handleBulkApprove(approval.userId, approval.pendingItems)}
+                    disabled={isBulkProcessing || !!processingKey}
+                    size="sm"
+                    className="bg-green-600 hover:bg-green-700 flex-shrink-0"
+                  >
+                    {isBulkProcessing ? '処理中...' : '全承認'}
+                  </Button>
                 </div>
-              </div>
 
-              {/* 個別SNS承認カード */}
-              <div className="space-y-3">
-                {approval.pendingItems.map((item) => {
-                  const snsInfo = SNS_LABELS[item.snsKey];
-                  const key = `${approval.userId}_${item.snsKey}`;
-                  const isProcessing = processingKey === key;
-                  const isRejecting = rejectingKey === key;
+                {/* SNS一覧（1行表示） */}
+                <div className="space-y-2">
+                  {approval.pendingItems.map((item) => {
+                    const snsInfo = SNS_LABELS[item.snsKey];
+                    const key = `${approval.userId}_${item.snsKey}`;
+                    const isProcessing = processingKey === key;
+                    const isRejecting = rejectingKey === key;
 
-                  return (
-                    <div key={item.snsKey} className="glass-bg p-4 rounded-xl">
-                      {/* SNS情報とリンク */}
-                      <div className="flex items-center gap-3 mb-3">
-                        <span className="text-2xl">{snsInfo.icon}</span>
-                        <div className="flex-1 min-w-0">
-                          <span className="text-sm font-bold text-white">{snsInfo.label}</span>
-                          <p className="text-xs text-slate-500">
-                            申請: {formatDate(item.submittedAt)}
-                          </p>
-                        </div>
+                    return (
+                      <div key={item.snsKey} className="flex items-center gap-2 py-2 px-3 bg-white/5 rounded-lg">
+                        {/* SNS Icon + Label */}
+                        <span className="text-lg flex-shrink-0">{snsInfo.icon}</span>
+                        <span className="text-sm font-medium text-white w-20 flex-shrink-0">{snsInfo.label}</span>
+
+                        {/* URL確認リンク */}
                         <a
                           href={item.url}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="flex items-center gap-2 bg-blue-500/20 hover:bg-blue-500/30 text-blue-300 px-3 py-2 rounded-lg transition-colors"
+                          className="flex items-center gap-1 text-blue-400 hover:text-blue-300 transition-colors flex-shrink-0"
+                          title={item.url}
                         >
-                          <span className="text-xs">確認</span>
                           <ExternalLink className="w-4 h-4" />
                         </a>
-                      </div>
 
-                      {/* URL表示 */}
-                      <p className="text-xs text-slate-400 mb-3 break-all">{item.url}</p>
+                        {/* 申請日時 */}
+                        <span className="text-xs text-slate-500 flex-1 truncate">
+                          {formatDate(item.submittedAt)}
+                        </span>
 
-                      {/* アクションボタン */}
-                      {isRejecting ? (
-                        <div className="space-y-2">
-                          <Input
-                            placeholder="却下理由を入力してください"
-                            value={rejectionReason}
-                            onChange={(e) => setRejectionReason(e.target.value)}
-                            className="bg-white/5 border-slate-600 text-sm"
-                          />
-                          <div className="flex gap-2">
+                        {/* アクションボタン */}
+                        {isRejecting ? (
+                          <div className="flex items-center gap-1 flex-shrink-0">
+                            <Input
+                              placeholder="却下理由"
+                              value={rejectionReason}
+                              onChange={(e) => setRejectionReason(e.target.value)}
+                              className="bg-white/5 border-slate-600 text-xs h-7 w-32"
+                            />
                             <Button
                               onClick={() => handleReject(approval.userId, item.snsKey)}
                               disabled={isProcessing}
                               size="sm"
-                              className="flex-1 bg-red-600 hover:bg-red-700"
+                              className="bg-red-600 hover:bg-red-700 h-7 px-2"
                             >
-                              {isProcessing ? '処理中...' : '却下確定'}
+                              <Check className="w-3 h-3" />
                             </Button>
                             <Button
                               onClick={() => {
@@ -280,41 +315,39 @@ export default function SnsApprovalsPage() {
                               }}
                               variant="outline"
                               size="sm"
-                              className="flex-1"
+                              className="h-7 px-2"
                             >
-                              キャンセル
+                              <X className="w-3 h-3" />
                             </Button>
                           </div>
-                        </div>
-                      ) : (
-                        <div className="flex gap-2">
-                          <Button
-                            onClick={() => handleApprove(approval.userId, item.snsKey)}
-                            disabled={isProcessing}
-                            size="sm"
-                            className="flex-1 bg-green-600 hover:bg-green-700 flex items-center justify-center gap-1"
-                          >
-                            <Check className="w-3 h-3" />
-                            {isProcessing ? '...' : '承認'}
-                          </Button>
-                          <Button
-                            onClick={() => setRejectingKey(key)}
-                            disabled={isProcessing}
-                            variant="outline"
-                            size="sm"
-                            className="flex-1 border-red-500/50 text-red-400 hover:bg-red-500/10 flex items-center justify-center gap-1"
-                          >
-                            <X className="w-3 h-3" />
-                            却下
-                          </Button>
-                        </div>
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
-            </GlassCard>
-          ))}
+                        ) : (
+                          <div className="flex gap-1 flex-shrink-0">
+                            <Button
+                              onClick={() => handleApprove(approval.userId, item.snsKey)}
+                              disabled={isProcessing || isBulkProcessing}
+                              size="sm"
+                              className="bg-green-600 hover:bg-green-700 h-7 px-2"
+                            >
+                              <Check className="w-3 h-3" />
+                            </Button>
+                            <Button
+                              onClick={() => setRejectingKey(key)}
+                              disabled={isProcessing || isBulkProcessing}
+                              variant="outline"
+                              size="sm"
+                              className="border-red-500/50 text-red-400 hover:bg-red-500/10 h-7 px-2"
+                            >
+                              <X className="w-3 h-3" />
+                            </Button>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              </GlassCard>
+            );
+          })}
         </div>
       )}
     </div>

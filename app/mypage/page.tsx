@@ -236,6 +236,8 @@ export default function MyPage() {
         setSnsMessage({ type: 'success', text: result.message });
         // ステート更新（変更されたSNSのみ）
         const snsKeys = ['instagram', 'youtube', 'tiktok', 'x'] as const;
+        const pendingSnsToNotify: Array<{ snsKey: typeof snsKeys[number]; url: string }> = [];
+
         setSnsAccounts(prev => {
           const updated = { ...prev };
           for (const key of snsKeys) {
@@ -247,10 +249,35 @@ export default function MyPage() {
                 url,
                 status: 'pending' as const,
               } as SnsAccountApproval;
+              // 通知対象に追加
+              pendingSnsToNotify.push({ snsKey: key, url });
             }
           }
           return updated;
         });
+
+        // Slack通知を送信（新規申請のみ）
+        if (result.submitted && pendingSnsToNotify.length > 0) {
+          for (const { snsKey, url } of pendingSnsToNotify) {
+            try {
+              await fetch('/api/notify-sns-approval', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  userId: user.uid,
+                  userName: userProfile?.displayName || '名前未設定',
+                  userEmail: user.email || '',
+                  team: userProfile?.team || '未設定',
+                  snsKey,
+                  url,
+                }),
+              });
+            } catch (e) {
+              // Slack通知エラーはユーザーに影響させない
+              console.error('Slack notification error:', e);
+            }
+          }
+        }
       } else {
         setSnsMessage({ type: 'error', text: result.message });
       }

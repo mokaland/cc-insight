@@ -712,3 +712,96 @@ export async function notifyGoalRejected(data: {
     sendSlackMessage(SLACK_WEBHOOK_URLS.admin, message),
   ]);
 }
+
+// ===== SNS承認申請通知 =====
+
+const SNS_ICONS: Record<string, string> = {
+  instagram: "📸",
+  youtube: "📺",
+  tiktok: "🎵",
+  x: "𝕏",
+};
+
+const SNS_NAMES: Record<string, string> = {
+  instagram: "Instagram",
+  youtube: "YouTube",
+  tiktok: "TikTok",
+  x: "X (Twitter)",
+};
+
+/**
+ * SNS承認申請があった際に管理者チャンネルに通知
+ */
+export async function notifySnsApprovalRequest(data: {
+  userId: string;
+  userName: string;
+  userEmail: string;
+  team: string;
+  snsKey: 'instagram' | 'youtube' | 'tiktok' | 'x';
+  url: string;
+}): Promise<void> {
+  const teamName = TEAM_NAMES[data.team] || data.team || "未設定";
+  const snsIcon = SNS_ICONS[data.snsKey] || "🔗";
+  const snsName = SNS_NAMES[data.snsKey] || data.snsKey;
+
+  const message: SlackMessage = {
+    text: `🆕 SNS承認申請: ${data.userName}さんが${snsName}を登録しました`,
+    blocks: [
+      {
+        type: "header",
+        text: {
+          type: "plain_text",
+          text: "🆕 SNS承認申請",
+          emoji: true,
+        },
+      },
+      {
+        type: "section",
+        text: {
+          type: "mrkdwn",
+          text: `*${data.userName}*（${teamName}）が*${snsName}*アカウントを登録しました。`,
+        },
+      },
+      {
+        type: "section",
+        fields: [
+          {
+            type: "mrkdwn",
+            text: `*${snsIcon} ${snsName}*\n<${data.url}|${data.url.substring(0, 50)}...>`,
+          },
+          {
+            type: "mrkdwn",
+            text: `*メール*\n${data.userEmail}`,
+          },
+        ],
+      },
+      {
+        type: "actions",
+        elements: [
+          {
+            type: "button",
+            text: {
+              type: "plain_text",
+              text: "📋 SNS承認画面を開く",
+              emoji: true,
+            },
+            url: "https://cc-insight-app.vercel.app/admin/sns-approvals",
+            style: "primary",
+          },
+          {
+            type: "button",
+            text: {
+              type: "plain_text",
+              text: "🔗 URLを確認",
+              emoji: true,
+            },
+            url: data.url,
+          },
+        ],
+      },
+    ],
+  };
+
+  // 管理者チャンネルに通知
+  await sendSlackMessage(SLACK_WEBHOOK_URLS.admin, message);
+}
