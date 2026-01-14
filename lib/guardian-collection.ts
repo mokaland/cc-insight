@@ -761,12 +761,20 @@ export function createStreakMemory(guardianId: GuardianId, streakDays: number): 
 
 /**
  * 画像パスを取得
- * Stage 0 (卵) の場合は共通の白い卵画像を返す
+ * Stage 0 (卵) の場合:
+ * - T1 (初期選択可能): 各ガーディアン固有の白い卵 (stage0.png)
+ * - T2以降: 共通の黒い卵 (guardian-egg.png)
  */
 export function getGuardianImagePath(guardianId: GuardianId, stage: EvolutionStage): string {
-  // Stage 0 は全守護神共通の卵画像
+  // Stage 0 は卵画像
   if (stage === 0) {
-    return '/images/ui/guardian-egg.png';
+    const guardian = GUARDIANS[guardianId];
+    // T1は各ガーディアン固有の白い卵を使用
+    if (guardian.tier === 1) {
+      return `/images/guardians/${guardianId}/stage0.png`;
+    }
+    // T2以降は共通の黒い卵を使用
+    return '/images/guardians/guardian-egg.png';
   }
   return `/images/guardians/${guardianId}/stage${stage}.png`;
 }
