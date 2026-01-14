@@ -530,13 +530,14 @@ export default function MyPage() {
               </div>
             </div>
 
-            {/* 守護神情報 */}
-            <div className="flex-1 min-w-0">
+            {/* 守護神情報 - クリックで図鑑へ */}
+            <Link href="/guardians" className="flex-1 min-w-0">
               <div className="flex items-center gap-1.5 mb-1">
                 <span className="text-xl">{attr.emoji}</span>
                 <h2 className="text-lg sm:text-xl font-bold truncate" style={{ color: attr.color }}>
                   {activeGuardian?.name || '守護神'}
                 </h2>
+                <ChevronRight className="w-5 h-5 text-slate-400 flex-shrink-0" />
               </div>
               <p className="text-[11px] text-slate-400 mb-2">
                 {stageInfo.name} • {attr.name}属性
@@ -553,7 +554,7 @@ export default function MyPage() {
                   <p className="text-sm font-bold text-pink-400">{auraLevel}%</p>
                 </div>
               </div>
-            </div>
+            </Link>
           </div>
 
           {/* オーラゲージ */}
@@ -851,36 +852,6 @@ export default function MyPage() {
             <AnimatedNumber value={profile.streak.current} /><span className="text-xs">日</span>
           </p>
         </motion.div>
-
-        {/* 日報 */}
-        <Link
-          href="/report"
-          className="glass-premium p-3 rounded-xl border border-green-500/30 cursor-pointer active:scale-95 transition-all aspect-square flex flex-col items-center justify-center"
-        >
-          <div className="text-3xl mb-1">📝</div>
-          <p className="text-[10px] text-gray-400 text-center leading-tight">日報</p>
-          <p className="text-xs font-bold text-green-400">入力する</p>
-        </Link>
-
-        {/* 守護神図鑑 */}
-        <Link
-          href="/guardians"
-          className="glass-premium p-3 rounded-xl border border-purple-500/30 cursor-pointer active:scale-95 transition-all aspect-square flex flex-col items-center justify-center"
-        >
-          <div className="text-3xl mb-1">🛡️</div>
-          <p className="text-[10px] text-gray-400 text-center leading-tight">守護神図鑑</p>
-          <p className="text-xs font-bold text-purple-400">見る</p>
-        </Link>
-
-        {/* ランキング */}
-        <Link
-          href="/ranking"
-          className="glass-premium p-3 rounded-xl border border-yellow-500/30 cursor-pointer active:scale-95 transition-all aspect-square flex flex-col items-center justify-center"
-        >
-          <div className="text-3xl mb-1">🏆</div>
-          <p className="text-[10px] text-gray-400 text-center leading-tight">ランキング</p>
-          <p className="text-xs font-bold text-yellow-400">確認</p>
-        </Link>
       </div>
 
       {/* 📱 SNSアカウント設定 - 折りたたみ式 */}
