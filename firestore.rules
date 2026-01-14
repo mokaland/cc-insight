@@ -44,6 +44,18 @@ service cloud.firestore {
 
       // 削除: 管理者のみ
       allow delete: if isAdmin();
+
+      // dailyMissions サブコレクション（デイリーミッション）
+      match /dailyMissions/{date} {
+        // 読み取り: 自分のミッションのみ
+        allow read: if isOwner(userId);
+
+        // 作成・更新: 自分のミッションのみ
+        allow create, update: if isOwner(userId);
+
+        // 削除: 禁止
+        allow delete: if false;
+      }
     }
 
     // reports collection
