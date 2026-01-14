@@ -494,89 +494,91 @@ export default function MyPage() {
       {/* 守護神エリア - コンパクト */}
       <GlassCard glowColor={attr.color} className="p-3 sm:p-4">
         <div className="flex flex-col gap-3">
-          {/* 守護神表示 - 横並び */}
-          <div className="flex items-center gap-3">
-            {/* 守護神画像 - 小さく */}
-            <div className="flex-shrink-0 relative">
-              <div
-                className="w-20 h-20 sm:w-24 sm:h-24 rounded-xl flex items-center justify-center relative overflow-hidden"
-                style={{
-                  background: "transparent",
-                  border: `2px solid ${attr.color}`,
-                }}
-              >
-                <img
-                  src={getGuardianImagePath(activeGuardianId as GuardianId, stage)}
-                  alt={activeGuardian?.name || '守護神'}
-                  className="w-full h-full object-contain"
-                  onError={(e) => {
-                    e.currentTarget.style.display = 'none';
-                    e.currentTarget.nextElementSibling?.classList.remove('hidden');
+          {/* 守護神表示 - 全体をクリック可能 */}
+          <Link href="/guardians" className="block">
+            <div className="flex items-center gap-3">
+              {/* 守護神画像 - 小さく */}
+              <div className="flex-shrink-0 relative">
+                <div
+                  className="w-20 h-20 sm:w-24 sm:h-24 rounded-xl flex items-center justify-center relative overflow-hidden"
+                  style={{
+                    background: "transparent",
+                    border: `2px solid ${attr.color}`,
+                  }}
+                >
+                  <img
+                    src={getGuardianImagePath(activeGuardianId as GuardianId, stage)}
+                    alt={activeGuardian?.name || '守護神'}
+                    className="w-full h-full object-contain"
+                    onError={(e) => {
+                      e.currentTarget.style.display = 'none';
+                      e.currentTarget.nextElementSibling?.classList.remove('hidden');
+                    }}
+                  />
+                  <div className="absolute inset-0 flex items-center justify-center hidden">
+                    <span className="text-4xl">{placeholder.emoji}</span>
+                  </div>
+                </div>
+
+                {/* Stage表示 */}
+                <div className="absolute -bottom-1 left-1/2 transform -translate-x-1/2">
+                  <div
+                    className="px-2 py-0.5 rounded-full text-[10px] font-bold text-white"
+                    style={{ backgroundColor: attr.color }}
+                  >
+                    S{stage}
+                  </div>
+                </div>
+              </div>
+
+              {/* 守護神情報 */}
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-1.5 mb-1">
+                  <span className="text-xl">{attr.emoji}</span>
+                  <h2 className="text-lg sm:text-xl font-bold truncate" style={{ color: attr.color }}>
+                    {activeGuardian?.name || '守護神'}
+                  </h2>
+                  <ChevronRight className="w-5 h-5 text-slate-400 flex-shrink-0" />
+                </div>
+                <p className="text-[11px] text-slate-400 mb-2">
+                  {stageInfo.name} • {attr.name}属性
+                </p>
+
+                {/* ステータス - インライン */}
+                <div className="flex gap-2">
+                  <div className="flex-1 bg-black/30 rounded-lg p-1.5 text-center">
+                    <p className="text-[9px] text-slate-400">投資済み</p>
+                    <p className="text-sm font-bold text-purple-400">{investedEnergy}E</p>
+                  </div>
+                  <div className="flex-1 bg-black/30 rounded-lg p-1.5 text-center">
+                    <p className="text-[9px] text-slate-400">オーラ</p>
+                    <p className="text-sm font-bold text-pink-400">{auraLevel}%</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* オーラゲージ */}
+            <div className="space-y-2 mt-3">
+              <div className="flex justify-between text-sm">
+                <span className="text-muted-foreground">オーラレベル</span>
+                <span className="font-bold" style={{ color: attr.color }}>
+                  {auraLevel}%
+                </span>
+              </div>
+
+              <div className="relative w-full h-4 bg-white/10 rounded-full overflow-hidden border-2 border-white/20">
+                <div
+                  className="h-full transition-all duration-1000"
+                  style={{
+                    width: `${auraLevel}%`,
+                    background: `linear-gradient(90deg, ${attr.color}, ${attr.gradientTo})`,
+                    boxShadow: `0 0 20px ${attr.color}`,
                   }}
                 />
-                <div className="absolute inset-0 flex items-center justify-center hidden">
-                  <span className="text-4xl">{placeholder.emoji}</span>
-                </div>
-              </div>
-
-              {/* Stage表示 */}
-              <div className="absolute -bottom-1 left-1/2 transform -translate-x-1/2">
-                <div
-                  className="px-2 py-0.5 rounded-full text-[10px] font-bold text-white"
-                  style={{ backgroundColor: attr.color }}
-                >
-                  S{stage}
-                </div>
               </div>
             </div>
-
-            {/* 守護神情報 - クリックで図鑑へ */}
-            <Link href="/guardians" className="flex-1 min-w-0">
-              <div className="flex items-center gap-1.5 mb-1">
-                <span className="text-xl">{attr.emoji}</span>
-                <h2 className="text-lg sm:text-xl font-bold truncate" style={{ color: attr.color }}>
-                  {activeGuardian?.name || '守護神'}
-                </h2>
-                <ChevronRight className="w-5 h-5 text-slate-400 flex-shrink-0" />
-              </div>
-              <p className="text-[11px] text-slate-400 mb-2">
-                {stageInfo.name} • {attr.name}属性
-              </p>
-
-              {/* ステータス - インライン */}
-              <div className="flex gap-2">
-                <div className="flex-1 bg-black/30 rounded-lg p-1.5 text-center">
-                  <p className="text-[9px] text-slate-400">投資済み</p>
-                  <p className="text-sm font-bold text-purple-400">{investedEnergy}E</p>
-                </div>
-                <div className="flex-1 bg-black/30 rounded-lg p-1.5 text-center">
-                  <p className="text-[9px] text-slate-400">オーラ</p>
-                  <p className="text-sm font-bold text-pink-400">{auraLevel}%</p>
-                </div>
-              </div>
-            </Link>
-          </div>
-
-          {/* オーラゲージ */}
-          <div className="space-y-2">
-            <div className="flex justify-between text-sm">
-              <span className="text-muted-foreground">オーラレベル</span>
-              <span className="font-bold" style={{ color: attr.color }}>
-                {auraLevel}%
-              </span>
-            </div>
-
-            <div className="relative w-full h-4 bg-white/10 rounded-full overflow-hidden border-2 border-white/20">
-              <div
-                className="h-full transition-all duration-1000"
-                style={{
-                  width: `${auraLevel}%`,
-                  background: `linear-gradient(90deg, ${attr.color}, ${attr.gradientTo})`,
-                  boxShadow: `0 0 20px ${attr.color}`,
-                }}
-              />
-            </div>
-          </div>
+          </Link>
 
           {/* 🎯 進化予告表示 */}
           {(() => {
