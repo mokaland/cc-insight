@@ -128,10 +128,17 @@ export default function MyPage() {
 
         if (todayReport) {
           setTodayReported(true);
-          // 今日のエナジー取得（energy_historyから取得）
+          // 今日のエナジー取得（energy_historyから取得 + ミッション報酬）
           const { getTodayEnergyHistory } = await import("@/lib/energy-history");
-          const todayHistory = await getTodayEnergyHistory(user.uid, today);
-          setTodayEnergy(todayHistory?.totalEarned || 0);
+          const { getTodayMissions } = await import("@/lib/services/mission");
+          const [todayHistory, missionState] = await Promise.all([
+            getTodayEnergyHistory(user.uid, today),
+            getTodayMissions(user.uid)
+          ]);
+          // レポートエナジー + ミッション報酬 = 今日の総獲得
+          const reportEnergy = todayHistory?.totalEarned || 0;
+          const missionReward = missionState?.totalRewardEarned || 0;
+          setTodayEnergy(reportEnergy + missionReward);
         } else {
           // 📅 ストリーク警告ロジック
           const { getLastReport } = await import("@/lib/firestore");
