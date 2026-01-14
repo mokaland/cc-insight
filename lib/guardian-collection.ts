@@ -761,8 +761,13 @@ export function createStreakMemory(guardianId: GuardianId, streakDays: number): 
 
 /**
  * 画像パスを取得
+ * Stage 0 (卵) の場合は共通の白い卵画像を返す
  */
 export function getGuardianImagePath(guardianId: GuardianId, stage: EvolutionStage): string {
+  // Stage 0 は全守護神共通の卵画像
+  if (stage === 0) {
+    return '/images/ui/guardian-egg.png';
+  }
   return `/images/guardians/${guardianId}/stage${stage}.png`;
 }
 
