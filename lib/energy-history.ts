@@ -113,6 +113,8 @@ export async function getTodayTotalEnergy(
   userId: string,
   date: string
 ): Promise<number> {
+  console.log(`[TodayTotalEnergy] Querying userId=${userId}, date=${date}`);
+
   const historyRef = collection(db, "energy_history");
   const q = query(
     historyRef,
@@ -120,16 +122,24 @@ export async function getTodayTotalEnergy(
     where("date", "==", date)
   );
 
-  const snapshot = await getDocs(q);
-  let total = 0;
+  try {
+    const snapshot = await getDocs(q);
+    console.log(`[TodayTotalEnergy] Found ${snapshot.docs.length} documents`);
 
-  snapshot.docs.forEach(doc => {
-    const data = doc.data();
-    // totalEarnedがある場合はそれを使用、なければamountを使用
-    total += data.totalEarned || data.amount || 0;
-  });
+    let total = 0;
+    snapshot.docs.forEach(doc => {
+      const data = doc.data();
+      const amount = data.totalEarned || data.amount || 0;
+      console.log(`[TodayTotalEnergy] Doc ${doc.id}: type=${data.type}, amount=${amount}`);
+      total += amount;
+    });
 
-  return total;
+    console.log(`[TodayTotalEnergy] Total: ${total}`);
+    return total;
+  } catch (error) {
+    console.error('[TodayTotalEnergy] Query error:', error);
+    return 0;
+  }
 }
 
 /**
