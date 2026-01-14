@@ -19,20 +19,31 @@ import { generateAndSaveFeedback, sendFeedbackAsDM } from "@/lib/post-feedback";
  */
 export async function GET(request: Request) {
     try {
-        // 🔐 セキュリティ強化: Vercel Cron専用ヘッダーチェック + Bearer token
+        // 🔐 セキュリティ: Vercel Cron専用ヘッダー、または手動実行用Bearer token
         const vercelCronHeader = request.headers.get('x-vercel-cron');
         const authHeader = request.headers.get('authorization');
         const token = authHeader?.replace('Bearer ', '');
+        const cronSecret = process.env.CRON_SECRET;
 
-        // Vercel Cronからのリクエストでない、または認証トークンが一致しない場合は拒否
-        if (!vercelCronHeader || !process.env.CRON_SECRET || token !== process.env.CRON_SECRET) {
+        // 認証チェック:
+        // 1. Vercel Cronからの呼び出し（x-vercel-cronヘッダーあり）→ OK
+        // 2. 手動呼び出し（Bearer token一致）→ OK
+        // 3. それ以外 → 拒否
+        const isVercelCron = vercelCronHeader === '1';
+        const isValidToken = cronSecret && token === cronSecret;
+
+        if (!isVercelCron && !isValidToken) {
             console.warn('⚠️ 不正なCronアクセス試行を検出:', {
                 hasVercelHeader: !!vercelCronHeader,
+                vercelHeaderValue: vercelCronHeader,
                 hasToken: !!token,
+                hasCronSecret: !!cronSecret,
                 timestamp: new Date().toISOString(),
             });
             return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
         }
+
+        console.log('🔓 Cron認証成功:', { isVercelCron, isValidToken });
 
         console.log('📬 フィードバック処理Cron実行開始...');
 
