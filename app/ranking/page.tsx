@@ -116,8 +116,9 @@ export default function AllTeamsRankingPage() {
       const unsubscribe = subscribeToReports(async (data) => {
         setReports(data);
         const uniqueUserIds = Array.from(new Set(data.map(r => r.userId).filter(Boolean))) as string[];
+        // 🔧 キャッシュ時間を30秒に短縮（進化やエナジー変更を早く反映するため）
         const cacheKey = `guardian-profiles-${uniqueUserIds.sort().join(',')}`;
-        const profiles = await cachedFetch(cacheKey, () => getBulkUserGuardianProfiles(uniqueUserIds), 5 * 60 * 1000);
+        const profiles = await cachedFetch(cacheKey, () => getBulkUserGuardianProfiles(uniqueUserIds), 30 * 1000);
         setGuardianProfiles(profiles);
         setLoading(false);
         setError(null);
