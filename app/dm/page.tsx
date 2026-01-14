@@ -14,6 +14,7 @@ import {
 import { motion, AnimatePresence } from "framer-motion";
 import { PageLoader } from "@/components/ui/loading-spinner";
 import Link from "next/link";
+import { triggerPageVisitMission } from "@/lib/services/mission";
 
 // 日付ラベル（LINE風: 1/11(日)）
 function getDateLabel(date: Date): string {
@@ -81,6 +82,13 @@ export default function MemberDMPage() {
 
     return () => unsubscribe();
   }, [user, userProfile, router]);
+
+  // 🎯 デイリーミッション: DMページ訪問
+  useEffect(() => {
+    if (user?.uid) {
+      triggerPageVisitMission(user.uid, "/dm").catch(console.error);
+    }
+  }, [user?.uid]);
 
   useEffect(() => {
     if (!user?.uid) return;

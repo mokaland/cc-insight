@@ -15,6 +15,7 @@ import { GUARDIANS, ATTRIBUTES, getGuardianImagePath, GuardianId, EVOLUTION_STAG
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ContentLoader } from "@/components/ui/loading-spinner";
 import { cachedFetch } from "@/lib/firestore-cache";
+import { triggerPageVisitMission } from "@/lib/services/mission";
 
 // 🆕 動的インポートでCode Splitting
 const MemberDetailModal = dynamic(
@@ -75,6 +76,13 @@ export default function AllTeamsRankingPage() {
       setActiveTeamId(teams[0].id);
     }
   }, [userProfile, activeTeamId]);
+
+  // 🎯 デイリーミッション: ランキングページ訪問
+  useEffect(() => {
+    if (user?.uid) {
+      triggerPageVisitMission(user.uid, "/ranking").catch(console.error);
+    }
+  }, [user?.uid]);
 
   // 📅 期間でフィルタリング
   const filteredReports = useMemo(() => {

@@ -41,6 +41,7 @@ import { ReportSuccessCelebration } from "@/components/report-success-celebratio
 import { LevelUpCelebration } from "@/components/level-up-celebration";
 import { PackOpeningModal } from "@/components/pack-opening-modal";
 import { GUARDIANS, ATTRIBUTES, calculateLevel } from "@/lib/guardian-collection";
+import { triggerMissionComplete } from "@/lib/services/mission";
 
 export default function ReportPage() {
   const { user, userProfile, loading: authLoading } = useAuth();
@@ -467,6 +468,15 @@ export default function ReportPage() {
       }
 
       setSuccess(true);
+
+      // 🎯 デイリーミッション: 日報報告ミッションを完了
+      if (user && !isEditMode) {
+        try {
+          await triggerMissionComplete(user.uid, "daily_report");
+        } catch (missionError) {
+          console.error("ミッション完了エラー:", missionError);
+        }
+      }
 
       // 🔧 フォーム再充填防止フラグを設定
       setJustSubmitted(true);

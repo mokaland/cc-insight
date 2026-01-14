@@ -39,6 +39,7 @@ import {
 } from "@/components/energy-history-modal";
 import { PageLoader } from "@/components/ui/loading-spinner";
 import { StreakWarningBanner } from "@/components/streak-celebration";
+import { DailyMissions } from "@/components/daily-missions";
 
 // カウントアップコンポーネント
 function AnimatedNumber({ value }: { value: number }) {
@@ -487,6 +488,9 @@ export default function MyPage() {
           </Link>
         </div>
       )}
+
+      {/* 🎯 デイリーミッション */}
+      <DailyMissions />
 
       {/* 🎯 レベル & 称号 - コンパクト */}
       <div className="bg-gradient-to-r from-yellow-500/10 via-amber-500/10 to-orange-500/10 border border-yellow-500/30 rounded-xl p-3">
