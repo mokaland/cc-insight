@@ -382,20 +382,20 @@ export default function EnergyInvestmentModal({
         className="fixed inset-0 bg-gradient-to-b from-slate-950 via-indigo-950/95 to-slate-950 flex items-center justify-center z-[9999]"
         onClick={handleSkip}
       >
-        {/* スキップボタン */}
+        {/* スキップボタン（右下に配置） */}
         <motion.button
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 1.5 }}
           onClick={(e) => { e.stopPropagation(); handleSkip(); }}
-          className="absolute top-8 right-4 px-4 py-2 bg-slate-800/80 hover:bg-slate-700 text-slate-400 hover:text-white rounded-full text-sm font-medium transition-all flex items-center gap-2 z-50"
-          style={{ marginTop: "env(safe-area-inset-top, 0px)" }}
+          className="absolute bottom-8 right-4 px-4 py-2 bg-slate-800/80 hover:bg-slate-700 text-slate-400 hover:text-white rounded-full text-sm font-medium transition-all flex items-center gap-2 z-50"
+          style={{ marginBottom: "calc(env(safe-area-inset-bottom, 0px) + 70px)" }}
         >
-          <X className="w-4 h-4" />
           スキップ
+          <X className="w-4 h-4" />
         </motion.button>
 
-        {/* 広がる波紋エフェクト */}
+        {/* 広がる波紋エフェクト（中央固定） */}
         {[...Array(3)].map((_, i) => (
           <motion.div
             key={`ripple-${i}`}
@@ -408,7 +408,12 @@ export default function EnergyInvestmentModal({
               ease: "easeOut"
             }}
             className="absolute w-40 h-40 rounded-full border-2 pointer-events-none"
-            style={{ borderColor: attr.color }}
+            style={{
+              borderColor: attr.color,
+              left: "50%",
+              top: "50%",
+              transform: "translate(-50%, -50%)"
+            }}
           />
         ))}
 
