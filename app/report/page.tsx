@@ -35,7 +35,8 @@ import {
   ChevronUp
 } from "lucide-react";
 import { teams, processReportWithEnergy, getTodayReport, updateReport, Report, getAllUsers, getUserGuardianProfile, getPreviousFollowerCounts } from "@/lib/firestore";
-import { processPostFeedback } from "@/lib/post-feedback";
+import { db } from "@/lib/firebase";
+import { addDoc, collection, Timestamp } from "firebase/firestore";
 import EnergyToast from "@/components/energy-toast";
 import { ReportSuccessCelebration } from "@/components/report-success-celebration";
 import { LevelUpCelebration } from "@/components/level-up-celebration";
@@ -504,14 +505,15 @@ export default function ReportPage() {
         // DM送信失敗でも日報送信は成功扱い
       }
 
-      // 運営フィードバック生成・DM送信（X運用チームのみ、新規作成時のみ）
+      // 運営フィードバック生成・DM送信（Xチームのみ、新規作成時のみ）
+      // 🔧 信頼性向上: setTimeoutをFirestoreスケジュール予約に変更
       if (isXTeam && !isEditMode) {
         try {
           // 投稿内容があるポストのみフィルター
           const postsWithContent = xPosts.filter(p => p.content && p.content.trim() !== "");
 
           if (postsWithContent.length > 0) {
-            console.log(`💬 フィードバック生成準備: ${postsWithContent.length}件`);
+            console.log(`💬 フィードバック予約登録: ${postsWithContent.length}件`);
 
             // 管理者を取得（フィードバック送信元として使用）
             const allUsers = await getAllUsers();
@@ -520,33 +522,32 @@ export default function ReportPage() {
             if (admins.length > 0) {
               const adminUser = admins[0]; // 最初の管理者を送信元として使用
 
-              // 人間味を出すために5〜10分のランダムな遅延を入れる
+              // 人間味を出すために5〜10分のランダムな遅延を設定
               const minDelay = 5;
               const maxDelay = 10;
               const delayMinutes = Math.floor(Math.random() * (maxDelay - minDelay + 1) + minDelay);
-              const delayMs = delayMinutes * 60 * 1000;
 
-              console.log(`🕐 フィードバック送信を ${delayMinutes} 分後にスケジュールしました`);
+              // 実行予定時刻を計算
+              const scheduledAt = new Date(Date.now() + delayMinutes * 60 * 1000);
 
-              // バックグラウンドでフィードバック生成・送信（遅延実行）
-              setTimeout(() => {
-                processPostFeedback(
-                  `report-${user.uid}-${date}`,
-                  postsWithContent,
-                  user.uid,
-                  userProfile.displayName,
-                  adminUser.uid,
-                  adminUser.displayName
-                ).then(() => {
-                  console.log('✅ フィードバック送信完了');
-                }).catch((feedbackError) => {
-                  console.error('フィードバックエラー:', feedbackError);
-                });
-              }, delayMs);
+              // Firestoreにスケジュール予約を保存
+              await addDoc(collection(db, "scheduled_feedbacks"), {
+                reportId: `report-${user.uid}-${date}`,
+                posts: postsWithContent,
+                userId: user.uid,
+                userName: userProfile.displayName,
+                adminId: adminUser.uid,
+                adminName: adminUser.displayName,
+                status: "pending",
+                scheduledAt: Timestamp.fromDate(scheduledAt),
+                createdAt: Timestamp.now(),
+              });
+
+              console.log(`🕐 フィードバックを ${delayMinutes} 分後にスケジュール登録しました`);
             }
           }
         } catch (feedbackSetupError) {
-          console.error('フィードバック設定エラー:', feedbackSetupError);
+          console.error('フィードバック予約エラー:', feedbackSetupError);
           // フィードバック失敗でも日報送信は成功扱い
         }
       }

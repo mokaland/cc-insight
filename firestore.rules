@@ -311,6 +311,19 @@ service cloud.firestore {
       allow delete: if isAdmin();
     }
 
+    // scheduled_feedbacks collection (スケジュールされた投稿フィードバック)
+    match /scheduled_feedbacks/{feedbackId} {
+      // 読み取り: 管理者のみ
+      allow read: if isAdmin();
+
+      // 作成: 認証済みユーザー（日報送信時に予約登録）
+      allow create: if isAuthenticated();
+
+      // 更新: Cronから更新されるためサーバーサイドのみ（ここでは禁止）
+      // 実際の更新はAdmin SDKまたはサーバーサイドから行う
+      allow update, delete: if false;
+    }
+
     // その他のコレクションはデフォルトで禁止
     match /{document=**} {
       allow read, write: if false;
