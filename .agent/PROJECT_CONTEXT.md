@@ -54,7 +54,7 @@
 | `/api/cron/decade-judgment` | 毎月11,21日 0:00 UTC | 10日・20日のADAPT判定実行 |
 | `/api/cron/check-escalation` | 毎日1:00 UTC | 離脱リスクメンバー検出・Slack通知 |
 | `/api/cron/daily-summary` | 毎日23:00 UTC | デイリーサマリーをSlackに送信 |
-| `/api/cron/month-end-judgment` | 月末 | 月末判定 |
+| `/api/cron/month-end-judgment` | 毎月28-31日 0:00 UTC | 月末判定（コード内で実際の月末かチェック） |
 | `/api/cron/process-feedbacks` | **毎分** | 投稿フィードバックのスケジュール処理 ⭐NEW |
 
 ---

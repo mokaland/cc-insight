@@ -45,6 +45,10 @@
       "schedule": "0 23 * * *"
     },
     {
+      "path": "/api/cron/month-end-judgment",
+      "schedule": "0 0 28-31 * *"
+    },
+    {
       "path": "/api/cron/process-feedbacks",
       "schedule": "* * * * *"
     }
