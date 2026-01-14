@@ -110,6 +110,10 @@ export function getTrackForPath(pathname: string): BGMTrack {
     if (pathname === "/dm") {
         return "mypage";
     }
+    // 成長の記録ページもマイページと同じBGM
+    if (pathname === "/history") {
+        return "mypage";
+    }
     // その他のページはBGMなし
     return "none";
 }
