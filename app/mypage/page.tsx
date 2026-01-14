@@ -491,19 +491,20 @@ export default function MyPage() {
         </div>
       </Link>
 
-      {/* 守護神エリア - コンパクト */}
+      {/* 守護神エリア - 画像を大きく表示 */}
       <GlassCard glowColor={attr.color} className="p-3 sm:p-4">
-        <div className="flex flex-col gap-3">
-          {/* 守護神表示 - 全体をクリック可能 */}
+        <div className="flex flex-col gap-2">
+          {/* 全体をクリック可能 */}
           <Link href="/guardians" className="block">
-            <div className="flex items-center gap-3">
-              {/* 守護神画像 - 小さく */}
-              <div className="flex-shrink-0 relative">
+            {/* 守護神画像 - 大きく中央配置 */}
+            <div className="flex justify-center mb-2">
+              <div className="relative">
                 <div
-                  className="w-20 h-20 sm:w-24 sm:h-24 rounded-xl flex items-center justify-center relative overflow-hidden"
+                  className="w-32 h-32 sm:w-36 sm:h-36 rounded-2xl flex items-center justify-center relative overflow-hidden"
                   style={{
                     background: "transparent",
-                    border: `2px solid ${attr.color}`,
+                    border: `3px solid ${attr.color}`,
+                    boxShadow: `0 0 20px ${attr.color}40`,
                   }}
                 >
                   <img
@@ -516,64 +517,56 @@ export default function MyPage() {
                     }}
                   />
                   <div className="absolute inset-0 flex items-center justify-center hidden">
-                    <span className="text-4xl">{placeholder.emoji}</span>
+                    <span className="text-5xl">{placeholder.emoji}</span>
                   </div>
                 </div>
 
                 {/* Stage表示 */}
-                <div className="absolute -bottom-1 left-1/2 transform -translate-x-1/2">
+                <div className="absolute -bottom-2 left-1/2 transform -translate-x-1/2">
                   <div
-                    className="px-2 py-0.5 rounded-full text-[10px] font-bold text-white"
+                    className="px-3 py-1 rounded-full text-xs font-bold text-white"
                     style={{ backgroundColor: attr.color }}
                   >
                     S{stage}
                   </div>
                 </div>
               </div>
+            </div>
 
-              {/* 守護神情報 */}
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-1.5 mb-1">
-                  <span className="text-xl">{attr.emoji}</span>
-                  <h2 className="text-lg sm:text-xl font-bold truncate" style={{ color: attr.color }}>
-                    {activeGuardian?.name || '守護神'}
-                  </h2>
-                  <ChevronRight className="w-5 h-5 text-slate-400 flex-shrink-0" />
-                </div>
-                <p className="text-[11px] text-slate-400 mb-2">
-                  {stageInfo.name} • {attr.name}属性
-                </p>
+            {/* 名前・ステージ情報 - 中央揃え1行 */}
+            <div className="flex items-center justify-center gap-2 mb-2">
+              <span className="text-xl">{attr.emoji}</span>
+              <h2 className="text-xl font-bold" style={{ color: attr.color }}>
+                {activeGuardian?.name || '守護神'}
+              </h2>
+              <span className="text-xs text-slate-400">
+                {stageInfo.name} • {attr.name}
+              </span>
+              <ChevronRight className="w-5 h-5 text-slate-400" />
+            </div>
 
-                {/* ステータス - インライン */}
-                <div className="flex gap-2">
-                  <div className="flex-1 bg-black/30 rounded-lg p-1.5 text-center">
-                    <p className="text-[9px] text-slate-400">投資済み</p>
-                    <p className="text-sm font-bold text-purple-400">{investedEnergy}E</p>
-                  </div>
-                  <div className="flex-1 bg-black/30 rounded-lg p-1.5 text-center">
-                    <p className="text-[9px] text-slate-400">オーラ</p>
-                    <p className="text-sm font-bold text-pink-400">{auraLevel}%</p>
-                  </div>
-                </div>
+            {/* ステータス - コンパクト1行 */}
+            <div className="flex items-center justify-center gap-4 bg-black/30 rounded-lg py-2 px-4">
+              <div className="flex items-center gap-1.5">
+                <span className="text-[10px] text-slate-400">投資</span>
+                <span className="text-sm font-bold text-purple-400">{investedEnergy}E</span>
+              </div>
+              <div className="w-px h-4 bg-slate-600" />
+              <div className="flex items-center gap-1.5">
+                <span className="text-[10px] text-slate-400">オーラ</span>
+                <span className="text-sm font-bold text-pink-400">{auraLevel}%</span>
               </div>
             </div>
 
-            {/* オーラゲージ */}
-            <div className="space-y-2 mt-3">
-              <div className="flex justify-between text-sm">
-                <span className="text-muted-foreground">オーラレベル</span>
-                <span className="font-bold" style={{ color: attr.color }}>
-                  {auraLevel}%
-                </span>
-              </div>
-
-              <div className="relative w-full h-4 bg-white/10 rounded-full overflow-hidden border-2 border-white/20">
+            {/* オーラゲージ - スリム */}
+            <div className="mt-2">
+              <div className="relative w-full h-2.5 bg-white/10 rounded-full overflow-hidden">
                 <div
                   className="h-full transition-all duration-1000"
                   style={{
                     width: `${auraLevel}%`,
                     background: `linear-gradient(90deg, ${attr.color}, ${attr.gradientTo})`,
-                    boxShadow: `0 0 20px ${attr.color}`,
+                    boxShadow: `0 0 10px ${attr.color}`,
                   }}
                 />
               </div>
