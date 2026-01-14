@@ -96,7 +96,7 @@ export function BGMSettings({ className = "", showLabel = true }: BGMSettingsPro
                 </span>
             </div>
 
-            {/* 初期化状態の表示（デバッグ用、必要に応じて非表示に） */}
+            {/* 初期化状態の表示 */}
             {!initialized && (
                 <p className="text-xs text-white/40 mt-1">
                     ※ 画面をタップするとBGMが開始されます
@@ -110,18 +110,11 @@ export function BGMSettings({ className = "", showLabel = true }: BGMSettingsPro
  * コンパクト版（アイコンのみ）
  */
 export function BGMToggle({ className = "" }: { className?: string }) {
-    const { enabled, setEnabled, initialized, initialize } = useBGM();
-
-    const handleClick = async () => {
-        if (!initialized) {
-            await initialize();
-        }
-        setEnabled(!enabled);
-    };
+    const { enabled, setEnabled } = useBGM();
 
     return (
         <button
-            onClick={handleClick}
+            onClick={() => setEnabled(!enabled)}
             className={`
                 p-2 rounded-full transition-all duration-200
                 ${enabled

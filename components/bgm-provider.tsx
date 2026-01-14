@@ -1,11 +1,11 @@
 "use client";
 
 /**
- * 🎵 BGM Provider
- * ページ遷移に応じて自動的にBGMを切り替えるReactコンテキスト
+ * 🎵 BGM Provider（シンプル版）
+ * ページ遷移に応じてBGMを切り替える
  * 
  * 修正履歴:
- * - 2026-01-14: BGM被り問題対応（状態管理をサービスに集約）
+ * - 2026-01-14 v3: シンプル化、サービスに処理を委譲
  */
 
 import React, { createContext, useContext, useEffect, useCallback, useState, useRef } from "react";
@@ -17,19 +17,17 @@ import {
     setBGMEnabled,
     setBGMVolume,
     getBGMSettings,
-    getCurrentBGMTrack
+    getCurrentBGMTrack,
+    isBGMPlaying
 } from "@/lib/bgm-service";
 import { getTrackForPath, BGMTrack } from "@/lib/bgm-compositions";
 
 interface BGMContextType {
-    isPlaying: boolean;
-    currentTrack: BGMTrack | null;
     enabled: boolean;
     volume: number;
     initialized: boolean;
     setEnabled: (enabled: boolean) => void;
     setVolume: (volume: number) => void;
-    initialize: () => Promise<void>;
 }
 
 const BGMContext = createContext<BGMContextType | null>(null);
@@ -48,28 +46,27 @@ interface BGMProviderProps {
 
 export function BGMProvider({ children }: BGMProviderProps) {
     const pathname = usePathname();
-    const [isPlaying, setIsPlaying] = useState(false);
-    const [currentTrack, setCurrentTrack] = useState<BGMTrack | null>(null);
     const [enabled, setEnabledState] = useState(true);
     const [volume, setVolumeState] = useState(0.3);
     const [initialized, setInitialized] = useState(false);
 
-    // 初期化試行フラグ（StrictMode対策）
-    const initAttemptedRef = useRef(false);
-    // 最後に処理したpathnameを追跡（重複呼び出し防止）
-    const lastProcessedPathRef = useRef<string | null>(null);
+    // 初期化フラグ
+    const initRef = useRef(false);
+    // 最後のpathname（重複防止）
+    const lastPathRef = useRef<string>("");
 
-    // 初期化時に設定を読み込み
+    // 設定読み込み
     useEffect(() => {
+        if (typeof window === "undefined") return;
         const settings = getBGMSettings();
         setEnabledState(settings.enabled);
         setVolumeState(settings.volume);
     }, []);
 
-    // ユーザー操作でBGMを初期化
-    const initialize = useCallback(async () => {
-        if (initialized || initAttemptedRef.current) return;
-        initAttemptedRef.current = true;
+    // 初期化
+    const initializeBGM = useCallback(async () => {
+        if (initRef.current || initialized) return;
+        initRef.current = true;
 
         try {
             const service = getBGMService();
@@ -77,67 +74,45 @@ export function BGMProvider({ children }: BGMProviderProps) {
             setInitialized(true);
             console.log("🎵 BGM Provider initialized");
 
-            // 初期化後、現在のページのBGMを再生
+            // 初期ページのBGMを再生
             const track = getTrackForPath(pathname);
             if (track !== "none" && enabled) {
+                lastPathRef.current = pathname;
                 await playBGM(track);
-                lastProcessedPathRef.current = pathname;
-                setCurrentTrack(track);
-                setIsPlaying(true);
             }
         } catch (error) {
-            console.error("🎵 BGM initialization failed:", error);
-            initAttemptedRef.current = false; // 再試行可能に
+            console.error("🎵 Init failed:", error);
+            initRef.current = false;
         }
     }, [pathname, enabled, initialized]);
 
-    // ページ遷移時にBGMを切り替え
+    // ページ遷移時のBGM切り替え
     useEffect(() => {
         if (!initialized || !enabled) return;
-
-        // 同じパスは処理しない（StrictMode対策）
-        if (lastProcessedPathRef.current === pathname) return;
+        if (lastPathRef.current === pathname) return;
 
         const track = getTrackForPath(pathname);
-        const serviceTrack = getCurrentBGMTrack();
+        console.log(`🎵 Path changed: ${pathname} -> ${track}`);
 
-        console.log(`🎵 Page transition: ${pathname} -> track: ${track}, current: ${serviceTrack}`);
+        lastPathRef.current = pathname;
 
-        // サービスの現在のトラックと比較（Provider側のstateではなく）
-        if (track !== serviceTrack) {
-            lastProcessedPathRef.current = pathname;
-
-            if (track === "none") {
-                stopBGM().then(() => {
-                    setIsPlaying(false);
-                    setCurrentTrack(null);
-                });
-            } else {
-                playBGM(track).then(() => {
-                    setCurrentTrack(track);
-                    setIsPlaying(true);
-                });
-            }
+        if (track === "none") {
+            stopBGM();
+        } else {
+            playBGM(track);
         }
     }, [pathname, initialized, enabled]);
 
-    // 有効/無効の切り替え
+    // 有効/無効切り替え
     const setEnabled = useCallback((newEnabled: boolean) => {
         setEnabledState(newEnabled);
         setBGMEnabled(newEnabled);
 
-        if (!newEnabled) {
-            setIsPlaying(false);
-            setCurrentTrack(null);
-            lastProcessedPathRef.current = null;
-        } else if (initialized) {
+        if (newEnabled && initialized) {
             const track = getTrackForPath(pathname);
             if (track !== "none") {
-                playBGM(track).then(() => {
-                    lastProcessedPathRef.current = pathname;
-                    setCurrentTrack(track);
-                    setIsPlaying(true);
-                });
+                lastPathRef.current = pathname;
+                playBGM(track);
             }
         }
     }, [initialized, pathname]);
@@ -148,35 +123,35 @@ export function BGMProvider({ children }: BGMProviderProps) {
         setBGMVolume(newVolume);
     }, []);
 
-    // ユーザー操作を検知して初期化
+    // ユーザー操作検知
     useEffect(() => {
         if (initialized) return;
 
-        const handleUserInteraction = () => {
-            initialize();
+        const handler = () => {
+            initializeBGM();
+            // 一度だけ実行
+            document.removeEventListener("click", handler);
+            document.removeEventListener("touchstart", handler);
+            document.removeEventListener("keydown", handler);
         };
 
-        // クリック、タッチ、キー入力で初期化
-        document.addEventListener("click", handleUserInteraction, { once: true });
-        document.addEventListener("touchstart", handleUserInteraction, { once: true });
-        document.addEventListener("keydown", handleUserInteraction, { once: true });
+        document.addEventListener("click", handler);
+        document.addEventListener("touchstart", handler);
+        document.addEventListener("keydown", handler);
 
         return () => {
-            document.removeEventListener("click", handleUserInteraction);
-            document.removeEventListener("touchstart", handleUserInteraction);
-            document.removeEventListener("keydown", handleUserInteraction);
+            document.removeEventListener("click", handler);
+            document.removeEventListener("touchstart", handler);
+            document.removeEventListener("keydown", handler);
         };
-    }, [initialize, initialized]);
+    }, [initializeBGM, initialized]);
 
     const value: BGMContextType = {
-        isPlaying,
-        currentTrack,
         enabled,
         volume,
         initialized,
         setEnabled,
         setVolume,
-        initialize,
     };
 
     return (
