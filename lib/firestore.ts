@@ -1881,13 +1881,16 @@ export async function saveSnsAccounts(
  * 注: guardianProfileは users/{userId}/guardianProfile フィールドに保存されている
  */
 async function addProfileCompletionBonus(userId: string): Promise<void> {
+  console.log(`[addProfileCompletionBonus] Starting for userId=${userId}`);
   try {
     // getUserGuardianProfileを使用してエナジーデータを取得
     const profile = await getUserGuardianProfile(userId);
+    console.log(`[addProfileCompletionBonus] Profile found:`, !!profile);
 
     if (profile) {
       const currentEnergy = profile.energy?.current || 0;
       const totalEarned = profile.energy?.totalEarned || 0;
+      console.log(`[addProfileCompletionBonus] Current energy=${currentEnergy}, totalEarned=${totalEarned}`);
 
       // users/{userId}/guardianProfile.energy にエナジーを加算
       await setDoc(doc(db, "users", userId), {
@@ -1899,10 +1902,13 @@ async function addProfileCompletionBonus(userId: string): Promise<void> {
           }
         }
       }, { merge: true });
+      console.log(`[addProfileCompletionBonus] Updated user energy successfully`);
 
       // エナジー履歴に記録（energy_history コレクションを使用 - 既存のFirestoreルールに準拠）
       const today = new Date().toISOString().split('T')[0];
       const bonusHistoryDocId = `${userId}_profile_bonus_${today}`;
+      console.log(`[addProfileCompletionBonus] Saving to energy_history: docId=${bonusHistoryDocId}, date=${today}`);
+
       await setDoc(doc(db, "energy_history", bonusHistoryDocId), {
         userId,
         type: 'profile_completion',
@@ -1911,9 +1917,12 @@ async function addProfileCompletionBonus(userId: string): Promise<void> {
         date: today,
         createdAt: serverTimestamp()
       });
+      console.log(`[addProfileCompletionBonus] energy_history saved successfully`);
+    } else {
+      console.warn(`[addProfileCompletionBonus] No profile found for userId=${userId}`);
     }
   } catch (error) {
-    console.error("Error adding profile completion bonus:", error);
+    console.error("[addProfileCompletionBonus] Error:", error);
     throw error;
   }
 }
