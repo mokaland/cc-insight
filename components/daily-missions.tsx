@@ -122,8 +122,8 @@ export function DailyMissions({
             >
                 <div className="flex items-center gap-3">
                     <div className={`w-10 h-10 rounded-full flex items-center justify-center ${todayReported
-                            ? "bg-gradient-to-br from-green-500 to-emerald-500"
-                            : "bg-gradient-to-br from-purple-500 to-pink-500"
+                        ? "bg-gradient-to-br from-green-500 to-emerald-500"
+                        : "bg-gradient-to-br from-purple-500 to-pink-500"
                         }`}>
                         {todayReported ? (
                             <Check className="w-5 h-5 text-white" />
@@ -135,9 +135,29 @@ export function DailyMissions({
                         <div className="flex items-center gap-2">
                             <h3 className="font-bold text-white">デイリーミッション</h3>
                             {todayReported && todayEnergy > 0 && (
-                                <span className="text-sm font-bold text-yellow-400">
+                                <motion.span
+                                    initial={{ scale: 0, opacity: 0 }}
+                                    animate={{
+                                        scale: [1, 1.1, 1],
+                                        opacity: 1,
+                                    }}
+                                    transition={{
+                                        scale: {
+                                            repeat: Infinity,
+                                            repeatType: "reverse",
+                                            duration: 1.5,
+                                            ease: "easeInOut"
+                                        },
+                                        opacity: { duration: 0.3 }
+                                    }}
+                                    className="text-sm font-bold text-yellow-400 px-2 py-0.5 rounded-full bg-yellow-400/20 border border-yellow-400/40"
+                                    style={{
+                                        textShadow: '0 0 10px rgba(250, 204, 21, 0.5)',
+                                        boxShadow: '0 0 15px rgba(250, 204, 21, 0.3)'
+                                    }}
+                                >
                                     +{todayEnergy}E
-                                </span>
+                                </motion.span>
                             )}
                         </div>
                         <p className="text-xs text-slate-400">
