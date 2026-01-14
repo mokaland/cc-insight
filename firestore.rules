@@ -174,9 +174,9 @@ service cloud.firestore {
       // 読み取り: 認証済みユーザーなら誰でも
       allow read: if isAuthenticated();
 
-      // 作成: 自分のエナジー履歴のみ
+      // 作成: 自分のエナジー履歴、または管理者（SNS承認ボーナス付与用）
       allow create: if isAuthenticated() &&
-                       request.resource.data.userId == request.auth.uid;
+                       (request.resource.data.userId == request.auth.uid || isAdmin());
 
       // 更新・削除: 禁止（履歴は削除・変更不可）
       allow update, delete: if false;
