@@ -16,10 +16,15 @@ import {
     ExternalLink,
     Flame,
     Mail,
+    Star,
+    Award,
+    Crown,
 } from "lucide-react";
 import { ButtonLoader } from "@/components/ui/loading-spinner";
 import { GUARDIANS, ATTRIBUTES, getGuardianImagePath, GuardianId, EVOLUTION_STAGES } from "@/lib/guardian-collection";
 import { useRouter } from "next/navigation";
+import { calculateLevel, BADGES, UserBadge, getBadgeRarityColor } from "@/lib/gamification";
+import { getUserBadges } from "@/lib/firestore";
 
 interface UserQuickViewModalProps {
     userId: string;
@@ -37,8 +42,11 @@ interface QuickViewData {
         color: string;
         emoji: string;
         imagePath: string | null;
+        energy: number;
     } | null;
     snsAccounts: SnsAccounts | null;
+    badges: UserBadge[];
+    level: { level: number; name: string; icon: string; color: string } | null;
 }
 
 export function UserQuickViewModal({ userId, userName, onClose }: UserQuickViewModalProps) {
@@ -49,6 +57,8 @@ export function UserQuickViewModal({ userId, userName, onClose }: UserQuickViewM
         reports: [],
         guardianData: null,
         snsAccounts: null,
+        badges: [],
+        level: null,
     });
 
     useEffect(() => {
@@ -74,14 +84,15 @@ export function UserQuickViewModal({ userId, userName, onClose }: UserQuickViewM
                         if (instance) {
                             const guardian = GUARDIANS[activeId];
                             const attr = ATTRIBUTES[guardian.attribute];
-                            const stage = EVOLUTION_STAGES[instance.stage];
+                            const stageInfo = EVOLUTION_STAGES[instance.stage];
                             guardianData = {
                                 name: guardian.name,
-                                stageName: stage.name,
+                                stageName: stageInfo.name,
                                 stage: instance.stage,
                                 color: attr.color,
                                 emoji: attr.emoji,
                                 imagePath: getGuardianImagePath(activeId, instance.stage),
+                                energy: instance.investedEnergy || 0,
                             };
                         }
                     }
@@ -96,11 +107,27 @@ export function UserQuickViewModal({ userId, userName, onClose }: UserQuickViewM
                     console.error("SNS取得エラー:", e);
                 }
 
+                // バッジ取得
+                let badges: UserBadge[] = [];
+                try {
+                    badges = await getUserBadges(userId);
+                } catch (e) {
+                    console.error("バッジ取得エラー:", e);
+                }
+
+                // レベル計算（総活動量から）
+                const totalActivity = reportsData.reduce((sum, r) =>
+                    sum + (r.likeCount || 0) + (r.replyCount || 0) + (r.igViews || 0), 0
+                );
+                const levelInfo = calculateLevel(totalActivity);
+
                 setData({
                     user: userData as User | null,
                     reports: reportsData,
                     guardianData,
                     snsAccounts: snsData,
+                    badges,
+                    level: levelInfo,
                 });
             } catch (error) {
                 console.error("データ取得エラー:", error);
@@ -179,23 +206,39 @@ export function UserQuickViewModal({ userId, userName, onClose }: UserQuickViewM
                     <div className="p-4 space-y-4">
                         {/* メインKPI 2x2 */}
                         <div className="grid grid-cols-2 gap-3">
-                            {/* 守護神 */}
+                            {/* 守護神 + ステージ */}
                             <div className="bg-white/5 rounded-lg p-3 flex items-center gap-3">
                                 {data.guardianData?.imagePath ? (
                                     <img
                                         src={data.guardianData.imagePath}
                                         alt={data.guardianData.name}
-                                        className="w-10 h-10 rounded-full object-cover"
+                                        className="w-12 h-12 rounded-full object-cover border-2"
+                                        style={{ borderColor: data.guardianData.color }}
                                     />
                                 ) : (
-                                    <div className="w-10 h-10 rounded-full bg-slate-700 flex items-center justify-center text-xl">
+                                    <div className="w-12 h-12 rounded-full bg-slate-700 flex items-center justify-center text-xl">
                                         {data.guardianData?.emoji || "🥚"}
                                     </div>
                                 )}
-                                <div>
-                                    <p className="text-xs text-muted-foreground">守護神</p>
-                                    <p className="font-bold" style={{ color: data.guardianData?.color || "#94a3b8" }}>
-                                        {data.guardianData?.stageName || "未召喚"}
+                                <div className="flex-1">
+                                    <div className="flex items-center gap-2">
+                                        <p className="font-bold" style={{ color: data.guardianData?.color || "#94a3b8" }}>
+                                            {data.guardianData?.name || "未召喚"}
+                                        </p>
+                                        {data.guardianData && (
+                                            <span
+                                                className="text-xs px-1.5 py-0.5 rounded font-medium"
+                                                style={{
+                                                    backgroundColor: `${data.guardianData.color}30`,
+                                                    color: data.guardianData.color
+                                                }}
+                                            >
+                                                S{data.guardianData.stage}
+                                            </span>
+                                        )}
+                                    </div>
+                                    <p className="text-xs text-muted-foreground">
+                                        {data.guardianData?.stageName || "守護神"} • {data.guardianData?.energy || 0}E
                                     </p>
                                 </div>
                             </div>
@@ -242,9 +285,9 @@ export function UserQuickViewModal({ userId, userName, onClose }: UserQuickViewM
                             <div className="flex gap-2 flex-wrap">
                                 {/* Instagram */}
                                 <div className={`flex items-center gap-1.5 px-2 py-1 rounded text-xs ${igStatus.status === 'approved' ? 'bg-green-500/20 text-green-300'
-                                        : igStatus.status === 'pending' ? 'bg-yellow-500/20 text-yellow-300'
-                                            : igStatus.hasUrl ? 'bg-red-500/20 text-red-300'
-                                                : 'bg-slate-700 text-slate-500'
+                                    : igStatus.status === 'pending' ? 'bg-yellow-500/20 text-yellow-300'
+                                        : igStatus.hasUrl ? 'bg-red-500/20 text-red-300'
+                                            : 'bg-slate-700 text-slate-500'
                                     }`}>
                                     <Instagram className="w-3 h-3" />
                                     <span className="font-medium">IG</span>
@@ -252,32 +295,80 @@ export function UserQuickViewModal({ userId, userName, onClose }: UserQuickViewM
                                 </div>
                                 {/* YouTube */}
                                 <div className={`flex items-center gap-1.5 px-2 py-1 rounded text-xs ${ytStatus.status === 'approved' ? 'bg-green-500/20 text-green-300'
-                                        : ytStatus.status === 'pending' ? 'bg-yellow-500/20 text-yellow-300'
-                                            : ytStatus.hasUrl ? 'bg-red-500/20 text-red-300'
-                                                : 'bg-slate-700 text-slate-500'
+                                    : ytStatus.status === 'pending' ? 'bg-yellow-500/20 text-yellow-300'
+                                        : ytStatus.hasUrl ? 'bg-red-500/20 text-red-300'
+                                            : 'bg-slate-700 text-slate-500'
                                     }`}>
                                     <span className="text-xs font-bold">YT</span>
                                     <span>{ytStatus.status === 'approved' ? '✓' : ytStatus.status === 'pending' ? '...' : ytStatus.hasUrl ? '✗' : '-'}</span>
                                 </div>
                                 {/* TikTok */}
                                 <div className={`flex items-center gap-1.5 px-2 py-1 rounded text-xs ${ttStatus.status === 'approved' ? 'bg-green-500/20 text-green-300'
-                                        : ttStatus.status === 'pending' ? 'bg-yellow-500/20 text-yellow-300'
-                                            : ttStatus.hasUrl ? 'bg-red-500/20 text-red-300'
-                                                : 'bg-slate-700 text-slate-500'
+                                    : ttStatus.status === 'pending' ? 'bg-yellow-500/20 text-yellow-300'
+                                        : ttStatus.hasUrl ? 'bg-red-500/20 text-red-300'
+                                            : 'bg-slate-700 text-slate-500'
                                     }`}>
                                     <span className="text-xs font-bold">TT</span>
                                     <span>{ttStatus.status === 'approved' ? '✓' : ttStatus.status === 'pending' ? '...' : ttStatus.hasUrl ? '✗' : '-'}</span>
                                 </div>
                                 {/* X */}
                                 <div className={`flex items-center gap-1.5 px-2 py-1 rounded text-xs ${xStatus.status === 'approved' ? 'bg-green-500/20 text-green-300'
-                                        : xStatus.status === 'pending' ? 'bg-yellow-500/20 text-yellow-300'
-                                            : xStatus.hasUrl ? 'bg-red-500/20 text-red-300'
-                                                : 'bg-slate-700 text-slate-500'
+                                    : xStatus.status === 'pending' ? 'bg-yellow-500/20 text-yellow-300'
+                                        : xStatus.hasUrl ? 'bg-red-500/20 text-red-300'
+                                            : 'bg-slate-700 text-slate-500'
                                     }`}>
                                     <span className="font-bold">𝕏</span>
                                     <span>{xStatus.status === 'approved' ? '✓' : xStatus.status === 'pending' ? '...' : xStatus.hasUrl ? '✗' : '-'}</span>
                                 </div>
                             </div>
+                        </div>
+
+                        {/* レベル + バッジ */}
+                        <div className="bg-white/5 rounded-lg p-3">
+                            <div className="flex items-center justify-between mb-2">
+                                <div className="flex items-center gap-2">
+                                    <Crown className="w-4 h-4 text-yellow-500" />
+                                    <p className="text-xs text-muted-foreground">レベル</p>
+                                </div>
+                                {data.level && (
+                                    <div className="flex items-center gap-1.5">
+                                        <span className="text-lg">{data.level.icon}</span>
+                                        <span className="font-bold" style={{ color: data.level.color }}>
+                                            Lv.{data.level.level} {data.level.name}
+                                        </span>
+                                    </div>
+                                )}
+                            </div>
+
+                            {/* 獲得バッジ */}
+                            <div className="flex items-center gap-2 mt-3">
+                                <Award className="w-4 h-4 text-purple-400" />
+                                <p className="text-xs text-muted-foreground">獲得バッジ</p>
+                            </div>
+                            {data.badges.length > 0 ? (
+                                <div className="flex gap-1.5 flex-wrap mt-2">
+                                    {data.badges.map((userBadge) => {
+                                        const badge = BADGES.find(b => b.id === userBadge.badgeId);
+                                        if (!badge) return null;
+                                        return (
+                                            <div
+                                                key={userBadge.badgeId}
+                                                className="flex items-center gap-1 px-2 py-1 rounded text-xs"
+                                                style={{
+                                                    backgroundColor: `${getBadgeRarityColor(badge.rarity)}20`,
+                                                    color: getBadgeRarityColor(badge.rarity)
+                                                }}
+                                                title={badge.description}
+                                            >
+                                                <span>{badge.icon}</span>
+                                                <span className="font-medium">{badge.name}</span>
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                            ) : (
+                                <p className="text-xs text-slate-500 mt-2">まだバッジを獲得していません</p>
+                            )}
                         </div>
 
                         {/* アクションボタン */}
