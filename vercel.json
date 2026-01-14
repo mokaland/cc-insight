@@ -31,6 +31,18 @@
     {
       "path": "/api/cron/backup-to-sheets",
       "schedule": "0 3 * * *"
+    },
+    {
+      "path": "/api/cron/decade-judgment",
+      "schedule": "0 0 11,21 * *"
+    },
+    {
+      "path": "/api/cron/check-escalation",
+      "schedule": "0 1 * * *"
+    },
+    {
+      "path": "/api/cron/daily-summary",
+      "schedule": "0 23 * * *"
     }
   ]
 }

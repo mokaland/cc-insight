@@ -20,5 +20,9 @@ export * from "./guardian";
 // エナジー型
 export * from "./energy";
 
+// KPI型（事業ダッシュボード用）
+export * from "./kpi";
+
 // Firestore Timestamp型（UI層はここからimportすること）
 export { Timestamp } from "firebase/firestore";
+

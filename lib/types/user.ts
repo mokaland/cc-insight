@@ -18,7 +18,10 @@ export type AgeGroup = '10s' | '20s' | '30s' | '40s' | '50plus';
 export type TeamId = 'fukugyou' | 'taishoku' | 'buppan';
 
 // ユーザー役割
-export type UserRole = 'member' | 'admin';
+// - member: 一般メンバー
+// - teamLead: チーム統括（自チームのKPI編集可能）
+// - admin: 管理者（全権限）
+export type UserRole = 'member' | 'teamLead' | 'admin';
 
 // ユーザーステータス
 export type UserStatus = 'pending' | 'approved' | 'suspended';

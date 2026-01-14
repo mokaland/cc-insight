@@ -18,6 +18,7 @@ import { subscribeToUnreadCount } from "@/lib/services/dm";
 import { PageTransition } from "@/components/page-transition";
 import { BGMProvider } from "@/components/bgm-provider";
 import { SEProvider } from "@/components/se-provider";
+import { registerServiceWorker, subscribeToPush } from "@/lib/pwa";
 
 // 完全公開ページ（認証不要・サイドバー非表示・ボトムナビ非表示）
 const publicPages = ["/login", "/register", "/verify-email", "/pending-approval", "/admin/login"];
@@ -143,6 +144,23 @@ function LayoutContent({ children }: { children: React.ReactNode }) {
     };
   }, [user, isPublicPage]);
 
+  // 📱 PWA Service Worker登録 & プッシュ通知購読
+  useEffect(() => {
+    const initPwa = async () => {
+      await registerServiceWorker();
+
+      // ユーザーがログイン済みの場合、プッシュ通知に購読
+      if (user) {
+        const success = await subscribeToPush(user.uid);
+        if (success) {
+          console.log('🔔 [PWA] Push notification subscription complete');
+        }
+      }
+    };
+
+    initPwa();
+  }, [user]);
+
   // 公開ページは認証なしで表示
   if (isPublicPage) {
     return <>{children}</>;
@@ -262,30 +280,48 @@ function BottomNavigation() {
       href: "/admin/monitor",
     },
     {
-      label: "メンバー",
-      icon: Users,
-      href: "/admin/users",
+      label: "DM",
+      icon: MessageSquare,
+      href: "/admin/dm",
     },
     {
-      label: "ランキング",
-      icon: Trophy,
-      href: "/ranking",
+      label: "招待",
+      icon: Ticket,
+      href: "/admin/invitations",
     },
   ];
 
-  // 管理者用：ドロワーに表示する全メニュー（整理後）
+  // 管理者用：ドロワーに表示する全メニュー（v3 チームページ対応）
   const adminDrawerItems = [
     {
-      label: "📊 ダッシュボード",
-      subtitle: "監視・監査",
+      label: "📈 CEOダッシュボード",
+      subtitle: "全チーム俯瞰・KPI",
+      icon: Shield,
+      href: "/admin/ceo",
+    },
+    {
+      label: "📊 Active Monitor",
+      subtitle: "離脱防止監視",
       icon: Shield,
       href: "/admin/monitor",
     },
     {
-      label: "👥 チーム",
-      subtitle: "副業・退職・スマホ",
+      label: "💼 副業チーム",
+      subtitle: "ファネル・目標・入力",
       icon: Briefcase,
-      href: "/dashboard?team=fukugyou",
+      href: "/team/fukugyou",
+    },
+    {
+      label: "🚪 退職チーム",
+      subtitle: "ファネル・目標・入力",
+      icon: Shield,
+      href: "/team/taishoku",
+    },
+    {
+      label: "📱 スマホ物販",
+      subtitle: "ファネル・目標・投稿",
+      icon: Smartphone,
+      href: "/team/buppan",
     },
     {
       label: "💬 DM",
@@ -459,16 +495,6 @@ function BottomNavigation() {
       {/* ボトムナビゲーション - コンパクト */}
       <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50 glass-premium border-t border-white/10" style={{ paddingBottom: 'max(env(safe-area-inset-bottom, 0px), 8px)' }}>
         <div className="flex items-center justify-around h-12">
-          {/* 管理者用メニューボタン */}
-          {isAdmin && (
-            <button
-              onClick={() => setIsDrawerOpen(true)}
-              className="flex flex-col items-center justify-center p-2 transition-all active:scale-95"
-            >
-              <Menu className="w-5 h-5 text-slate-400" />
-            </button>
-          )}
-
           {bottomNavItems.map((item) => {
             const isActive = pathname === item.href || pathname.startsWith(item.href);
             const isDm = item.href === "/dm";

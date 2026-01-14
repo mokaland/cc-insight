@@ -225,8 +225,17 @@ service cloud.firestore {
 
     // team_goals collection
     match /team_goals/{goalId} {
-      // 読み取り: 誰でも可能（目標表示用）
-      allow read: if true;
+      // 読み取り: 認証済みユーザー
+      allow read: if isAuthenticated();
+
+      // 書き込み: 管理者のみ
+      allow write: if isAdmin();
+    }
+
+    // team_weekly_kpi collection
+    match /team_weekly_kpi/{kpiId} {
+      // 読み取り: 認証済みユーザー
+      allow read: if isAuthenticated();
 
       // 書き込み: 管理者のみ
       allow write: if isAdmin();
