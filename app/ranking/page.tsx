@@ -573,9 +573,11 @@ export default function AllTeamsRankingPage() {
                 const guardian = GUARDIANS[guardianId as GuardianId];
                 const instance = profile.guardians[guardianId];
                 const attr = ATTRIBUTES[guardian.attribute];
+                const stageDef = EVOLUTION_STAGES[instance.stage as 0 | 1 | 2 | 3 | 4];
                 guardianData = {
                   guardianId,
                   stage: instance.stage,
+                  stageName: stageDef?.name || '卵',
                   imagePath: getGuardianImagePath(guardianId as GuardianId, instance.stage),
                   color: attr.color,
                   name: guardian.name,
