@@ -132,6 +132,76 @@ export async function getTodayTotalEnergy(
   return total;
 }
 
+/**
+ * 今日の獲得エナジー内訳を取得
+ */
+export interface EnergyBreakdownItem {
+  type: string;
+  label: string;
+  amount: number;
+  icon: string;
+}
+
+const ENERGY_TYPE_LABELS: Record<string, { label: string; icon: string }> = {
+  daily_report: { label: '日報報告', icon: '📝' },
+  streak_bonus: { label: '連続報告ボーナス', icon: '🔥' },
+  performance_bonus: { label: '成果ボーナス', icon: '⭐' },
+  weekly_bonus: { label: '週間ボーナス', icon: '📅' },
+  profile_completion: { label: 'SNS全承認ボーナス', icon: '📱' },
+  mission_reward: { label: 'ミッション達成', icon: '✅' },
+  referral_bonus: { label: '紹介ボーナス', icon: '🎁' },
+  guardian_investment: { label: '守護神投資', icon: '🥚' },
+};
+
+export async function getTodayEnergyBreakdown(
+  userId: string,
+  date: string
+): Promise<EnergyBreakdownItem[]> {
+  const historyRef = collection(db, "energy_history");
+  const q = query(
+    historyRef,
+    where("userId", "==", userId),
+    where("date", "==", date)
+  );
+
+  const snapshot = await getDocs(q);
+  const items: EnergyBreakdownItem[] = [];
+
+  snapshot.docs.forEach(doc => {
+    const data = doc.data();
+    const type = data.type || 'unknown';
+    const typeInfo = ENERGY_TYPE_LABELS[type] || { label: data.description || 'その他', icon: '💎' };
+
+    // 複合タイプ（日報）の場合は内訳を展開
+    if (data.breakdown) {
+      const breakdown = data.breakdown;
+      if (breakdown.dailyReport > 0) {
+        items.push({ type: 'daily_report', label: '日報報告', icon: '📝', amount: breakdown.dailyReport });
+      }
+      if (breakdown.streakBonus > 0) {
+        items.push({ type: 'streak_bonus', label: '連続報告ボーナス', icon: '🔥', amount: breakdown.streakBonus });
+      }
+      if (breakdown.performanceBonus > 0) {
+        items.push({ type: 'performance_bonus', label: '成果ボーナス', icon: '⭐', amount: breakdown.performanceBonus });
+      }
+      if (breakdown.weeklyBonus > 0) {
+        items.push({ type: 'weekly_bonus', label: '週間ボーナス', icon: '📅', amount: breakdown.weeklyBonus });
+      }
+    } else {
+      // 単一タイプ
+      const amount = data.totalEarned || data.amount || 0;
+      if (amount > 0) {
+        items.push({ type, ...typeInfo, amount });
+      }
+    }
+  });
+
+  // 金額順にソート（大きい順）
+  items.sort((a, b) => b.amount - a.amount);
+
+  return items;
+}
+
 // ============================================
 // 履歴取得関数
 // ============================================

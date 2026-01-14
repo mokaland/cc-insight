@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Check, Gift, Sparkles, ChevronDown, ChevronUp, Zap, AlertTriangle } from "lucide-react";
+import { Check, Gift, Sparkles, ChevronDown, ChevronUp, Zap, AlertTriangle, X } from "lucide-react";
 import { useAuth } from "@/lib/auth-context";
 import Link from "next/link";
 import {
@@ -16,6 +16,7 @@ import {
     ALL_COMPLETE_BONUS,
 } from "@/lib/types/mission";
 import { playSound, vibrate } from "@/lib/sound-service";
+import { getTodayEnergyBreakdown, type EnergyBreakdownItem } from "@/lib/energy-history";
 
 interface DailyMissionsProps {
     onRewardClaimed?: (reward: number) => void;
@@ -33,6 +34,10 @@ export function DailyMissions({
     const { user } = useAuth();
     const [missionState, setMissionState] = useState<DailyMissionState | null>(null);
     const [loading, setLoading] = useState(true);
+    // 内訳モーダル用
+    const [showBreakdownModal, setShowBreakdownModal] = useState(false);
+    const [breakdownItems, setBreakdownItems] = useState<EnergyBreakdownItem[]>([]);
+    const [loadingBreakdown, setLoadingBreakdown] = useState(false);
     const [expanded, setExpanded] = useState(false); // デフォルト折りたたみ
     const [claimingId, setClaimingId] = useState<string | null>(null);
 
@@ -91,6 +96,35 @@ export function DailyMissions({
             console.error("Failed to claim bonus:", error);
         } finally {
             setClaimingId(null);
+        }
+    };
+
+    // 内訳モーダルを表示
+    const handleShowBreakdown = async () => {
+        if (!user?.uid) return;
+        setShowBreakdownModal(true);
+        setLoadingBreakdown(true);
+
+        try {
+            const today = new Date().toISOString().split('T')[0];
+            const items = await getTodayEnergyBreakdown(user.uid, today);
+
+            // ミッション報酬も追加
+            if (missionState?.totalRewardEarned && missionState.totalRewardEarned > 0) {
+                items.push({
+                    type: 'mission_reward',
+                    label: 'ミッション達成',
+                    icon: '✅',
+                    amount: missionState.totalRewardEarned
+                });
+                items.sort((a, b) => b.amount - a.amount);
+            }
+
+            setBreakdownItems(items);
+        } catch (error) {
+            console.error('Failed to load breakdown:', error);
+        } finally {
+            setLoadingBreakdown(false);
         }
     };
 
@@ -156,7 +190,11 @@ export function DailyMissions({
                         <div className="flex items-center gap-2">
                             <h3 className="font-bold text-white">デイリーミッション</h3>
                             {todayEnergy > 0 && (
-                                <motion.span
+                                <motion.button
+                                    onClick={(e) => {
+                                        e.stopPropagation(); // アコーディオン開閉を防ぐ
+                                        handleShowBreakdown();
+                                    }}
                                     initial={{ scale: 0, opacity: 0 }}
                                     animate={{
                                         scale: [1, 1.1, 1],
@@ -171,14 +209,14 @@ export function DailyMissions({
                                         },
                                         opacity: { duration: 0.3 }
                                     }}
-                                    className="text-sm font-bold text-yellow-400 px-2 py-0.5 rounded-full bg-yellow-400/20 border border-yellow-400/40"
+                                    className="text-sm font-bold text-yellow-400 px-2 py-0.5 rounded-full bg-yellow-400/20 border border-yellow-400/40 cursor-pointer hover:bg-yellow-400/30 active:scale-95 transition-all"
                                     style={{
                                         textShadow: '0 0 10px rgba(250, 204, 21, 0.5)',
                                         boxShadow: '0 0 15px rgba(250, 204, 21, 0.3)'
                                     }}
                                 >
                                     +{todayEnergy}E
-                                </motion.span>
+                                </motion.button>
                             )}
                         </div>
                         <p className="text-xs text-slate-400">
@@ -358,6 +396,77 @@ export function DailyMissions({
                                 </motion.div>
                             )}
                         </div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
+
+            {/* 内訳モーダル */}
+            <AnimatePresence>
+                {showBreakdownModal && (
+                    <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        className="fixed inset-0 z-[100] flex items-center justify-center bg-black/70 backdrop-blur-sm"
+                        onClick={() => setShowBreakdownModal(false)}
+                    >
+                        <motion.div
+                            initial={{ scale: 0.9, opacity: 0 }}
+                            animate={{ scale: 1, opacity: 1 }}
+                            exit={{ scale: 0.9, opacity: 0 }}
+                            className="bg-slate-900/95 border border-yellow-500/30 rounded-2xl p-5 mx-4 max-w-sm w-full shadow-[0_0_30px_rgba(250,204,21,0.2)]"
+                            onClick={(e) => e.stopPropagation()}
+                        >
+                            {/* ヘッダー */}
+                            <div className="flex items-center justify-between mb-4">
+                                <h3 className="text-lg font-bold text-white flex items-center gap-2">
+                                    <span className="text-2xl">📊</span>
+                                    今日の獲得エナジー
+                                </h3>
+                                <button
+                                    onClick={() => setShowBreakdownModal(false)}
+                                    className="p-1 rounded-full hover:bg-white/10 transition-colors"
+                                >
+                                    <X className="w-5 h-5 text-slate-400" />
+                                </button>
+                            </div>
+
+                            {/* 内訳リスト */}
+                            {loadingBreakdown ? (
+                                <div className="py-8 text-center text-slate-400">
+                                    読み込み中...
+                                </div>
+                            ) : breakdownItems.length === 0 ? (
+                                <div className="py-8 text-center text-slate-400">
+                                    まだ獲得がありません
+                                </div>
+                            ) : (
+                                <div className="space-y-2 mb-4">
+                                    {breakdownItems.map((item, index) => (
+                                        <div
+                                            key={`${item.type}-${index}`}
+                                            className="flex items-center justify-between py-2 px-3 bg-white/5 rounded-lg"
+                                        >
+                                            <div className="flex items-center gap-3">
+                                                <span className="text-lg">{item.icon}</span>
+                                                <span className="text-sm text-slate-300">{item.label}</span>
+                                            </div>
+                                            <span className="text-sm font-bold text-yellow-400">
+                                                +{item.amount}E
+                                            </span>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+
+                            {/* 合計 */}
+                            <div className="border-t border-white/10 pt-3 flex items-center justify-between">
+                                <span className="text-sm text-slate-400">合計</span>
+                                <span className="text-xl font-bold text-yellow-400 glow-text">
+                                    +{todayEnergy}E
+                                </span>
+                            </div>
+                        </motion.div>
                     </motion.div>
                 )}
             </AnimatePresence>
