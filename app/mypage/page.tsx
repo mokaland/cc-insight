@@ -502,7 +502,16 @@ export default function MyPage() {
         todayReported={todayReported}
         todayEnergy={todayEnergy}
         isFirstDay={isFirstDay}
-        onRewardClaimed={(reward) => setTodayEnergy(prev => prev + reward)}
+        onRewardClaimed={async (reward) => {
+          setTodayEnergy(prev => prev + reward);
+          // プロフィールも再取得して保有エナジー・累計獲得を更新
+          if (user?.uid) {
+            const updatedProfile = await getUserGuardianProfile(user.uid);
+            if (updatedProfile) {
+              setProfile(updatedProfile);
+            }
+          }
+        }}
       />
 
       {/* 🎯 レベル & 称号 - クリックで詳細ページへ */}
