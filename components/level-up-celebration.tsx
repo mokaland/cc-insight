@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Star, Sparkles, TrendingUp } from "lucide-react";
 import { useEffect, useRef } from "react";
 import { getLevelTitle } from "@/lib/guardian-collection";
+import { playSound, vibrate, getSoundService } from "@/lib/sound-service";
 
 interface LevelUpCelebrationProps {
   isOpen: boolean;
@@ -57,12 +58,14 @@ export function LevelUpCelebration({
     }
   }, [isOpen]);
 
-  // バイブレーション
+  // 🔊 サウンド & バイブレーション
   useEffect(() => {
     if (isOpen) {
-      if (navigator.vibrate) {
-        navigator.vibrate([100, 50, 100, 50, 200]);
-      }
+      // AudioContext初期化（ユーザー操作後なのでOK）
+      getSoundService().initialize().then(() => {
+        playSound("level_up");
+      });
+      vibrate("level_up");
     }
   }, [isOpen]);
 

@@ -3,6 +3,7 @@
 import { motion, AnimatePresence, PanInfo } from "framer-motion";
 import { useState, useEffect, useRef, useCallback } from "react";
 import { Sparkles, Zap } from "lucide-react";
+import { playSound, vibrate, getSoundService } from "@/lib/sound-service";
 
 interface PackOpeningModalProps {
     isOpen: boolean;
@@ -61,11 +62,13 @@ export function PackOpeningModal({
         }
     }, [isOpen]);
 
-    // フェーズリセット
+    // フェーズリセット & サウンド初期化
     useEffect(() => {
         if (isOpen) {
             setPhase("idle");
             setSwipeProgress(0);
+            // ユーザー操作後なのでAudioContext初期化
+            getSoundService().initialize();
         }
     }, [isOpen]);
 
@@ -75,8 +78,8 @@ export function PackOpeningModal({
         setSwipeProgress(progress);
 
         // スワイプ中のバイブレーション
-        if (progress > 0.3 && progress < 0.7 && navigator.vibrate) {
-            navigator.vibrate(10);
+        if (progress > 0.3 && progress < 0.7) {
+            vibrate(10);
         }
     }, []);
 
@@ -85,20 +88,31 @@ export function PackOpeningModal({
             // 開封成功！
             setPhase("opening");
 
+            // 🔊 開封サウンド
+            playSound("pack_open");
+
             // 開封時の強いバイブレーション
-            if (navigator.vibrate) {
-                if (rarity === "legendary") {
-                    navigator.vibrate([100, 50, 100, 50, 200]);
-                } else if (rarity === "epic") {
-                    navigator.vibrate([80, 40, 120]);
-                } else {
-                    navigator.vibrate([50, 30, 80]);
-                }
+            if (rarity === "legendary") {
+                vibrate("legendary_drop");
+            } else if (rarity === "epic") {
+                vibrate("rare_drop");
+            } else {
+                vibrate("pack_open");
             }
 
             // 開封アニメーション後にリザルト表示
             setTimeout(() => {
                 setPhase("reveal");
+                // 🔊 リビールサウンド
+                if (rarity === "legendary") {
+                    playSound("legendary_drop");
+                } else if (rarity === "epic" || rarity === "rare") {
+                    playSound("rare_drop");
+                } else {
+                    playSound("pack_reveal");
+                }
+                // 🔊 エナジー獲得サウンド
+                setTimeout(() => playSound("energy_gain"), 300);
             }, 800);
 
             // リザルト表示後に完了
@@ -116,12 +130,14 @@ export function PackOpeningModal({
         if (phase === "idle") {
             setPhase("opening");
 
-            if (navigator.vibrate) {
-                navigator.vibrate([50, 30, 80]);
-            }
+            // 🔊 開封サウンド & バイブレーション
+            playSound("pack_open");
+            vibrate("pack_open");
 
             setTimeout(() => {
                 setPhase("reveal");
+                playSound("pack_reveal");
+                setTimeout(() => playSound("energy_gain"), 300);
             }, 800);
 
             setTimeout(() => {
