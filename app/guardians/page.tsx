@@ -359,7 +359,7 @@ export default function GuardiansPage() {
                       {/* ロック画像 */}
                       <div className="w-16 h-16 rounded-xl overflow-hidden border-2 border-slate-600 flex-shrink-0 relative bg-slate-800">
                         <img
-                          src="/images/guardians/horyu/stage0.png"
+                          src="/images/guardians/guardian-egg.png"
                           alt="???"
                           className="w-full h-full object-cover opacity-30 grayscale"
                         />

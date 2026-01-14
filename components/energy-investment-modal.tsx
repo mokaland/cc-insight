@@ -1011,8 +1011,11 @@ export default function EnergyInvestmentModal({
                     opacity: evolutionPhase === "cardify" ? [1, 0.7] : evolutionPhase === "charging" ? 0.5 : 1
                   }}
                   onError={(e) => {
-                    // 画像読み込み失敗時は卵画像を表示
-                    e.currentTarget.src = "/images/ui/guardian-egg.png";
+                    // 画像読み込み失敗時: T1は白い卵、T2以降は黒い卵
+                    const g = GUARDIANS[guardianId];
+                    e.currentTarget.src = g.tier === 1
+                      ? `/images/guardians/${guardianId}/stage0.png`
+                      : '/images/guardians/guardian-egg.png';
                   }}
                 />
               </div>
@@ -1117,8 +1120,11 @@ export default function EnergyInvestmentModal({
                   } : {}}
                   transition={{ duration: 2, repeat: Infinity }}
                   onError={(e) => {
-                    // 画像読み込み失敗時は卵画像を表示
-                    e.currentTarget.src = "/images/ui/guardian-egg.png";
+                    // 画像読み込み失敗時: T1は白い卵、T2以降は黒い卵
+                    const g = GUARDIANS[guardianId];
+                    e.currentTarget.src = g.tier === 1
+                      ? `/images/guardians/${guardianId}/stage0.png`
+                      : '/images/guardians/guardian-egg.png';
                   }}
                 />
               </div>

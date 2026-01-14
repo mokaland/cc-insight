@@ -222,11 +222,15 @@ export default function GuardianDetailPage() {
         >
           {isStageUnlocked || isEggStage ? (
             <img
-              src={isEggStage ? "/images/ui/guardian-egg.png" : getGuardianImagePath(guardianId, selectedStage)}
+              src={getGuardianImagePath(guardianId, selectedStage)}
               alt={isEggStage ? `${guardian.name} 卵` : `${guardian.name} Stage ${selectedStage}`}
               className="w-full h-full object-contain"
               onError={(e) => {
-                e.currentTarget.src = "/images/ui/guardian-egg.png";
+                // フォールバック: T1は白い卵、T2以降は黒い卵
+                const g = GUARDIANS[guardianId];
+                e.currentTarget.src = g.tier === 1
+                  ? `/images/guardians/${guardianId}/stage0.png`
+                  : '/images/guardians/guardian-egg.png';
               }}
             />
           ) : (

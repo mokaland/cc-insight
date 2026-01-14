@@ -374,8 +374,11 @@ export default function GuardianUnlockAnimation({
               alt={guardian.name}
               className="w-full h-full object-contain"
               onError={(e) => {
-                // 画像読み込み失敗時は卵画像を表示
-                e.currentTarget.src = "/images/ui/guardian-egg.png";
+                // 画像読み込み失敗時: T1は白い卵、T2以降は黒い卵
+                const g = GUARDIANS[guardianId];
+                e.currentTarget.src = g.tier === 1
+                  ? `/images/guardians/${guardianId}/stage0.png`
+                  : '/images/guardians/guardian-egg.png';
               }}
             />
             {/* Stage 0 バッジ */}
