@@ -13,6 +13,8 @@ export type BGMTrack =
     | "guardian_detail"  // 守護神詳細 - 守護神の威光
     | "ranking"          // ランキング - コズミック・コロシアム
     | "level_journey"    // レベルジャーニー - 星々の航路
+    | "login"            // ログイン・新規登録・確認画面
+    | "pending"          // 承認待ち画面
     | "none";            // BGMなし
 
 // トラック情報
@@ -61,10 +63,31 @@ export const BGM_TRACKS: Record<Exclude<BGMTrack, "none">, TrackInfo> = {
         nameJa: "星々の航路",
         file: "/bgm/level-journey.mp3",
     },
+    login: {
+        id: "login",
+        name: "Gateway",
+        nameJa: "門出の調べ",
+        file: "/bgm/login.mp3",
+    },
+    pending: {
+        id: "pending",
+        name: "Waiting for Approval",
+        nameJa: "承認への祈り",
+        file: "/bgm/pending.mp3",
+    },
 };
 
 // ページパスからBGMトラックを取得
 export function getTrackForPath(pathname: string): BGMTrack {
+    // ログイン関連ページ
+    if (pathname === "/login" || pathname === "/register" || pathname === "/verify-email") {
+        return "login";
+    }
+    // 承認待ちページ
+    if (pathname === "/pending-approval") {
+        return "pending";
+    }
+    // マイページ（ログイン後のトップ）
     if (pathname === "/mypage" || pathname === "/") {
         return "mypage";
     }
@@ -80,8 +103,12 @@ export function getTrackForPath(pathname: string): BGMTrack {
     if (pathname === "/ranking") {
         return "ranking";
     }
-    if (pathname === "/level" || pathname === "/level-journey") {
+    if (pathname === "/level" || pathname === "/level-journey" || pathname.startsWith("/level/")) {
         return "level_journey";
+    }
+    // DMページはマイページと同じBGM
+    if (pathname === "/dm") {
+        return "mypage";
     }
     // その他のページはBGMなし
     return "none";

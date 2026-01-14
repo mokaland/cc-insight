@@ -17,6 +17,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { subscribeToUnreadCount } from "@/lib/services/dm";
 import { PageTransition } from "@/components/page-transition";
 import { BGMProvider } from "@/components/bgm-provider";
+import { SEProvider } from "@/components/se-provider";
 
 // 完全公開ページ（認証不要・サイドバー非表示・ボトムナビ非表示）
 const publicPages = ["/login", "/register", "/verify-email", "/pending-approval", "/admin/login"];
@@ -507,7 +508,9 @@ export function ClientLayout({ children }: { children: React.ReactNode }) {
   return (
     <AuthProvider>
       <BGMProvider>
-        <LayoutContent>{children}</LayoutContent>
+        <SEProvider>
+          <LayoutContent>{children}</LayoutContent>
+        </SEProvider>
       </BGMProvider>
     </AuthProvider>
   );
