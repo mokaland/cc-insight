@@ -128,27 +128,25 @@ export default function MyPage() {
 
         if (todayReport) {
           setTodayReported(true);
-          // 今日のエナジー取得（energy_historyから取得 + ミッション報酬）
-          const { getTodayEnergyHistory } = await import("@/lib/energy-history");
+          // 今日のエナジー取得（全ドキュメント集計 + ミッション報酬）
+          const { getTodayTotalEnergy } = await import("@/lib/energy-history");
           const { getTodayMissions } = await import("@/lib/services/mission");
-          const [todayHistory, missionState] = await Promise.all([
-            getTodayEnergyHistory(user.uid, today),
+          const [historyEnergy, missionState] = await Promise.all([
+            getTodayTotalEnergy(user.uid, today),
             getTodayMissions(user.uid)
           ]);
-          // レポートエナジー + ミッション報酬 = 今日の総獲得
-          const reportEnergy = todayHistory?.totalEarned || 0;
+          // レポートエナジー + SNSボーナス + ミッション報酬 = 今日の総獲得
           const missionReward = missionState?.totalRewardEarned || 0;
-          setTodayEnergy(reportEnergy + missionReward);
+          setTodayEnergy(historyEnergy + missionReward);
         } else {
           // 📅 日報がなくても本日獲得分を計算（SNS承認ボーナス等を含む）
-          const { getTodayEnergyHistory } = await import("@/lib/energy-history");
+          const { getTodayTotalEnergy } = await import("@/lib/energy-history");
           const { getTodayMissions } = await import("@/lib/services/mission");
           const today = new Date().toISOString().split("T")[0];
-          const [todayHistory, missionState] = await Promise.all([
-            getTodayEnergyHistory(user.uid, today),
+          const [historyEnergy, missionState] = await Promise.all([
+            getTodayTotalEnergy(user.uid, today),
             getTodayMissions(user.uid)
           ]);
-          const historyEnergy = todayHistory?.totalEarned || 0;
           const missionReward = missionState?.totalRewardEarned || 0;
           if (historyEnergy > 0 || missionReward > 0) {
             setTodayEnergy(historyEnergy + missionReward);

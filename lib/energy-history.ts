@@ -105,6 +105,33 @@ export async function getTodayEnergyHistory(
   return null;
 }
 
+/**
+ * 今日の総獲得エナジーを取得（全ドキュメントを集計）
+ * SNS承認ボーナス等の特別ボーナスも含む
+ */
+export async function getTodayTotalEnergy(
+  userId: string,
+  date: string
+): Promise<number> {
+  const historyRef = collection(db, "energy_history");
+  const q = query(
+    historyRef,
+    where("userId", "==", userId),
+    where("date", "==", date)
+  );
+
+  const snapshot = await getDocs(q);
+  let total = 0;
+
+  snapshot.docs.forEach(doc => {
+    const data = doc.data();
+    // totalEarnedがある場合はそれを使用、なければamountを使用
+    total += data.totalEarned || data.amount || 0;
+  });
+
+  return total;
+}
+
 // ============================================
 // 履歴取得関数
 // ============================================
@@ -117,7 +144,7 @@ export async function getEnergyHistory(
   periodDays: number | "all" = 30
 ): Promise<EnergyHistoryRecord[]> {
   let q;
-  
+
   if (periodDays === "all") {
     q = query(
       collection(db, "energy_history"),
@@ -166,7 +193,7 @@ export function calculateHistorySummary(
   const totalEarned = records.reduce((sum, r) => sum + r.totalEarned, 0);
 
   // 最高獲得日
-  const bestRecord = records.reduce((best, r) => 
+  const bestRecord = records.reduce((best, r) =>
     r.totalEarned > best.totalEarned ? r : best
   );
 
