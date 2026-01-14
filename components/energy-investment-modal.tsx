@@ -405,7 +405,7 @@ export default function EnergyInvestmentModal({
 
     return (
       <div
-        className="fixed inset-0 bg-gradient-to-b from-slate-950 via-indigo-950/95 to-slate-950 flex flex-col items-center justify-center z-[9999] overflow-hidden"
+        className="fixed inset-0 bg-gradient-to-b from-slate-950 via-indigo-950/95 to-slate-950 flex flex-col items-center z-[9999] overflow-y-auto"
         style={{
           width: "100vw",
           height: "100dvh",
@@ -413,8 +413,9 @@ export default function EnergyInvestmentModal({
           left: 0,
           right: 0,
           top: 0,
-          paddingTop: "env(safe-area-inset-top, 0px)",
-          touchAction: "none"
+          paddingTop: "calc(env(safe-area-inset-top, 0px) + 60px)",
+          paddingBottom: "calc(env(safe-area-inset-bottom, 0px) + 120px)",
+          touchAction: "pan-y"
         }}
         onClick={handleSkip}
       >
