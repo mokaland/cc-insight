@@ -8,6 +8,9 @@
  * - クロスフェードによる滑らかな切り替え
  * - iOS Safari対応
  * - 音量調整・ON/OFF設定
+ * 
+ * 修正履歴:
+ * - 2026-01-14: BGM被り問題を修正（孤児オーディオ防止、フェード中断対応）
  */
 
 import { BGMTrack, getTrackInfo } from "./bgm-compositions";
@@ -17,12 +20,14 @@ const STORAGE_KEY = "cc-insight-bgm-settings";
 
 class BGMService {
     private currentAudio: HTMLAudioElement | null = null;
-    private nextAudio: HTMLAudioElement | null = null;
     private currentTrack: BGMTrack | null = null;
     private enabled: boolean = true;
-    private volume: number = 0.3; // デフォルト音量を控えめに
+    private volume: number = 0.3;
     private initialized: boolean = false;
-    private isFading: boolean = false;
+
+    // フェード関連（中断可能に）
+    private fadeAnimationId: number | null = null;
+    private pendingTrack: BGMTrack | null = null;
 
     constructor() {
         if (typeof window !== "undefined") {
@@ -31,11 +36,10 @@ class BGMService {
     }
 
     /**
-     * サービスを初期化（ユーザー操作後に呼び出し）
+     * サービスを初期化
      */
     async initialize(): Promise<void> {
         if (this.initialized) return;
-
         this.initialized = true;
         console.log("🎵 BGMService initialized");
     }
@@ -78,7 +82,7 @@ class BGMService {
         this.saveSettings();
 
         if (!enabled) {
-            this.stop();
+            this.stopImmediately();
         }
     }
 
@@ -89,7 +93,6 @@ class BGMService {
         this.volume = Math.max(0, Math.min(1, volume));
         this.saveSettings();
 
-        // 現在再生中のオーディオに反映
         if (this.currentAudio) {
             this.currentAudio.volume = this.volume;
         }
@@ -110,25 +113,58 @@ class BGMService {
     }
 
     /**
-     * BGMを再生（クロスフェード対応）
+     * 全てのオーディオを即座に停止（孤児防止）
+     */
+    private stopImmediately(): void {
+        // フェードアニメーションをキャンセル
+        if (this.fadeAnimationId !== null) {
+            cancelAnimationFrame(this.fadeAnimationId);
+            this.fadeAnimationId = null;
+        }
+
+        // 現在のオーディオを停止
+        if (this.currentAudio) {
+            try {
+                this.currentAudio.pause();
+                this.currentAudio.currentTime = 0;
+                this.currentAudio.src = ""; // リソース解放
+            } catch (e) {
+                // 無視
+            }
+            this.currentAudio = null;
+        }
+
+        this.currentTrack = null;
+        this.pendingTrack = null;
+    }
+
+    /**
+     * BGMを再生（改善版：被り防止）
      */
     async play(trackId: BGMTrack, crossFadeDuration: number = 1500): Promise<void> {
-        // 無効またはnoneの場合は停止
-        if (!this.enabled || trackId === "none") {
+        // 無効の場合は停止
+        if (!this.enabled) {
+            this.stopImmediately();
+            return;
+        }
+
+        // noneの場合はフェードアウトして停止
+        if (trackId === "none") {
             if (this.currentAudio) {
-                await this.fadeOut(this.currentAudio, crossFadeDuration);
-                this.currentTrack = null;
+                await this.fadeOutAndStop(crossFadeDuration);
             }
             return;
         }
 
         // 同じトラックが再生中なら何もしない
         if (this.currentTrack === trackId && this.currentAudio && !this.currentAudio.paused) {
+            console.log(`🎵 Already playing: ${trackId}`);
             return;
         }
 
-        // フェード中は待機
-        if (this.isFading) {
+        // 同じトラックへの切り替えが既にペンディング中なら何もしない
+        if (this.pendingTrack === trackId) {
+            console.log(`🎵 Already pending: ${trackId}`);
             return;
         }
 
@@ -138,64 +174,121 @@ class BGMService {
             return;
         }
 
-        console.log(`🎵 Playing BGM: ${trackInfo.nameJa}`);
+        console.log(`🎵 Switching BGM to: ${trackInfo.nameJa}`);
+
+        // ペンディング設定
+        this.pendingTrack = trackId;
 
         try {
             // 新しいオーディオを準備
-            this.nextAudio = new Audio(trackInfo.file);
-            this.nextAudio.loop = true;
-            this.nextAudio.volume = 0; // フェードイン用に0から開始
+            const newAudio = new Audio(trackInfo.file);
+            newAudio.loop = true;
+            newAudio.volume = 0; // フェードイン用
 
-            // 再生開始を待機
-            await this.nextAudio.play();
+            // 再生開始を試みる（エラー時はキャッチ）
+            try {
+                await newAudio.play();
+            } catch (playError) {
+                console.warn("🎵 Autoplay blocked, waiting for interaction");
+                this.pendingTrack = null;
+                return;
+            }
 
-            // クロスフェード
-            this.isFading = true;
-
+            // 古いオーディオがあれば停止（フェードせず即停止して確実に）
             if (this.currentAudio) {
-                // 古いオーディオをフェードアウト、新しいオーディオをフェードイン
+                // フェードアニメーションをキャンセル
+                if (this.fadeAnimationId !== null) {
+                    cancelAnimationFrame(this.fadeAnimationId);
+                    this.fadeAnimationId = null;
+                }
+
+                // 古いオーディオを停止
+                const oldAudio = this.currentAudio;
+                this.currentAudio = null;
+
+                // クロスフェード：古いのをフェードアウト、新しいのをフェードイン
                 await Promise.all([
-                    this.fadeOut(this.currentAudio, crossFadeDuration),
-                    this.fadeIn(this.nextAudio, crossFadeDuration),
+                    this.fadeOutAudio(oldAudio, crossFadeDuration),
+                    this.fadeInAudio(newAudio, crossFadeDuration),
                 ]);
             } else {
                 // 新しいオーディオをフェードイン
-                await this.fadeIn(this.nextAudio, crossFadeDuration);
+                await this.fadeInAudio(newAudio, crossFadeDuration);
             }
 
-            this.currentAudio = this.nextAudio;
-            this.nextAudio = null;
+            // 状態を更新
+            this.currentAudio = newAudio;
             this.currentTrack = trackId;
-            this.isFading = false;
+            this.pendingTrack = null;
 
         } catch (error) {
             console.error("🎵 Failed to play BGM:", error);
-            this.isFading = false;
-
-            // 自動再生がブロックされた場合のメッセージ
-            if (error instanceof Error && error.name === "NotAllowedError") {
-                console.log("🎵 Autoplay blocked. Waiting for user interaction.");
-            }
+            this.pendingTrack = null;
         }
     }
 
     /**
-     * フェードイン
+     * フェードイン（中断可能）
      */
-    private fadeIn(audio: HTMLAudioElement, duration: number): Promise<void> {
+    private fadeInAudio(audio: HTMLAudioElement, duration: number): Promise<void> {
         return new Promise((resolve) => {
-            const startTime = Date.now();
+            const startTime = performance.now();
             const targetVolume = this.volume;
 
-            const fade = () => {
-                const elapsed = Date.now() - startTime;
+            const fade = (currentTime: number) => {
+                const elapsed = currentTime - startTime;
                 const progress = Math.min(elapsed / duration, 1);
 
-                audio.volume = targetVolume * progress;
+                try {
+                    audio.volume = targetVolume * progress;
+                } catch (e) {
+                    // オーディオが既に破棄されている場合
+                    resolve();
+                    return;
+                }
+
+                if (progress < 1) {
+                    this.fadeAnimationId = requestAnimationFrame(fade);
+                } else {
+                    this.fadeAnimationId = null;
+                    resolve();
+                }
+            };
+
+            this.fadeAnimationId = requestAnimationFrame(fade);
+        });
+    }
+
+    /**
+     * フェードアウト（別のオーディオを対象に）
+     */
+    private fadeOutAudio(audio: HTMLAudioElement, duration: number): Promise<void> {
+        return new Promise((resolve) => {
+            const startTime = performance.now();
+            const startVolume = audio.volume;
+
+            const fade = (currentTime: number) => {
+                const elapsed = currentTime - startTime;
+                const progress = Math.min(elapsed / duration, 1);
+
+                try {
+                    audio.volume = startVolume * (1 - progress);
+                } catch (e) {
+                    // オーディオが既に破棄されている場合
+                    resolve();
+                    return;
+                }
 
                 if (progress < 1) {
                     requestAnimationFrame(fade);
                 } else {
+                    try {
+                        audio.pause();
+                        audio.currentTime = 0;
+                        audio.src = ""; // リソース解放
+                    } catch (e) {
+                        // 無視
+                    }
                     resolve();
                 }
             };
@@ -205,56 +298,30 @@ class BGMService {
     }
 
     /**
-     * フェードアウト
+     * フェードアウトして停止
      */
-    private fadeOut(audio: HTMLAudioElement, duration: number): Promise<void> {
-        return new Promise((resolve) => {
-            const startTime = Date.now();
-            const startVolume = audio.volume;
+    private async fadeOutAndStop(duration: number): Promise<void> {
+        if (!this.currentAudio) return;
 
-            const fade = () => {
-                const elapsed = Date.now() - startTime;
-                const progress = Math.min(elapsed / duration, 1);
+        const audio = this.currentAudio;
+        this.currentAudio = null;
+        this.currentTrack = null;
 
-                audio.volume = startVolume * (1 - progress);
-
-                if (progress < 1) {
-                    requestAnimationFrame(fade);
-                } else {
-                    audio.pause();
-                    audio.currentTime = 0;
-                    resolve();
-                }
-            };
-
-            requestAnimationFrame(fade);
-        });
+        await this.fadeOutAudio(audio, duration);
     }
 
     /**
      * BGMを停止
      */
     async stop(fadeDuration: number = 1000): Promise<void> {
-        if (this.currentAudio) {
-            await this.fadeOut(this.currentAudio, fadeDuration);
-            this.currentAudio = null;
-            this.currentTrack = null;
-        }
+        await this.fadeOutAndStop(fadeDuration);
     }
 
     /**
      * クリーンアップ
      */
     dispose(): void {
-        if (this.currentAudio) {
-            this.currentAudio.pause();
-            this.currentAudio = null;
-        }
-        if (this.nextAudio) {
-            this.nextAudio.pause();
-            this.nextAudio = null;
-        }
-        this.currentTrack = null;
+        this.stopImmediately();
         this.initialized = false;
     }
 }
@@ -288,4 +355,8 @@ export function setBGMEnabled(enabled: boolean): void {
 
 export function getBGMSettings(): { enabled: boolean; volume: number } {
     return getBGMService().getSettings();
+}
+
+export function getCurrentBGMTrack(): BGMTrack | null {
+    return getBGMService().getCurrentTrack();
 }

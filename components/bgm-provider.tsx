@@ -3,11 +3,22 @@
 /**
  * 🎵 BGM Provider
  * ページ遷移に応じて自動的にBGMを切り替えるReactコンテキスト
+ * 
+ * 修正履歴:
+ * - 2026-01-14: BGM被り問題対応（状態管理をサービスに集約）
  */
 
 import React, { createContext, useContext, useEffect, useCallback, useState, useRef } from "react";
 import { usePathname } from "next/navigation";
-import { getBGMService, playBGM, stopBGM, setBGMEnabled, setBGMVolume, getBGMSettings } from "@/lib/bgm-service";
+import {
+    getBGMService,
+    playBGM,
+    stopBGM,
+    setBGMEnabled,
+    setBGMVolume,
+    getBGMSettings,
+    getCurrentBGMTrack
+} from "@/lib/bgm-service";
 import { getTrackForPath, BGMTrack } from "@/lib/bgm-compositions";
 
 interface BGMContextType {
@@ -40,9 +51,13 @@ export function BGMProvider({ children }: BGMProviderProps) {
     const [isPlaying, setIsPlaying] = useState(false);
     const [currentTrack, setCurrentTrack] = useState<BGMTrack | null>(null);
     const [enabled, setEnabledState] = useState(true);
-    const [volume, setVolumeState] = useState(0.5);
+    const [volume, setVolumeState] = useState(0.3);
     const [initialized, setInitialized] = useState(false);
+
+    // 初期化試行フラグ（StrictMode対策）
     const initAttemptedRef = useRef(false);
+    // 最後に処理したpathnameを追跡（重複呼び出し防止）
+    const lastProcessedPathRef = useRef<string | null>(null);
 
     // 初期化時に設定を読み込み
     useEffect(() => {
@@ -66,11 +81,13 @@ export function BGMProvider({ children }: BGMProviderProps) {
             const track = getTrackForPath(pathname);
             if (track !== "none" && enabled) {
                 await playBGM(track);
+                lastProcessedPathRef.current = pathname;
                 setCurrentTrack(track);
                 setIsPlaying(true);
             }
         } catch (error) {
             console.error("🎵 BGM initialization failed:", error);
+            initAttemptedRef.current = false; // 再試行可能に
         }
     }, [pathname, enabled, initialized]);
 
@@ -78,10 +95,18 @@ export function BGMProvider({ children }: BGMProviderProps) {
     useEffect(() => {
         if (!initialized || !enabled) return;
 
-        const track = getTrackForPath(pathname);
+        // 同じパスは処理しない（StrictMode対策）
+        if (lastProcessedPathRef.current === pathname) return;
 
-        // 現在のトラックと異なる場合のみ切り替え
-        if (track !== currentTrack) {
+        const track = getTrackForPath(pathname);
+        const serviceTrack = getCurrentBGMTrack();
+
+        console.log(`🎵 Page transition: ${pathname} -> track: ${track}, current: ${serviceTrack}`);
+
+        // サービスの現在のトラックと比較（Provider側のstateではなく）
+        if (track !== serviceTrack) {
+            lastProcessedPathRef.current = pathname;
+
             if (track === "none") {
                 stopBGM().then(() => {
                     setIsPlaying(false);
@@ -94,7 +119,7 @@ export function BGMProvider({ children }: BGMProviderProps) {
                 });
             }
         }
-    }, [pathname, initialized, enabled, currentTrack]);
+    }, [pathname, initialized, enabled]);
 
     // 有効/無効の切り替え
     const setEnabled = useCallback((newEnabled: boolean) => {
@@ -104,11 +129,12 @@ export function BGMProvider({ children }: BGMProviderProps) {
         if (!newEnabled) {
             setIsPlaying(false);
             setCurrentTrack(null);
+            lastProcessedPathRef.current = null;
         } else if (initialized) {
-            // 有効化された場合、現在のページのBGMを再生
             const track = getTrackForPath(pathname);
             if (track !== "none") {
                 playBGM(track).then(() => {
+                    lastProcessedPathRef.current = pathname;
                     setCurrentTrack(track);
                     setIsPlaying(true);
                 });
