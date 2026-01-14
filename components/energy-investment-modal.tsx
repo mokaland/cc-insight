@@ -349,11 +349,11 @@ export default function EnergyInvestmentModal({
           });
           setShowSuccessAnimation(true);
 
-          // 2.5秒後に演出を閉じて成功コールバック
+          // 6秒後に演出を閉じて成功コールバック（スキップしない場合）
           setTimeout(() => {
             setShowSuccessAnimation(false);
             onSuccess();
-          }, 2500);
+          }, 6000);
         }
       } else {
         alert(result.message);
@@ -366,32 +366,75 @@ export default function EnergyInvestmentModal({
     }
   }
 
-  // 投資成功演出（進化なし）- リッチUI版
+  // 投資成功演出（進化なし）- リッチUI版 + スキップ対応
   if (showSuccessAnimation && successData) {
     const successMsg = getSuccessMessage(successData.amount, successData.remaining, guardian.name);
+    const guardianImage = getGuardianImagePath(guardianId, stage as EvolutionStage);
+
+    // スキップハンドラー
+    const handleSkip = () => {
+      setShowSuccessAnimation(false);
+      onSuccess();
+    };
 
     return (
-      <div className="fixed inset-0 bg-gradient-to-b from-slate-950 via-indigo-950/90 to-slate-950 flex items-center justify-center z-[9999]">
+      <div
+        className="fixed inset-0 bg-gradient-to-b from-slate-950 via-indigo-950/95 to-slate-950 flex items-center justify-center z-[9999]"
+        onClick={handleSkip}
+      >
+        {/* スキップボタン */}
+        <motion.button
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 1.5 }}
+          onClick={(e) => { e.stopPropagation(); handleSkip(); }}
+          className="absolute top-8 right-4 px-4 py-2 bg-slate-800/80 hover:bg-slate-700 text-slate-400 hover:text-white rounded-full text-sm font-medium transition-all flex items-center gap-2 z-50"
+          style={{ marginTop: "env(safe-area-inset-top, 0px)" }}
+        >
+          <X className="w-4 h-4" />
+          スキップ
+        </motion.button>
+
+        {/* 広がる波紋エフェクト */}
+        {[...Array(3)].map((_, i) => (
+          <motion.div
+            key={`ripple-${i}`}
+            initial={{ scale: 0.5, opacity: 0.6 }}
+            animate={{ scale: 3, opacity: 0 }}
+            transition={{
+              duration: 3,
+              delay: i * 0.8,
+              repeat: Infinity,
+              ease: "easeOut"
+            }}
+            className="absolute w-40 h-40 rounded-full border-2 pointer-events-none"
+            style={{ borderColor: attr.color }}
+          />
+        ))}
+
         {/* 背景パーティクル */}
         <div className="absolute inset-0 overflow-hidden pointer-events-none">
-          {[...Array(20)].map((_, i) => (
+          {[...Array(25)].map((_, i) => (
             <motion.div
               key={`bg-particle-${i}`}
               initial={{ opacity: 0, y: "100%" }}
               animate={{
-                opacity: [0, 0.6, 0],
+                opacity: [0, 0.7, 0],
                 y: "-20%"
               }}
               transition={{
-                duration: 3 + Math.random() * 2,
+                duration: 4 + Math.random() * 3,
                 delay: Math.random() * 2,
                 repeat: Infinity,
                 ease: "linear"
               }}
-              className="absolute w-1 h-1 rounded-full bg-yellow-400/60"
+              className="absolute rounded-full"
               style={{
                 left: `${Math.random() * 100}%`,
-                bottom: 0
+                bottom: 0,
+                width: Math.random() * 4 + 2,
+                height: Math.random() * 4 + 2,
+                background: `radial-gradient(circle, ${attr.color}80, transparent)`
               }}
             />
           ))}
@@ -401,7 +444,8 @@ export default function EnergyInvestmentModal({
           initial={{ scale: 0.8, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
           transition={{ type: "spring", damping: 20, stiffness: 300 }}
-          className="text-center px-8 relative z-10"
+          className="text-center px-6 relative z-10 max-w-md w-full"
+          onClick={(e) => e.stopPropagation()}
         >
           {/* メインアイコン + グロー */}
           <div className="relative mb-10">
