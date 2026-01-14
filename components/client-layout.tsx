@@ -45,26 +45,45 @@ function LayoutContent({ children }: { children: React.ReactNode }) {
   const { user } = useAuth();
   const isPublicPage = publicPages.some((page) => pathname.startsWith(page));
 
-  // 🔧 PWAキャッシュ問題対策: Service Workerを解除してキャッシュをクリア
-  useEffect(() => {
-    // Service Workerの登録を解除（過去に登録されていた場合に備えて）
-    if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.getRegistrations().then((registrations) => {
-        registrations.forEach((registration) => {
-          registration.unregister();
-          console.log('[PWA] Service Worker unregistered:', registration.scope);
-        });
-      });
-    }
+  // 🔧 PWAキャッシュ問題対策: バージョンベースの強制リロード
+  // このバージョン番号を変更するたびに、PWAは強制的にリフレッシュされる
+  const APP_VERSION = "2026-01-15-v5"; // 変更のたびにインクリメント
 
-    // キャッシュAPIをクリア
-    if ('caches' in window) {
-      caches.keys().then((cacheNames) => {
-        cacheNames.forEach((cacheName) => {
-          caches.delete(cacheName);
-          console.log('[PWA] Cache deleted:', cacheName);
+  useEffect(() => {
+    const storedVersion = localStorage.getItem('cc_app_version');
+
+    // バージョンが異なる場合、キャッシュクリア＋強制リロード
+    if (storedVersion !== APP_VERSION) {
+      console.log(`[PWA] Version mismatch: ${storedVersion} -> ${APP_VERSION}`);
+
+      // Service Workerを解除
+      if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.getRegistrations().then((registrations) => {
+          registrations.forEach((registration) => {
+            registration.unregister();
+            console.log('[PWA] Service Worker unregistered:', registration.scope);
+          });
         });
-      });
+      }
+
+      // キャッシュAPIをクリア
+      if ('caches' in window) {
+        caches.keys().then((cacheNames) => {
+          cacheNames.forEach((cacheName) => {
+            caches.delete(cacheName);
+            console.log('[PWA] Cache deleted:', cacheName);
+          });
+        });
+      }
+
+      // バージョンを保存
+      localStorage.setItem('cc_app_version', APP_VERSION);
+
+      // 少し待ってからハードリロード（キャッシュクリアが完了するのを待つ）
+      setTimeout(() => {
+        console.log('[PWA] Forcing hard reload...');
+        window.location.reload();
+      }, 500);
     }
   }, []); // マウント時に1回だけ実行
 
