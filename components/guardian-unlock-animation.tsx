@@ -69,17 +69,17 @@ export default function GuardianUnlockAnimation({
     const timer3 = setTimeout(
       () => setPhase("manifesting"),
       SUMMONING_CONFIG.preparingDuration +
-        SUMMONING_CONFIG.channelingDuration +
-        SUMMONING_CONFIG.summoningDuration
+      SUMMONING_CONFIG.channelingDuration +
+      SUMMONING_CONFIG.summoningDuration
     );
 
     // Phase 5: 祝福（ボタンが押されるまで待機）
     const timer4 = setTimeout(
       () => setPhase("blessing"),
       SUMMONING_CONFIG.preparingDuration +
-        SUMMONING_CONFIG.channelingDuration +
-        SUMMONING_CONFIG.summoningDuration +
-        SUMMONING_CONFIG.manifestingDuration
+      SUMMONING_CONFIG.channelingDuration +
+      SUMMONING_CONFIG.summoningDuration +
+      SUMMONING_CONFIG.manifestingDuration
     );
 
     // 自動完了は削除 - ユーザーがボタンを押すまで待機
@@ -132,18 +132,18 @@ export default function GuardianUnlockAnimation({
             phase === "summoning"
               ? 0
               : phase === "preparing"
-              ? 0.8
-              : phase === "channeling"
-              ? 1
-              : 0.4,
+                ? 0.8
+                : phase === "channeling"
+                  ? 1
+                  : 0.4,
           scale:
             phase === "preparing"
               ? 1
               : phase === "channeling"
-              ? 1.3
-              : phase === "manifesting" || phase === "blessing"
-              ? 1.5
-              : 0,
+                ? 1.3
+                : phase === "manifesting" || phase === "blessing"
+                  ? 1.5
+                  : 0,
           rotate: phase === "channeling" ? 360 : phase === "preparing" ? 180 : 0,
         }}
         transition={{ duration: 1.2, ease: "easeInOut" }}
@@ -301,26 +301,26 @@ export default function GuardianUnlockAnimation({
               phase === "preparing" || phase === "channeling"
                 ? 180
                 : phase === "summoning"
-                ? 90
-                : 0,
+                  ? 90
+                  : 0,
             scale:
               phase === "preparing"
                 ? 0.8
                 : phase === "channeling"
-                ? 0.9
-                : phase === "summoning"
-                ? 0.9
-                : phase === "manifesting"
-                ? [0.9, 1.15, 1]
-                : 1,
+                  ? 0.9
+                  : phase === "summoning"
+                    ? 0.9
+                    : phase === "manifesting"
+                      ? [0.9, 1.15, 1]
+                      : 1,
             opacity:
               phase === "preparing"
                 ? 0.5
                 : phase === "channeling"
-                ? 0.8
-                : phase === "summoning"
-                ? 0.5
-                : 1,
+                  ? 0.8
+                  : phase === "summoning"
+                    ? 0.5
+                    : 1,
           }}
           transition={{
             duration: phase === "manifesting" ? 1.2 : 0.8,
@@ -364,7 +364,7 @@ export default function GuardianUnlockAnimation({
             className="absolute inset-0 w-56 h-72 md:w-64 md:h-80 rounded-2xl overflow-hidden border-4"
             style={{
               borderColor: "#fbbf24",
-              background: placeholder.background,
+              background: "transparent",
               boxShadow: `0 0 80px #fbbf24, 0 0 120px ${attr.color}`,
             }}
           >
@@ -438,8 +438,8 @@ export default function GuardianUnlockAnimation({
                   i % 3 === 0
                     ? "#fbbf24"
                     : i % 3 === 1
-                    ? attr.color
-                    : "#fff",
+                      ? attr.color
+                      : "#fff",
                 borderRadius: Math.random() > 0.5 ? "50%" : "2px",
               }}
             />

@@ -501,7 +501,7 @@ export default function MyPage() {
               <div
                 className="w-20 h-20 sm:w-24 sm:h-24 rounded-xl flex items-center justify-center relative overflow-hidden"
                 style={{
-                  background: placeholder.background,
+                  background: "transparent",
                   border: `2px solid ${attr.color}`,
                 }}
               >

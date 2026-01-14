@@ -376,7 +376,7 @@ export default function EnergyInvestmentModal({
               animate={{ scale: [0.5, 1.1, 1] }}
               transition={{ duration: 0.6, times: [0, 0.6, 1] }}
               className="w-40 h-40 mx-auto rounded-full flex items-center justify-center relative"
-              style={{ background: placeholder.background }}
+              style={{ background: "transparent" }}
             >
               <span className="text-7xl">{placeholder.emoji}</span>
 
@@ -1315,7 +1315,7 @@ export default function EnergyInvestmentModal({
         {/* 守護神画像 */}
         <div
           className="w-full aspect-square max-h-[30vh] rounded-xl mb-4 guardian-floating relative overflow-hidden"
-          style={{ background: placeholder.background }}
+          style={{ background: "transparent" }}
         >
           <img
             src={getGuardianImagePath(guardianId, stage)}

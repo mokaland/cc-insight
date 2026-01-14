@@ -69,8 +69,8 @@ function ParticleEffect({ count = 20, color = "purple" }: { count?: number; colo
             left: `${Math.random() * 100}%`,
             top: `${Math.random() * 100}%`,
             backgroundColor: color === "purple" ? "#a855f7" :
-                            color === "gold" ? "#fbbf24" :
-                            color === "cyan" ? "#22d3ee" : "#ec4899",
+              color === "gold" ? "#fbbf24" :
+                color === "cyan" ? "#22d3ee" : "#ec4899",
             animationDelay: `${Math.random() * 5}s`,
             animationDuration: `${3 + Math.random() * 4}s`,
             opacity: 0.6 + Math.random() * 0.4,
@@ -316,9 +316,8 @@ export default function GuardianSummoning({ userId, onComplete }: GuardianSummon
 
           {/* 中央の魔法陣（フェードイン） */}
           <div
-            className={`absolute transition-all duration-2000 ${
-              prologuePhase >= 1 ? 'opacity-30 scale-100' : 'opacity-0 scale-50'
-            }`}
+            className={`absolute transition-all duration-2000 ${prologuePhase >= 1 ? 'opacity-30 scale-100' : 'opacity-0 scale-50'
+              }`}
           >
             <MagicCircle size="lg" spinning={true} />
           </div>
@@ -328,9 +327,8 @@ export default function GuardianSummoning({ userId, onComplete }: GuardianSummon
             {prologueTexts.map((text, index) => (
               <div
                 key={index}
-                className={`mb-6 transition-all duration-1000 ${
-                  prologuePhase >= index ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'
-                }`}
+                className={`mb-6 transition-all duration-1000 ${prologuePhase >= index ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'
+                  }`}
               >
                 {prologuePhase === index ? (
                   <TypewriterText
@@ -349,9 +347,8 @@ export default function GuardianSummoning({ userId, onComplete }: GuardianSummon
 
             {/* 儀式を始めるボタン */}
             <div
-              className={`mt-12 transition-all duration-1000 ${
-                showPrologueButton ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8 pointer-events-none'
-              }`}
+              className={`mt-12 transition-all duration-1000 ${showPrologueButton ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8 pointer-events-none'
+                }`}
             >
               <button
                 onClick={() => setStep('demographics')}
@@ -561,9 +558,8 @@ export default function GuardianSummoning({ userId, onComplete }: GuardianSummon
                 return (
                   <div
                     key={guardian.id}
-                    className={`transition-all duration-1000 ${
-                      isRevealed ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-12'
-                    }`}
+                    className={`transition-all duration-1000 ${isRevealed ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-12'
+                      }`}
                     style={{ transitionDelay: `${index * 200}ms` }}
                   >
                     <button
@@ -601,7 +597,7 @@ export default function GuardianSummoning({ userId, onComplete }: GuardianSummon
                           ${isSelected ? 'guardian-floating' : ''}
                         `}
                         style={{
-                          background: placeholder.background,
+                          background: "transparent",
                           boxShadow: isSelected ? `0 0 40px ${attr.color}50` : 'none'
                         }}
                       >
@@ -636,8 +632,8 @@ export default function GuardianSummoning({ userId, onComplete }: GuardianSummon
                           「{guardian.attribute === 'power'
                             ? '我が力で、汝の道を切り拓こう'
                             : guardian.attribute === 'beauty'
-                            ? '我が知恵で、汝を導こう'
-                            : '我が技術で、汝を守ろう'
+                              ? '我が知恵で、汝を導こう'
+                              : '我が技術で、汝を守ろう'
                           }」
                         </p>
                       </div>
@@ -716,7 +712,7 @@ export default function GuardianSummoning({ userId, onComplete }: GuardianSummon
               className="w-64 h-64 md:w-80 md:h-80 rounded-full flex items-center justify-center mx-auto mb-8
                          evolution-pulse overflow-hidden"
               style={{
-                background: placeholder.background,
+                background: "transparent",
                 boxShadow: `0 0 80px ${attr.color}80, 0 0 120px ${attr.color}40`
               }}
             >
@@ -803,7 +799,7 @@ export default function GuardianSummoning({ userId, onComplete }: GuardianSummon
               className="w-48 h-48 md:w-56 md:h-56 mx-auto mb-6 rounded-full flex items-center justify-center
                          guardian-floating overflow-hidden"
               style={{
-                background: placeholder.background,
+                background: "transparent",
                 boxShadow: `0 0 60px ${attr.color}60`
               }}
             >

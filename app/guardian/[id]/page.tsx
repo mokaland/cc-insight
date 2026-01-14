@@ -212,7 +212,7 @@ export default function GuardianDetailPage() {
         <div
           className="w-full aspect-square max-w-md mx-auto rounded-2xl overflow-hidden relative border-4"
           style={{
-            background: getPlaceholderStyle(guardianId).background,
+            background: "transparent",
             borderColor: isStageUnlocked ? attr.color : "#475569",
             boxShadow: isStageUnlocked
               ? `0 0 60px ${attr.color}60`
