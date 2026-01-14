@@ -45,6 +45,29 @@ function LayoutContent({ children }: { children: React.ReactNode }) {
   const { user } = useAuth();
   const isPublicPage = publicPages.some((page) => pathname.startsWith(page));
 
+  // 🔧 PWAキャッシュ問題対策: Service Workerを解除してキャッシュをクリア
+  useEffect(() => {
+    // Service Workerの登録を解除（過去に登録されていた場合に備えて）
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.getRegistrations().then((registrations) => {
+        registrations.forEach((registration) => {
+          registration.unregister();
+          console.log('[PWA] Service Worker unregistered:', registration.scope);
+        });
+      });
+    }
+
+    // キャッシュAPIをクリア
+    if ('caches' in window) {
+      caches.keys().then((cacheNames) => {
+        cacheNames.forEach((cacheName) => {
+          caches.delete(cacheName);
+          console.log('[PWA] Cache deleted:', cacheName);
+        });
+      });
+    }
+  }, []); // マウント時に1回だけ実行
+
   // 🎁 デイリーログインボーナス
   const [loginBonus, setLoginBonus] = useState<LoginBonusResult | null>(null);
   const [showLoginModal, setShowLoginModal] = useState(false);
