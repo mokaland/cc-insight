@@ -114,7 +114,28 @@ export function DailyMissions({
     const progress = (completedCount / totalCount) * 100;
 
     return (
-        <div className="glass-card rounded-xl overflow-hidden">
+        <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{
+                opacity: 1,
+                y: 0,
+                boxShadow: [
+                    '0 0 0px rgba(168, 85, 247, 0)',
+                    '0 0 20px rgba(168, 85, 247, 0.4)',
+                    '0 0 0px rgba(168, 85, 247, 0)'
+                ]
+            }}
+            transition={{
+                opacity: { duration: 0.3 },
+                y: { duration: 0.3 },
+                boxShadow: {
+                    repeat: Infinity,
+                    duration: 2,
+                    ease: "easeInOut"
+                }
+            }}
+            className="glass-card rounded-xl overflow-hidden border border-purple-500/30"
+        >
             {/* ヘッダー（報告ステータス統合） */}
             <button
                 onClick={() => setExpanded(!expanded)}
@@ -340,6 +361,6 @@ export function DailyMissions({
                     </motion.div>
                 )}
             </AnimatePresence>
-        </div>
+        </motion.div>
     );
 }
