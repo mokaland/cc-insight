@@ -1412,8 +1412,9 @@ export default function EnergyInvestmentModal({
       onClick={onClose}
     >
       <div
-        className="bg-gradient-to-b from-slate-900 to-slate-950 rounded-2xl p-6 pb-8 max-w-2xl w-full border-2 border-purple-500/30 max-h-[calc(100vh-var(--bottom-nav-height)-8rem)] md:max-h-[95vh] overflow-y-auto"
+        className="bg-gradient-to-b from-slate-900 to-slate-950 rounded-2xl p-6 pb-8 max-w-2xl w-full border-2 border-purple-500/30 max-h-[calc(100vh-var(--bottom-nav-height)-8rem)] md:max-h-[95vh] overflow-y-auto overflow-x-hidden"
         onClick={e => e.stopPropagation()}
+        style={{ touchAction: "pan-y" }}
       >
         {/* ヘッダー */}
         <div className="flex items-start justify-between mb-4">
@@ -1553,6 +1554,7 @@ export default function EnergyInvestmentModal({
                 value={investAmount}
                 onChange={(e) => setInvestAmount(parseInt(e.target.value))}
                 className="w-full mb-3"
+                style={{ touchAction: "none" }}
               />
 
               <div className="flex items-center justify-between mb-4">
