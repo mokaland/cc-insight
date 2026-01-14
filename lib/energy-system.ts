@@ -406,7 +406,10 @@ export function getStreakGraceHours(
 }
 
 /**
- * ストリークを更新（週次/日次対応）
+ * ストリークを更新（日付ベース）
+ * - 同日報告: ストリーク維持
+ * - 前日（または猶予期間内）報告: ストリーク+1
+ * - それ以外: リセット
  */
 export function updateStreak(
   currentStreak: UserStreakData,
@@ -426,23 +429,39 @@ export function updateStreak(
     };
   }
 
-  const hoursSinceLastReport = (now.getTime() - lastReport.getTime()) / (1000 * 60 * 60);
-  const graceHours = currentStreak.graceHours || (streakMode === 'weekly' ? 168 : 24);
+  // 日付比較のためにJST(+9)で日付を取得
+  const getJSTDateString = (date: Date): string => {
+    const jstOffset = 9 * 60; // JST is UTC+9
+    const utc = date.getTime() + (date.getTimezoneOffset() * 60 * 1000);
+    const jstDate = new Date(utc + (jstOffset * 60 * 1000));
+    return jstDate.toISOString().split('T')[0];
+  };
 
-  // 週次モードと日次モードで期間を分ける
-  const periodHours = streakMode === 'weekly' ? 168 : 24; // 7日 or 1日
+  const todayStr = getJSTDateString(now);
+  const lastReportStr = getJSTDateString(lastReport);
+
+  // 日付差分を計算
+  const todayDate = new Date(todayStr);
+  const lastReportDate = new Date(lastReportStr);
+  const daysDiff = Math.floor((todayDate.getTime() - lastReportDate.getTime()) / (24 * 60 * 60 * 1000));
+
+  // 猶予日数（週次モード: 7日、日次モード: 1日）
+  const graceDays = streakMode === 'weekly' ? 7 : 1;
 
   let newCurrent = currentStreak.current;
 
-  if (hoursSinceLastReport < periodHours) {
-    // 期間内: 同期間扱い（連続数変わらず）
+  if (daysDiff === 0) {
+    // 同日報告: ストリーク維持
     newCurrent = currentStreak.current;
-  } else if (hoursSinceLastReport < periodHours + graceHours) {
-    // 猶予時間内: ストリーク継続・インクリメント
+    console.log(`📊 ストリーク: 同日報告 (streak=${newCurrent})`);
+  } else if (daysDiff <= graceDays) {
+    // 猶予期間内（日次なら1日=昨日、週次なら7日以内）: ストリーク+1
     newCurrent = currentStreak.current + 1;
+    console.log(`📊 ストリーク: 継続 +1 (daysDiff=${daysDiff}, streak=${newCurrent})`);
   } else {
     // 猶予超過: リセット
     newCurrent = 1;
+    console.log(`📊 ストリーク: リセット (daysDiff=${daysDiff}, graceDays=${graceDays})`);
   }
 
   return {
@@ -450,7 +469,7 @@ export function updateStreak(
     max: Math.max(newCurrent, currentStreak.max),
     multiplier: getStreakMultiplier(newCurrent),
     lastReportAt: Timestamp.fromDate(now),
-    graceHours
+    graceHours: currentStreak.graceHours || (streakMode === 'weekly' ? 168 : 24)
   };
 }
 

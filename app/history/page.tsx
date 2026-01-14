@@ -13,6 +13,7 @@ import {
   EnergyHistoryRecord,
   EnergyHistorySummary,
 } from "@/lib/energy-history";
+import { getUserGuardianProfile } from "@/lib/firestore";
 import { TrendingUp, Calendar, Zap, Flame, ArrowLeft } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
@@ -31,8 +32,19 @@ export default function HistoryPage() {
       setLoading(true);
       try {
         const periodDays = period === "all" ? "all" : parseInt(period);
-        const records = await getEnergyHistory(user.uid, periodDays);
+        const [records, profile] = await Promise.all([
+          getEnergyHistory(user.uid, periodDays),
+          getUserGuardianProfile(user.uid)
+        ]);
+
         const sum = calculateHistorySummary(records);
+
+        // プロファイルのリアルタイムストリーク値を使用
+        if (profile) {
+          sum.currentStreak = profile.streak.current;
+          sum.maxStreak = profile.streak.max;
+        }
+
         setSummary(sum);
       } catch (error) {
         console.error("履歴取得エラー:", error);
