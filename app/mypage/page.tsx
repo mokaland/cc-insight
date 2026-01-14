@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { playSound } from "@/lib/sound-service";
 import { useAuth } from "@/lib/auth-context";
 import { GlassCard } from "@/components/glass-card";
 import { Button } from "@/components/ui/button";
@@ -783,7 +784,10 @@ export default function MyPage() {
           initial={{ scale: 0.8, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
           transition={{ duration: 0.3, delay: 0 }}
-          onClick={() => setEnergyModalOpen(true)}
+          onClick={() => {
+            playSound("button_tap");
+            setEnergyModalOpen(true);
+          }}
           className="glass-premium p-3 rounded-xl border border-yellow-500/30 cursor-pointer active:scale-95 transition-transform aspect-square flex flex-col items-center justify-center"
         >
           <div className="w-8 h-8 mb-1">
@@ -807,7 +811,10 @@ export default function MyPage() {
           initial={{ scale: 0.8, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
           transition={{ duration: 0.3, delay: 0.05 }}
-          onClick={() => setTotalModalOpen(true)}
+          onClick={() => {
+            playSound("button_tap");
+            setTotalModalOpen(true);
+          }}
           className="glass-premium p-3 rounded-xl border border-purple-500/30 cursor-pointer active:scale-95 transition-transform aspect-square flex flex-col items-center justify-center"
         >
           <div className="w-8 h-8 mb-1">
@@ -831,7 +838,10 @@ export default function MyPage() {
           initial={{ scale: 0.8, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
           transition={{ duration: 0.3, delay: 0.1 }}
-          onClick={() => setStreakModalOpen(true)}
+          onClick={() => {
+            playSound("button_tap");
+            setStreakModalOpen(true);
+          }}
           className="glass-premium p-3 rounded-xl border border-orange-500/30 cursor-pointer active:scale-95 transition-transform aspect-square flex flex-col items-center justify-center"
         >
           <div className="w-8 h-8 mb-1">
@@ -849,61 +859,63 @@ export default function MyPage() {
             <AnimatedNumber value={profile.streak.current} /><span className="text-xs">日</span>
           </p>
         </motion.div>
-      </div>
+      </div >
 
       {/* 🏅 獲得バッジ */}
-      {profile && (
-        <GlassCard className="p-3">
-          <div className="flex items-center gap-2 mb-3">
-            <Crown className="w-4 h-4 text-yellow-400" />
-            <h3 className="text-sm font-bold text-slate-200">獲得バッジ</h3>
-          </div>
-          <div className="flex flex-wrap gap-2">
-            {/* レベルバッジ */}
-            {currentLevel >= 5 && (
-              <div className="px-2 py-1 rounded-lg bg-purple-500/20 border border-purple-500/30 flex items-center gap-1">
-                <span className="text-xs">⭐</span>
-                <span className="text-[10px] text-purple-300 font-medium">Lv.{currentLevel}達成</span>
-              </div>
-            )}
+      {
+        profile && (
+          <GlassCard className="p-3">
+            <div className="flex items-center gap-2 mb-3">
+              <Crown className="w-4 h-4 text-yellow-400" />
+              <h3 className="text-sm font-bold text-slate-200">獲得バッジ</h3>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              {/* レベルバッジ */}
+              {currentLevel >= 5 && (
+                <div className="px-2 py-1 rounded-lg bg-purple-500/20 border border-purple-500/30 flex items-center gap-1">
+                  <span className="text-xs">⭐</span>
+                  <span className="text-[10px] text-purple-300 font-medium">Lv.{currentLevel}達成</span>
+                </div>
+              )}
 
-            {/* ストリークバッジ */}
-            {profile.streak.current >= 7 && (
-              <div className="px-2 py-1 rounded-lg bg-orange-500/20 border border-orange-500/30 flex items-center gap-1">
-                <span className="text-xs">🔥</span>
-                <span className="text-[10px] text-orange-300 font-medium">{profile.streak.current}日連続</span>
-              </div>
-            )}
-            {profile.streak.max >= 30 && (
-              <div className="px-2 py-1 rounded-lg bg-red-500/20 border border-red-500/30 flex items-center gap-1">
-                <span className="text-xs">💪</span>
-                <span className="text-[10px] text-red-300 font-medium">継続マスター</span>
-              </div>
-            )}
+              {/* ストリークバッジ */}
+              {profile.streak.current >= 7 && (
+                <div className="px-2 py-1 rounded-lg bg-orange-500/20 border border-orange-500/30 flex items-center gap-1">
+                  <span className="text-xs">🔥</span>
+                  <span className="text-[10px] text-orange-300 font-medium">{profile.streak.current}日連続</span>
+                </div>
+              )}
+              {profile.streak.max >= 30 && (
+                <div className="px-2 py-1 rounded-lg bg-red-500/20 border border-red-500/30 flex items-center gap-1">
+                  <span className="text-xs">💪</span>
+                  <span className="text-[10px] text-red-300 font-medium">継続マスター</span>
+                </div>
+              )}
 
-            {/* 守護神コンプリートバッジ */}
-            {Object.values(profile.guardians).filter(g => g?.unlocked).length >= 3 && (
-              <div className="px-2 py-1 rounded-lg bg-cyan-500/20 border border-cyan-500/30 flex items-center gap-1">
-                <span className="text-xs">🛡️</span>
-                <span className="text-[10px] text-cyan-300 font-medium">守護神収集家</span>
-              </div>
-            )}
+              {/* 守護神コンプリートバッジ */}
+              {Object.values(profile.guardians).filter(g => g?.unlocked).length >= 3 && (
+                <div className="px-2 py-1 rounded-lg bg-cyan-500/20 border border-cyan-500/30 flex items-center gap-1">
+                  <span className="text-xs">🛡️</span>
+                  <span className="text-[10px] text-cyan-300 font-medium">守護神収集家</span>
+                </div>
+              )}
 
-            {/* 究極体バッジ */}
-            {Object.values(profile.guardians).some(g => g?.stage === 4) && (
-              <div className="px-2 py-1 rounded-lg bg-gradient-to-r from-yellow-500/20 to-amber-500/20 border border-yellow-500/30 flex items-center gap-1">
-                <span className="text-xs">👑</span>
-                <span className="text-[10px] text-yellow-300 font-medium">究極体持ち</span>
-              </div>
-            )}
+              {/* 究極体バッジ */}
+              {Object.values(profile.guardians).some(g => g?.stage === 4) && (
+                <div className="px-2 py-1 rounded-lg bg-gradient-to-r from-yellow-500/20 to-amber-500/20 border border-yellow-500/30 flex items-center gap-1">
+                  <span className="text-xs">👑</span>
+                  <span className="text-[10px] text-yellow-300 font-medium">究極体持ち</span>
+                </div>
+              )}
 
-            {/* バッジがない場合 */}
-            {currentLevel < 5 && profile.streak.current < 7 && (
-              <p className="text-[10px] text-slate-500">まだバッジがありません。報告を続けてバッジを獲得しよう！</p>
-            )}
-          </div>
-        </GlassCard>
-      )}
+              {/* バッジがない場合 */}
+              {currentLevel < 5 && profile.streak.current < 7 && (
+                <p className="text-[10px] text-slate-500">まだバッジがありません。報告を続けてバッジを獲得しよう！</p>
+              )}
+            </div>
+          </GlassCard>
+        )
+      }
 
       {/* 📱 SNSアカウント設定 - 折りたたみ式 */}
       <div className="glass-bg rounded-xl border border-blue-500/20 overflow-hidden">
