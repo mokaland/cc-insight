@@ -3,8 +3,10 @@
 import { useState, useEffect, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { getUserById, getUserReports, getUserGuardianProfile, getUserSnsAccounts, teams, User } from "@/lib/services/user";
+import { approveSnsAccount, rejectSnsAccount } from "@/lib/firestore";
 import { Report } from "@/lib/types";
 import { SnsAccounts, SnsAccountApproval } from "@/lib/guardian-collection";
+import { useAuth } from "@/lib/auth-context";
 import { GlassCard } from "@/components/glass-card";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -24,7 +26,10 @@ import {
   MessageCircle,
   Instagram,
   Youtube,
-  Music2
+  Music2,
+  Check,
+  X,
+  ExternalLink
 } from "lucide-react";
 import { ContentLoader } from "@/components/ui/loading-spinner";
 import { GUARDIANS, ATTRIBUTES, getGuardianImagePath, GuardianId, EVOLUTION_STAGES } from "@/lib/guardian-collection";
@@ -43,7 +48,12 @@ interface PeriodStats {
 export default function UserDetailPage() {
   const params = useParams();
   const router = useRouter();
+  const { user: currentUser } = useAuth();
   const userId = params?.userId as string;
+
+  // SNS承認処理用の状態
+  const [snsProcessingKey, setSnsProcessingKey] = useState<string | null>(null);
+  const [snsMessage, setSnsMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
   const [user, setUser] = useState<User | null>(null);
   const [reports, setReports] = useState<Report[]>([]);
@@ -54,6 +64,56 @@ export default function UserDetailPage() {
   const [badges, setBadges] = useState<any[]>([]);
   const [guardianData, setGuardianData] = useState<any>(null);
   const [snsAccounts, setSnsAccounts] = useState<SnsAccounts | null>(null);
+
+  // SNS承認処理
+  const handleSnsApprove = async (snsKey: 'instagram' | 'youtube' | 'tiktok' | 'x') => {
+    if (!currentUser) return;
+    const key = `${userId}_${snsKey}`;
+    setSnsProcessingKey(key);
+    setSnsMessage(null);
+
+    try {
+      const result = await approveSnsAccount(userId, snsKey, currentUser.uid);
+      if (result.success) {
+        setSnsMessage({ type: 'success', text: result.message });
+        // SNSアカウント情報を再読み込み
+        const snsData = await getUserSnsAccounts(userId);
+        setSnsAccounts(snsData);
+      } else {
+        setSnsMessage({ type: 'error', text: result.message });
+      }
+    } catch (error) {
+      setSnsMessage({ type: 'error', text: '承認処理に失敗しました' });
+    } finally {
+      setSnsProcessingKey(null);
+    }
+  };
+
+  const handleSnsReject = async (snsKey: 'instagram' | 'youtube' | 'tiktok' | 'x') => {
+    if (!currentUser) return;
+    const reason = prompt('却下理由を入力してください:');
+    if (!reason) return;
+
+    const key = `${userId}_${snsKey}`;
+    setSnsProcessingKey(key);
+    setSnsMessage(null);
+
+    try {
+      const result = await rejectSnsAccount(userId, snsKey, currentUser.uid, reason);
+      if (result.success) {
+        setSnsMessage({ type: 'success', text: result.message });
+        // SNSアカウント情報を再読み込み
+        const snsData = await getUserSnsAccounts(userId);
+        setSnsAccounts(snsData);
+      } else {
+        setSnsMessage({ type: 'error', text: result.message });
+      }
+    } catch (error) {
+      setSnsMessage({ type: 'error', text: '却下処理に失敗しました' });
+    } finally {
+      setSnsProcessingKey(null);
+    }
+  };
 
   const loadUserData = useCallback(async () => {
     try {
@@ -531,82 +591,132 @@ export default function UserDetailPage() {
             }
 
             return (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-3">
+                {/* SNSメッセージ */}
+                {snsMessage && (
+                  <div className={`p-3 rounded-lg text-sm ${snsMessage.type === 'success' ? 'bg-green-500/20 text-green-300' : 'bg-red-500/20 text-red-300'}`}>
+                    {snsMessage.text}
+                  </div>
+                )}
+
+                {/* Instagram */}
                 {igData?.url && (
-                  <a
-                    href={igData.url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="flex items-center gap-3 p-3 rounded-lg bg-gradient-to-r from-pink-500/10 to-purple-500/10 border border-pink-500/20 hover:border-pink-500/40 transition-colors"
-                  >
-                    <Instagram className="w-5 h-5 text-pink-400" />
-                    <div className="flex-1 min-w-0">
-                      <div className="text-xs text-muted-foreground flex items-center gap-2">
-                        Instagram
-                        <span className={`px-1.5 py-0.5 rounded text-[10px] ${igData.status === 'approved' ? 'bg-green-500/20 text-green-300' : igData.status === 'pending' ? 'bg-yellow-500/20 text-yellow-300' : 'bg-red-500/20 text-red-300'}`}>
-                          {igData.status === 'approved' ? '承認済' : igData.status === 'pending' ? '審査中' : '却下'}
-                        </span>
+                  <div className="p-3 rounded-lg bg-gradient-to-r from-pink-500/10 to-purple-500/10 border border-pink-500/20">
+                    <div className="flex items-center gap-3">
+                      <Instagram className="w-5 h-5 text-pink-400 flex-shrink-0" />
+                      <div className="flex-1 min-w-0">
+                        <div className="text-xs text-muted-foreground flex items-center gap-2">
+                          Instagram
+                          <span className={`px-1.5 py-0.5 rounded text-[10px] ${igData.status === 'approved' ? 'bg-green-500/20 text-green-300' : igData.status === 'pending' ? 'bg-yellow-500/20 text-yellow-300' : 'bg-red-500/20 text-red-300'}`}>
+                            {igData.status === 'approved' ? '承認済' : igData.status === 'pending' ? '審査中' : '却下'}
+                          </span>
+                        </div>
+                        <a href={igData.url} target="_blank" rel="noopener noreferrer" className="font-medium text-pink-300 truncate text-sm hover:underline flex items-center gap-1">
+                          {igData.url} <ExternalLink className="w-3 h-3" />
+                        </a>
                       </div>
-                      <div className="font-medium text-pink-300 truncate text-sm">{igData.url}</div>
+                      {igData.status === 'pending' && (
+                        <div className="flex gap-1 flex-shrink-0">
+                          <Button size="sm" onClick={() => handleSnsApprove('instagram')} disabled={snsProcessingKey === `${userId}_instagram`} className="bg-green-600 hover:bg-green-700 h-7 px-2">
+                            <Check className="w-3 h-3" />
+                          </Button>
+                          <Button size="sm" variant="outline" onClick={() => handleSnsReject('instagram')} disabled={snsProcessingKey === `${userId}_instagram`} className="border-red-500/50 text-red-400 hover:bg-red-500/10 h-7 px-2">
+                            <X className="w-3 h-3" />
+                          </Button>
+                        </div>
+                      )}
                     </div>
-                  </a>
+                  </div>
                 )}
+
+                {/* YouTube */}
                 {ytData?.url && (
-                  <a
-                    href={ytData.url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="flex items-center gap-3 p-3 rounded-lg bg-gradient-to-r from-red-500/10 to-orange-500/10 border border-red-500/20 hover:border-red-500/40 transition-colors"
-                  >
-                    <Youtube className="w-5 h-5 text-red-400" />
-                    <div className="flex-1 min-w-0">
-                      <div className="text-xs text-muted-foreground flex items-center gap-2">
-                        YouTube
-                        <span className={`px-1.5 py-0.5 rounded text-[10px] ${ytData.status === 'approved' ? 'bg-green-500/20 text-green-300' : ytData.status === 'pending' ? 'bg-yellow-500/20 text-yellow-300' : 'bg-red-500/20 text-red-300'}`}>
-                          {ytData.status === 'approved' ? '承認済' : ytData.status === 'pending' ? '審査中' : '却下'}
-                        </span>
+                  <div className="p-3 rounded-lg bg-gradient-to-r from-red-500/10 to-orange-500/10 border border-red-500/20">
+                    <div className="flex items-center gap-3">
+                      <Youtube className="w-5 h-5 text-red-400 flex-shrink-0" />
+                      <div className="flex-1 min-w-0">
+                        <div className="text-xs text-muted-foreground flex items-center gap-2">
+                          YouTube
+                          <span className={`px-1.5 py-0.5 rounded text-[10px] ${ytData.status === 'approved' ? 'bg-green-500/20 text-green-300' : ytData.status === 'pending' ? 'bg-yellow-500/20 text-yellow-300' : 'bg-red-500/20 text-red-300'}`}>
+                            {ytData.status === 'approved' ? '承認済' : ytData.status === 'pending' ? '審査中' : '却下'}
+                          </span>
+                        </div>
+                        <a href={ytData.url} target="_blank" rel="noopener noreferrer" className="font-medium text-red-300 truncate text-sm hover:underline flex items-center gap-1">
+                          {ytData.url} <ExternalLink className="w-3 h-3" />
+                        </a>
                       </div>
-                      <div className="font-medium text-red-300 truncate text-sm">{ytData.url}</div>
+                      {ytData.status === 'pending' && (
+                        <div className="flex gap-1 flex-shrink-0">
+                          <Button size="sm" onClick={() => handleSnsApprove('youtube')} disabled={snsProcessingKey === `${userId}_youtube`} className="bg-green-600 hover:bg-green-700 h-7 px-2">
+                            <Check className="w-3 h-3" />
+                          </Button>
+                          <Button size="sm" variant="outline" onClick={() => handleSnsReject('youtube')} disabled={snsProcessingKey === `${userId}_youtube`} className="border-red-500/50 text-red-400 hover:bg-red-500/10 h-7 px-2">
+                            <X className="w-3 h-3" />
+                          </Button>
+                        </div>
+                      )}
                     </div>
-                  </a>
+                  </div>
                 )}
+
+                {/* TikTok */}
                 {ttData?.url && (
-                  <a
-                    href={ttData.url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="flex items-center gap-3 p-3 rounded-lg bg-gradient-to-r from-cyan-500/10 to-teal-500/10 border border-cyan-500/20 hover:border-cyan-500/40 transition-colors"
-                  >
-                    <Music2 className="w-5 h-5 text-cyan-400" />
-                    <div className="flex-1 min-w-0">
-                      <div className="text-xs text-muted-foreground flex items-center gap-2">
-                        TikTok
-                        <span className={`px-1.5 py-0.5 rounded text-[10px] ${ttData.status === 'approved' ? 'bg-green-500/20 text-green-300' : ttData.status === 'pending' ? 'bg-yellow-500/20 text-yellow-300' : 'bg-red-500/20 text-red-300'}`}>
-                          {ttData.status === 'approved' ? '承認済' : ttData.status === 'pending' ? '審査中' : '却下'}
-                        </span>
+                  <div className="p-3 rounded-lg bg-gradient-to-r from-cyan-500/10 to-teal-500/10 border border-cyan-500/20">
+                    <div className="flex items-center gap-3">
+                      <Music2 className="w-5 h-5 text-cyan-400 flex-shrink-0" />
+                      <div className="flex-1 min-w-0">
+                        <div className="text-xs text-muted-foreground flex items-center gap-2">
+                          TikTok
+                          <span className={`px-1.5 py-0.5 rounded text-[10px] ${ttData.status === 'approved' ? 'bg-green-500/20 text-green-300' : ttData.status === 'pending' ? 'bg-yellow-500/20 text-yellow-300' : 'bg-red-500/20 text-red-300'}`}>
+                            {ttData.status === 'approved' ? '承認済' : ttData.status === 'pending' ? '審査中' : '却下'}
+                          </span>
+                        </div>
+                        <a href={ttData.url} target="_blank" rel="noopener noreferrer" className="font-medium text-cyan-300 truncate text-sm hover:underline flex items-center gap-1">
+                          {ttData.url} <ExternalLink className="w-3 h-3" />
+                        </a>
                       </div>
-                      <div className="font-medium text-cyan-300 truncate text-sm">{ttData.url}</div>
+                      {ttData.status === 'pending' && (
+                        <div className="flex gap-1 flex-shrink-0">
+                          <Button size="sm" onClick={() => handleSnsApprove('tiktok')} disabled={snsProcessingKey === `${userId}_tiktok`} className="bg-green-600 hover:bg-green-700 h-7 px-2">
+                            <Check className="w-3 h-3" />
+                          </Button>
+                          <Button size="sm" variant="outline" onClick={() => handleSnsReject('tiktok')} disabled={snsProcessingKey === `${userId}_tiktok`} className="border-red-500/50 text-red-400 hover:bg-red-500/10 h-7 px-2">
+                            <X className="w-3 h-3" />
+                          </Button>
+                        </div>
+                      )}
                     </div>
-                  </a>
+                  </div>
                 )}
+
+                {/* X (Twitter) */}
                 {xData?.url && (
-                  <a
-                    href={xData.url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="flex items-center gap-3 p-3 rounded-lg bg-gradient-to-r from-slate-500/10 to-gray-500/10 border border-slate-500/20 hover:border-slate-500/40 transition-colors"
-                  >
-                    <span className="text-lg font-bold text-slate-400">𝕏</span>
-                    <div className="flex-1 min-w-0">
-                      <div className="text-xs text-muted-foreground flex items-center gap-2">
-                        X (Twitter)
-                        <span className={`px-1.5 py-0.5 rounded text-[10px] ${xData.status === 'approved' ? 'bg-green-500/20 text-green-300' : xData.status === 'pending' ? 'bg-yellow-500/20 text-yellow-300' : 'bg-red-500/20 text-red-300'}`}>
-                          {xData.status === 'approved' ? '承認済' : xData.status === 'pending' ? '審査中' : '却下'}
-                        </span>
+                  <div className="p-3 rounded-lg bg-gradient-to-r from-slate-500/10 to-gray-500/10 border border-slate-500/20">
+                    <div className="flex items-center gap-3">
+                      <span className="text-lg font-bold text-slate-400 flex-shrink-0">𝕏</span>
+                      <div className="flex-1 min-w-0">
+                        <div className="text-xs text-muted-foreground flex items-center gap-2">
+                          X (Twitter)
+                          <span className={`px-1.5 py-0.5 rounded text-[10px] ${xData.status === 'approved' ? 'bg-green-500/20 text-green-300' : xData.status === 'pending' ? 'bg-yellow-500/20 text-yellow-300' : 'bg-red-500/20 text-red-300'}`}>
+                            {xData.status === 'approved' ? '承認済' : xData.status === 'pending' ? '審査中' : '却下'}
+                          </span>
+                        </div>
+                        <a href={xData.url} target="_blank" rel="noopener noreferrer" className="font-medium text-slate-300 truncate text-sm hover:underline flex items-center gap-1">
+                          {xData.url} <ExternalLink className="w-3 h-3" />
+                        </a>
                       </div>
-                      <div className="font-medium text-slate-300 truncate text-sm">{xData.url}</div>
+                      {xData.status === 'pending' && (
+                        <div className="flex gap-1 flex-shrink-0">
+                          <Button size="sm" onClick={() => handleSnsApprove('x')} disabled={snsProcessingKey === `${userId}_x`} className="bg-green-600 hover:bg-green-700 h-7 px-2">
+                            <Check className="w-3 h-3" />
+                          </Button>
+                          <Button size="sm" variant="outline" onClick={() => handleSnsReject('x')} disabled={snsProcessingKey === `${userId}_x`} className="border-red-500/50 text-red-400 hover:bg-red-500/10 h-7 px-2">
+                            <X className="w-3 h-3" />
+                          </Button>
+                        </div>
+                      )}
                     </div>
-                  </a>
+                  </div>
                 )}
               </div>
             );

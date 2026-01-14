@@ -111,6 +111,12 @@ const adminNavItems = [
     icon: Users,
   },
   {
+    title: "✅ SNS承認",
+    subtitle: "アカウント審査",
+    href: "/admin/sns-approvals",
+    icon: CheckSquare,
+  },
+  {
     title: "🎟️ 招待コード",
     subtitle: "発行・管理",
     href: "/admin/invitations",
