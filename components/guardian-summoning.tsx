@@ -198,6 +198,8 @@ function FullScreenOverlay({
         className={`fixed inset-0 ${allowScroll ? 'overflow-y-auto allow-scroll' : 'overflow-hidden'}`}
         style={{
           zIndex: 99999,
+          width: '100%',
+          boxSizing: 'border-box',
           paddingTop: 'max(env(safe-area-inset-top, 0px), 20px)',
           paddingBottom: 'max(env(safe-area-inset-bottom, 0px), 20px)',
           paddingLeft: 'env(safe-area-inset-left, 0px)',
@@ -391,7 +393,7 @@ export default function GuardianSummoning({ userId, onComplete }: GuardianSummon
   if (step === 'demographics') {
     return (
       <FullScreenOverlay bgGradient="bg-gradient-to-b from-slate-950 via-purple-950 to-slate-950" allowScroll>
-        <div className="min-h-full flex items-center justify-center p-4 py-8">
+        <div className="min-h-full w-full flex items-center justify-center p-4 py-8">
           {/* 背景の魔法陣 */}
           <div className="fixed inset-0 flex items-center justify-center opacity-20 pointer-events-none">
             <MagicCircle size="lg" spinning={true} />
