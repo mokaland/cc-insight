@@ -18,7 +18,7 @@ import {
   getStageAuraConfig
 } from "@/lib/guardian-collection";
 import { investGuardianEnergy } from "@/lib/firestore";
-import { Zap, X, TrendingUp, Sparkles, Star, Heart, Eye } from "lucide-react";
+import { Zap, X, TrendingUp, Sparkles, Star, Heart, Eye, Flame, Crown, Diamond, Target } from "lucide-react";
 import { getEvolutionMessage } from "@/lib/guardian-messages";
 
 // 進化演出のフェーズ
@@ -141,45 +141,64 @@ interface EnergyInvestmentModalProps {
   onSuccess: () => void;
 }
 
-// 投資成功時のメッセージを生成
-function getSuccessMessage(amount: number, remaining: number | null, guardianName: string): { title: string; message: string; emoji: string } {
+// 投資成功時のメッセージを生成（アイコン名を返す）
+type SuccessIconType = "sparkles" | "flame" | "crown" | "target" | "diamond";
+
+function getSuccessMessage(amount: number, remaining: number | null, guardianName: string): { title: string; message: string; icon: SuccessIconType } {
   if (remaining !== null && remaining <= 0) {
     return {
-      title: "進化準備完了！",
+      title: "進化準備完了",
       message: `${guardianName}が進化の光に包まれています...`,
-      emoji: "✨"
+      icon: "sparkles"
     };
   }
 
   if (amount >= 100) {
     return {
-      title: "大量投資！",
-      message: `${guardianName}が力強く輝いています！`,
-      emoji: "🔥"
+      title: "大量投資",
+      message: `${guardianName}が力強く輝いています`,
+      icon: "flame"
     };
   }
 
   if (amount >= 50) {
     return {
-      title: "素晴らしい投資！",
-      message: `${guardianName}が喜んでいます！`,
-      emoji: "💫"
+      title: "素晴らしい投資",
+      message: `${guardianName}が喜んでいます`,
+      icon: "crown"
     };
   }
 
   if (remaining !== null && remaining <= 50) {
     return {
-      title: "あと少し！",
-      message: `進化まであと${remaining}E！`,
-      emoji: "🌟"
+      title: "あと少し",
+      message: `進化まであと${remaining}E`,
+      icon: "target"
     };
   }
 
   return {
-    title: "エナジー注入成功！",
+    title: "エナジー注入成功",
     message: `${guardianName}が成長しています`,
-    emoji: "💎"
+    icon: "diamond"
   };
+}
+
+// アイコンをレンダリングするヘルパー
+function SuccessIcon({ type, className }: { type: SuccessIconType; className?: string }) {
+  const iconClass = className || "w-12 h-12";
+  switch (type) {
+    case "sparkles":
+      return <Sparkles className={`${iconClass} text-purple-400`} />;
+    case "flame":
+      return <Flame className={`${iconClass} text-orange-400`} />;
+    case "crown":
+      return <Crown className={`${iconClass} text-yellow-400`} />;
+    case "target":
+      return <Target className={`${iconClass} text-cyan-400`} />;
+    case "diamond":
+      return <Diamond className={`${iconClass} text-indigo-400`} />;
+  }
 }
 
 // 進化ステップの型（1段階ごとの進化を表す）
@@ -347,117 +366,195 @@ export default function EnergyInvestmentModal({
     }
   }
 
-  // 投資成功演出（進化なし）
+  // 投資成功演出（進化なし）- リッチUI版
   if (showSuccessAnimation && successData) {
     const successMsg = getSuccessMessage(successData.amount, successData.remaining, guardian.name);
 
     return (
-      <div className="fixed inset-0 bg-black/95 flex items-center justify-center z-[9999]">
-        <motion.div
-          initial={{ scale: 0.5, opacity: 0 }}
-          animate={{ scale: 1, opacity: 1 }}
-          transition={{ type: "spring", damping: 15, stiffness: 300 }}
-          className="text-center px-8"
-        >
-          {/* エナジー吸収エフェクト */}
-          <div className="relative mb-8">
-            {/* 背景のグロー */}
+      <div className="fixed inset-0 bg-gradient-to-b from-slate-950 via-indigo-950/90 to-slate-950 flex items-center justify-center z-[9999]">
+        {/* 背景パーティクル */}
+        <div className="absolute inset-0 overflow-hidden pointer-events-none">
+          {[...Array(20)].map((_, i) => (
             <motion.div
-              initial={{ scale: 0.8, opacity: 0 }}
-              animate={{ scale: 1.2, opacity: 0.5 }}
-              transition={{ duration: 0.5 }}
-              className="absolute inset-0 rounded-full blur-3xl"
-              style={{ background: `radial-gradient(circle, ${attr.color}40, transparent)` }}
+              key={`bg-particle-${i}`}
+              initial={{ opacity: 0, y: "100%" }}
+              animate={{
+                opacity: [0, 0.6, 0],
+                y: "-20%"
+              }}
+              transition={{
+                duration: 3 + Math.random() * 2,
+                delay: Math.random() * 2,
+                repeat: Infinity,
+                ease: "linear"
+              }}
+              className="absolute w-1 h-1 rounded-full bg-yellow-400/60"
+              style={{
+                left: `${Math.random() * 100}%`,
+                bottom: 0
+              }}
+            />
+          ))}
+        </div>
+
+        <motion.div
+          initial={{ scale: 0.8, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
+          transition={{ type: "spring", damping: 20, stiffness: 300 }}
+          className="text-center px-8 relative z-10"
+        >
+          {/* メインアイコン + グロー */}
+          <div className="relative mb-10">
+            {/* 外側のパルスリング */}
+            <motion.div
+              animate={{ scale: [1, 1.4, 1], opacity: [0.5, 0, 0.5] }}
+              transition={{ duration: 2, repeat: Infinity, ease: "easeOut" }}
+              className="absolute inset-0 w-32 h-32 mx-auto rounded-full"
+              style={{
+                background: `radial-gradient(circle, ${attr.color}30, transparent 70%)`,
+                left: "50%",
+                top: "50%",
+                transform: "translate(-50%, -50%)"
+              }}
             />
 
-            {/* 守護神アイコン */}
+            {/* 中央のグロー */}
             <motion.div
-              initial={{ scale: 0.5 }}
-              animate={{ scale: [0.5, 1.1, 1] }}
+              initial={{ scale: 0.5, opacity: 0 }}
+              animate={{ scale: 1, opacity: 0.8 }}
+              transition={{ duration: 0.5 }}
+              className="absolute w-24 h-24 rounded-full blur-2xl"
+              style={{
+                background: `radial-gradient(circle, ${attr.color}60, transparent)`,
+                left: "50%",
+                top: "50%",
+                transform: "translate(-50%, -50%)"
+              }}
+            />
+
+            {/* エナジーアイコン（Zap） */}
+            <motion.div
+              initial={{ scale: 0, rotate: -30 }}
+              animate={{ scale: [0, 1.2, 1], rotate: 0 }}
               transition={{ duration: 0.6, times: [0, 0.6, 1] }}
-              className="w-40 h-40 mx-auto rounded-full flex items-center justify-center relative"
-              style={{ background: "transparent" }}
+              className="relative z-10 w-20 h-20 mx-auto flex items-center justify-center"
             >
-              <span className="text-7xl">{placeholder.emoji}</span>
-
-              {/* エナジー粒子 */}
-              {[...Array(12)].map((_, i) => (
-                <motion.div
-                  key={i}
-                  initial={{
-                    x: (Math.random() - 0.5) * 200,
-                    y: (Math.random() - 0.5) * 200,
-                    opacity: 1,
-                    scale: 1
-                  }}
-                  animate={{
-                    x: 0,
-                    y: 0,
-                    opacity: 0,
-                    scale: 0
-                  }}
-                  transition={{
-                    duration: 0.8,
-                    delay: i * 0.05,
-                    ease: "easeIn"
-                  }}
-                  className="absolute"
-                >
-                  <Zap className="w-6 h-6 text-yellow-400" />
-                </motion.div>
-              ))}
-            </motion.div>
-
-            {/* キラキラエフェクト */}
-            {[...Array(6)].map((_, i) => (
-              <motion.div
-                key={i}
-                initial={{ opacity: 0, scale: 0 }}
-                animate={{ opacity: [0, 1, 0], scale: [0, 1.5, 0] }}
-                transition={{
-                  duration: 1.5,
-                  delay: 0.3 + i * 0.15,
-                  repeat: 1,
-                  repeatDelay: 0.5
-                }}
-                className="absolute"
+              <div
+                className="w-20 h-20 rounded-2xl flex items-center justify-center"
                 style={{
-                  top: `${20 + Math.random() * 60}%`,
-                  left: `${20 + Math.random() * 60}%`
+                  background: `linear-gradient(135deg, ${attr.color}40, ${attr.color}20)`,
+                  boxShadow: `0 0 40px ${attr.color}40, inset 0 0 20px ${attr.color}20`
                 }}
               >
-                <Star className="w-6 h-6 text-yellow-300 fill-yellow-300" />
+                <Zap className="w-10 h-10 text-yellow-400 fill-yellow-400" />
+              </div>
+            </motion.div>
+
+            {/* 収束するエナジー粒子 */}
+            {[...Array(16)].map((_, i) => (
+              <motion.div
+                key={i}
+                initial={{
+                  x: (Math.random() - 0.5) * 300,
+                  y: (Math.random() - 0.5) * 300,
+                  opacity: 1,
+                  scale: 1
+                }}
+                animate={{
+                  x: 0,
+                  y: 0,
+                  opacity: 0,
+                  scale: 0
+                }}
+                transition={{
+                  duration: 1,
+                  delay: i * 0.04,
+                  ease: "easeIn"
+                }}
+                className="absolute left-1/2 top-1/2"
+                style={{ transform: "translate(-50%, -50%)" }}
+              >
+                <Zap className="w-5 h-5 text-yellow-400/80" />
               </motion.div>
             ))}
+
+            {/* 外周のキラキラ */}
+            {[...Array(8)].map((_, i) => {
+              const angle = (i / 8) * Math.PI * 2;
+              const radius = 80;
+              return (
+                <motion.div
+                  key={`star-${i}`}
+                  initial={{ opacity: 0, scale: 0 }}
+                  animate={{ opacity: [0, 1, 0], scale: [0, 1, 0] }}
+                  transition={{
+                    duration: 1.5,
+                    delay: 0.5 + i * 0.1,
+                    repeat: Infinity,
+                    repeatDelay: 1
+                  }}
+                  className="absolute left-1/2 top-1/2"
+                  style={{
+                    transform: `translate(-50%, -50%) translate(${Math.cos(angle) * radius}px, ${Math.sin(angle) * radius}px)`
+                  }}
+                >
+                  <Sparkles className="w-4 h-4 text-yellow-300" />
+                </motion.div>
+              );
+            })}
           </div>
 
           {/* 投資額表示 */}
           <motion.div
-            initial={{ y: 20, opacity: 0 }}
+            initial={{ y: 30, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
-            transition={{ delay: 0.3 }}
-            className="mb-6"
+            transition={{ delay: 0.3, type: "spring", damping: 20 }}
+            className="mb-8"
           >
-            <p className="text-6xl font-bold text-yellow-400 mb-2">
+            <motion.p
+              initial={{ scale: 0.8 }}
+              animate={{ scale: [0.8, 1.1, 1] }}
+              transition={{ delay: 0.4, duration: 0.5 }}
+              className="text-6xl font-black mb-3"
+              style={{
+                background: "linear-gradient(135deg, #fbbf24, #f59e0b, #fcd34d)",
+                WebkitBackgroundClip: "text",
+                WebkitTextFillColor: "transparent",
+                textShadow: "0 0 40px rgba(251, 191, 36, 0.5)"
+              }}
+            >
               +{successData.amount}E
-            </p>
-            <p className="text-xl text-gray-300">
-              注入完了！
+            </motion.p>
+            <p className="text-lg font-medium text-slate-300 tracking-widest uppercase">
+              Energy Injected
             </p>
           </motion.div>
 
-          {/* メッセージ */}
+          {/* メッセージカード */}
           <motion.div
-            initial={{ y: 20, opacity: 0 }}
+            initial={{ y: 30, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
-            transition={{ delay: 0.5 }}
-            className="mb-6"
+            transition={{ delay: 0.5, type: "spring", damping: 20 }}
+            className="mb-8 px-6 py-5 rounded-2xl relative overflow-hidden"
+            style={{
+              background: "linear-gradient(135deg, rgba(255,255,255,0.1), rgba(255,255,255,0.05))",
+              backdropFilter: "blur(10px)",
+              border: `1px solid ${attr.color}30`
+            }}
           >
-            <p className="text-5xl mb-3">{successMsg.emoji}</p>
-            <h2 className="text-3xl font-bold text-white mb-2">
+            {/* アイコン */}
+            <div className="flex items-center justify-center mb-3">
+              <motion.div
+                animate={{ rotate: [0, 10, -10, 0] }}
+                transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
+              >
+                <SuccessIcon type={successMsg.icon} className="w-10 h-10" />
+              </motion.div>
+            </div>
+            <h2 className="text-2xl font-bold text-white mb-2">
               {successMsg.title}
             </h2>
-            <p className="text-xl text-gray-300">
+            <p className="text-base text-slate-300">
               {successMsg.message}
             </p>
           </motion.div>
@@ -465,22 +562,45 @@ export default function EnergyInvestmentModal({
           {/* プログレスバー */}
           {successData.remaining !== null && successData.remaining > 0 && (
             <motion.div
-              initial={{ y: 20, opacity: 0 }}
+              initial={{ y: 30, opacity: 0 }}
               animate={{ y: 0, opacity: 1 }}
               transition={{ delay: 0.7 }}
-              className="max-w-xs mx-auto"
+              className="max-w-sm mx-auto px-4"
             >
-              <div className="flex justify-between text-sm text-gray-400 mb-2">
-                <span>次の進化まで</span>
-                <span className="text-yellow-400 font-bold">あと {successData.remaining}E</span>
+              <div className="flex justify-between text-sm mb-3">
+                <span className="text-slate-400">次の進化まで</span>
+                <span
+                  className="font-bold"
+                  style={{ color: attr.color }}
+                >
+                  あと {successData.remaining}E
+                </span>
               </div>
-              <div className="w-full h-3 bg-slate-700 rounded-full overflow-hidden">
+              <div className="w-full h-2.5 bg-slate-800 rounded-full overflow-hidden relative">
+                {/* 背景のシマー */}
+                <motion.div
+                  animate={{ x: ["-100%", "200%"] }}
+                  transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
+                  className="absolute inset-0 w-1/3 bg-gradient-to-r from-transparent via-white/20 to-transparent"
+                />
                 <motion.div
                   initial={{ width: 0 }}
                   animate={{ width: `${Math.min(100, ((successData.newInvested) / (successData.newInvested + successData.remaining)) * 100)}%` }}
-                  transition={{ delay: 0.8, duration: 0.8, ease: "easeOut" }}
-                  className="h-full bg-gradient-to-r from-purple-500 to-pink-500"
-                />
+                  transition={{ delay: 0.9, duration: 1, ease: "easeOut" }}
+                  className="h-full rounded-full relative"
+                  style={{
+                    background: `linear-gradient(90deg, ${attr.color}, ${attr.color}cc)`
+                  }}
+                >
+                  {/* プログレスのグロー */}
+                  <div
+                    className="absolute right-0 top-1/2 -translate-y-1/2 w-3 h-3 rounded-full"
+                    style={{
+                      background: attr.color,
+                      boxShadow: `0 0 10px ${attr.color}, 0 0 20px ${attr.color}80`
+                    }}
+                  />
+                </motion.div>
               </div>
             </motion.div>
           )}
