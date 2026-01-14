@@ -291,7 +291,7 @@ export default function GuardiansPage() {
                         }}
                       >
                         <img
-                          src={getGuardianImagePath(guardian.id, instance?.stage as 0 | 1 | 2 | 3 | 4 || 1)}
+                          src={getGuardianImagePath(guardian.id, (instance?.stage ?? 0) as 0 | 1 | 2 | 3 | 4)}
                           alt={guardian.name}
                           className="w-full h-full object-cover"
                         />
@@ -305,12 +305,12 @@ export default function GuardiansPage() {
                             <Star className="w-3 h-3 text-purple-400 fill-purple-400 flex-shrink-0" />
                           )}
                         </div>
-                        <p className="text-xs text-slate-400">Stage {instance?.stage || 1}</p>
+                        <p className="text-xs text-slate-400">Stage {instance?.stage ?? 0}</p>
                         <div className="mt-1 w-full h-1.5 bg-slate-700 rounded-full overflow-hidden">
                           <div
                             className="h-full rounded-full"
                             style={{
-                              width: `${((instance?.stage || 1) / 4) * 100}%`,
+                              width: `${((instance?.stage ?? 0) / 4) * 100}%`,
                               backgroundColor: attr.color
                             }}
                           />
