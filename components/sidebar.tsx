@@ -43,12 +43,6 @@ const memberNavItems = [
     icon: ClipboardList,
   },
   {
-    title: "今月の目標",
-    subtitle: "進捗を確認",
-    href: "/goals",
-    icon: Target,
-  },
-  {
     title: "運営とのDM",
     subtitle: "質問・相談",
     href: "/dm",
