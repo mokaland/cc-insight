@@ -2,8 +2,9 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Check, Gift, Sparkles, ChevronDown, ChevronUp, Zap } from "lucide-react";
+import { Check, Gift, Sparkles, ChevronDown, ChevronUp, Zap, AlertTriangle } from "lucide-react";
 import { useAuth } from "@/lib/auth-context";
+import Link from "next/link";
 import {
     getTodayMissions,
     claimMissionReward,
@@ -18,13 +19,21 @@ import { playSound, vibrate } from "@/lib/sound-service";
 
 interface DailyMissionsProps {
     onRewardClaimed?: (reward: number) => void;
+    todayReported?: boolean;
+    todayEnergy?: number;
+    isFirstDay?: boolean;
 }
 
-export function DailyMissions({ onRewardClaimed }: DailyMissionsProps) {
+export function DailyMissions({
+    onRewardClaimed,
+    todayReported = false,
+    todayEnergy = 0,
+    isFirstDay = false,
+}: DailyMissionsProps) {
     const { user } = useAuth();
     const [missionState, setMissionState] = useState<DailyMissionState | null>(null);
     const [loading, setLoading] = useState(true);
-    const [expanded, setExpanded] = useState(true);
+    const [expanded, setExpanded] = useState(false); // デフォルト折りたたみ
     const [claimingId, setClaimingId] = useState<string | null>(null);
 
     // ミッション状態を取得
@@ -106,19 +115,36 @@ export function DailyMissions({ onRewardClaimed }: DailyMissionsProps) {
 
     return (
         <div className="glass-card rounded-xl overflow-hidden">
-            {/* ヘッダー */}
+            {/* ヘッダー（報告ステータス統合） */}
             <button
                 onClick={() => setExpanded(!expanded)}
                 className="w-full flex items-center justify-between p-4 hover:bg-white/5 transition-colors"
             >
                 <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center">
-                        <Sparkles className="w-5 h-5 text-white" />
+                    <div className={`w-10 h-10 rounded-full flex items-center justify-center ${todayReported
+                            ? "bg-gradient-to-br from-green-500 to-emerald-500"
+                            : "bg-gradient-to-br from-purple-500 to-pink-500"
+                        }`}>
+                        {todayReported ? (
+                            <Check className="w-5 h-5 text-white" />
+                        ) : (
+                            <Sparkles className="w-5 h-5 text-white" />
+                        )}
                     </div>
                     <div className="text-left">
-                        <h3 className="font-bold text-white">デイリーミッション</h3>
+                        <div className="flex items-center gap-2">
+                            <h3 className="font-bold text-white">デイリーミッション</h3>
+                            {todayReported && todayEnergy > 0 && (
+                                <span className="text-sm font-bold text-yellow-400">
+                                    +{todayEnergy}E
+                                </span>
+                            )}
+                        </div>
                         <p className="text-xs text-slate-400">
                             {completedCount}/{totalCount} 完了
+                            {!todayReported && !isFirstDay && (
+                                <span className="text-red-400 ml-2">• 報告まだ</span>
+                            )}
                         </p>
                     </div>
                 </div>
@@ -187,16 +213,16 @@ export function DailyMissions({ onRewardClaimed }: DailyMissionsProps) {
                                     <motion.div
                                         key={userMission.missionId}
                                         className={`flex items-center gap-3 p-3 rounded-lg transition-colors ${userMission.completed
-                                                ? "bg-green-500/10 border border-green-500/30"
-                                                : "bg-slate-800/50 border border-slate-700/50"
+                                            ? "bg-green-500/10 border border-green-500/30"
+                                            : "bg-slate-800/50 border border-slate-700/50"
                                             }`}
                                         layout
                                     >
                                         {/* アイコン */}
                                         <div
                                             className={`w-10 h-10 rounded-full flex items-center justify-center text-xl ${userMission.completed
-                                                    ? "bg-green-500/20"
-                                                    : "bg-slate-700/50"
+                                                ? "bg-green-500/20"
+                                                : "bg-slate-700/50"
                                                 }`}
                                         >
                                             {userMission.completed ? (
@@ -253,8 +279,8 @@ export function DailyMissions({ onRewardClaimed }: DailyMissionsProps) {
                                     initial={{ scale: 0.9, opacity: 0 }}
                                     animate={{ scale: 1, opacity: 1 }}
                                     className={`flex items-center gap-3 p-3 rounded-lg ${missionState.bonusClaimed
-                                            ? "bg-amber-500/10 border border-amber-500/30"
-                                            : "bg-gradient-to-r from-amber-500/20 to-yellow-500/20 border-2 border-amber-500/50"
+                                        ? "bg-amber-500/10 border border-amber-500/30"
+                                        : "bg-gradient-to-r from-amber-500/20 to-yellow-500/20 border-2 border-amber-500/50"
                                         }`}
                                 >
                                     <div className="w-10 h-10 rounded-full bg-amber-500/30 flex items-center justify-center">

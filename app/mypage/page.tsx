@@ -452,74 +452,46 @@ export default function MyPage() {
         />
       )}
 
-      {/* 📅 今日の報告ステータス - コンパクト */}
-      {todayReported ? (
-        <div className="bg-green-500/15 border border-green-500/40 rounded-lg p-3 flex items-center gap-3">
-          <span className="text-3xl">✅</span>
-          <div className="flex-1">
-            <p className="text-sm font-semibold text-green-400">今日の報告完了！</p>
-            <p className="text-xs text-slate-400">獲得: <span className="text-yellow-400 font-medium">+{todayEnergy}E</span></p>
-          </div>
-        </div>
-      ) : isFirstDay ? (
-        /* 新規登録当日はウェルカムメッセージを表示 - コンパクト */
-        <div className="bg-purple-500/15 border border-purple-500/40 rounded-lg p-3">
-          <div className="flex items-center gap-3 mb-2">
-            <span className="text-2xl">✨</span>
-            <p className="font-semibold text-sm bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">
-              ようこそ、契約者よ！
-            </p>
-          </div>
-          <p className="text-xs text-slate-400">
-            明日から日報を報告してエナジーを獲得しましょう
-          </p>
-        </div>
-      ) : (
-        <div className="bg-red-500/15 border border-red-500/40 rounded-lg p-3 flex items-center gap-3">
-          <span className="text-3xl">⚠️</span>
-          <div className="flex-1">
-            <p className="text-sm font-semibold text-red-400">今日の報告がまだです</p>
-            <p className="text-xs text-slate-400">ストリークを維持しましょう</p>
-          </div>
-          <Link href="/report">
-            <Button size="sm" className="bg-gradient-to-r from-red-500 to-orange-500 text-white text-xs px-3 py-1.5 h-auto">
-              報告する
-            </Button>
-          </Link>
-        </div>
-      )}
+      {/* 🎯 デイリーミッション（報告ステータスも統合） */}
+      <DailyMissions
+        todayReported={todayReported}
+        todayEnergy={todayEnergy}
+        isFirstDay={isFirstDay}
+      />
 
-      {/* 🎯 デイリーミッション */}
-      <DailyMissions />
-
-      {/* 🎯 レベル & 称号 - コンパクト */}
-      <div className="bg-gradient-to-r from-yellow-500/10 via-amber-500/10 to-orange-500/10 border border-yellow-500/30 rounded-xl p-3">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="w-12 h-12 rounded-full bg-gradient-to-br from-yellow-500 to-amber-500 flex items-center justify-center">
-              <span className="text-xl font-bold text-white">{currentLevel}</span>
-            </div>
-            <div>
-              <p className="text-sm font-bold text-yellow-400">Lv.{currentLevel}</p>
-              <p className="text-xs text-purple-400 font-medium">{levelTitle}</p>
-            </div>
+      {/* 🎯 レベル & 称号 - リデザイン */}
+      <div className="bg-gradient-to-r from-yellow-500/10 via-amber-500/10 to-orange-500/10 border border-yellow-500/30 rounded-xl p-4">
+        <div className="flex items-center justify-between mb-2">
+          <div className="flex items-baseline gap-2">
+            <span className="text-3xl font-extrabold bg-gradient-to-r from-yellow-400 via-amber-400 to-orange-400 bg-clip-text text-transparent">
+              Lv.{currentLevel}
+            </span>
+            <span className="text-sm font-medium text-purple-400">
+              {levelTitle}
+            </span>
           </div>
-          {levelProgress && (
-            <div className="flex-1 max-w-[120px] ml-4">
-              <div className="h-2 bg-slate-700 rounded-full overflow-hidden">
-                <motion.div
-                  initial={{ width: 0 }}
-                  animate={{ width: `${levelProgress.progress}%` }}
-                  transition={{ duration: 1, ease: "easeOut" }}
-                  className="h-full bg-gradient-to-r from-yellow-500 to-amber-500 rounded-full"
-                />
-              </div>
-              <p className="text-[10px] text-slate-400 mt-1 text-right">
-                次まで {levelProgress.remaining}E
-              </p>
-            </div>
+          {todayReported && todayEnergy > 0 && (
+            <span className="text-sm font-bold text-yellow-400">
+              +{todayEnergy}E
+            </span>
           )}
         </div>
+        {levelProgress && (
+          <div className="space-y-1">
+            <div className="h-3 bg-slate-700/50 rounded-full overflow-hidden">
+              <motion.div
+                initial={{ width: 0 }}
+                animate={{ width: `${levelProgress.progress}%` }}
+                transition={{ duration: 1, ease: "easeOut" }}
+                className="h-full bg-gradient-to-r from-yellow-500 via-amber-500 to-orange-500 rounded-full"
+                style={{ boxShadow: '0 0 10px rgba(251, 191, 36, 0.5)' }}
+              />
+            </div>
+            <p className="text-xs text-slate-400 text-right">
+              {levelProgress.currentEnergy}E / {levelProgress.requiredForNext}E
+            </p>
+          </div>
+        )}
       </div>
 
       {/* 守護神エリア - コンパクト */}
