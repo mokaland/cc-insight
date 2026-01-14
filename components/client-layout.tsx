@@ -47,7 +47,7 @@ function LayoutContent({ children }: { children: React.ReactNode }) {
 
   // 🔧 PWAキャッシュ問題対策: バージョンベースの強制リロード
   // このバージョン番号を変更するたびに、PWAは強制的にリフレッシュされる
-  const APP_VERSION = "2026-01-15-v8"; // 変更のたびにインクリメント
+  const APP_VERSION = "2026-01-15-v9"; // 変更のたびにインクリメント
 
   useEffect(() => {
     const storedVersion = localStorage.getItem('cc_app_version');

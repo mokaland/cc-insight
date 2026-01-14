@@ -379,7 +379,8 @@ export default function EnergyInvestmentModal({
 
     return (
       <div
-        className="fixed inset-0 bg-gradient-to-b from-slate-950 via-indigo-950/95 to-slate-950 flex items-center justify-center z-[9999]"
+        className="fixed inset-0 bg-gradient-to-b from-slate-950 via-indigo-950/95 to-slate-950 flex flex-col items-center justify-center z-[9999]"
+        style={{ width: "100vw", left: 0, right: 0 }}
         onClick={handleSkip}
       >
         {/* スキップボタン（右下に配置） */}
@@ -449,7 +450,7 @@ export default function EnergyInvestmentModal({
           initial={{ scale: 0.8, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
           transition={{ type: "spring", damping: 20, stiffness: 300 }}
-          className="text-center px-6 relative z-10 max-w-md w-full"
+          className="text-center px-6 relative z-10 max-w-md w-full mx-auto"
           onClick={(e) => e.stopPropagation()}
         >
           {/* メインアイコン + グロー */}
