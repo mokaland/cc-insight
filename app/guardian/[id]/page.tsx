@@ -47,7 +47,7 @@ export default function GuardianDetailPage() {
   const [profile, setProfile] = useState<UserGuardianProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [selectedStage, setSelectedStage] = useState<EvolutionStage>(
-    stageParam ? (parseInt(stageParam) as EvolutionStage) : 1
+    stageParam ? (parseInt(stageParam) as EvolutionStage) : 0 // デフォルトを0に変更
   );
   const [isEditingMemo, setIsEditingMemo] = useState(false);
   const [memoText, setMemoText] = useState("");
@@ -76,12 +76,12 @@ export default function GuardianDetailPage() {
         if (stageParam) {
           const paramStage = parseInt(stageParam) as EvolutionStage;
           // 解放済みステージの範囲内かチェック
-          if (paramStage >= 1 && paramStage <= 4) {
+          if (paramStage >= 0 && paramStage <= 4) {
             setSelectedStage(paramStage);
           }
         } else {
-          // パラメータがない場合は現在のステージ（1以上）を選択
-          setSelectedStage(Math.max(1, instance.stage) as EvolutionStage);
+          // パラメータがない場合は現在のステージを選択
+          setSelectedStage(instance.stage as EvolutionStage);
         }
         setMemoText(instance.memo || "");
       }
@@ -157,10 +157,11 @@ export default function GuardianDetailPage() {
   const auraLevel = isUnlocked ? getAuraLevel(investedEnergy, currentStage) : 0;
   const memories = instance?.memories || [];
 
-  // 選択したステージが解放済みかどうか（Stage 1-4のみ）
+  // 選択したステージが解放済みかどうか（Stage 0も含む）
   const isStageUnlocked = unlockedStages.includes(selectedStage);
+  const isEggStage = selectedStage === 0; // Stage 0は卵
   const stageInfo = EVOLUTION_STAGES[selectedStage];
-  const stageContent = getStageContent(guardianId, selectedStage);
+  const stageContent = selectedStage > 0 ? getStageContent(guardianId, selectedStage) : null;
   const unlockedStories = getUnlockedStories(guardianId, unlockedStages);
 
   // 絆エピソード計算
@@ -169,8 +170,8 @@ export default function GuardianDetailPage() {
     ? Math.floor((Date.now() - unlockedAt.toDate().getTime()) / (1000 * 60 * 60 * 24))
     : 0;
 
-  // フィルタリングされた解放済みステージ（1-4のみ）
-  const displayStages = unlockedStages.filter(s => s >= 1 && s <= 4) as EvolutionStage[];
+  // フィルタリングされた解放済みステージ（Stage 0を含む、解放済みのみ）
+  const displayStages = unlockedStages.filter(s => s >= 0 && s <= 4).sort((a, b) => a - b) as EvolutionStage[];
 
   return (
     <div className="space-y-6 pb-8 overflow-x-hidden">
@@ -219,10 +220,10 @@ export default function GuardianDetailPage() {
               : "none",
           }}
         >
-          {isStageUnlocked ? (
+          {isStageUnlocked || isEggStage ? (
             <img
-              src={getGuardianImagePath(guardianId, selectedStage)}
-              alt={`${guardian.name} Stage ${selectedStage}`}
+              src={isEggStage ? "/images/ui/guardian-egg.png" : getGuardianImagePath(guardianId, selectedStage)}
+              alt={isEggStage ? `${guardian.name} 卵` : `${guardian.name} Stage ${selectedStage}`}
               className="w-full h-full object-contain"
               onError={(e) => {
                 e.currentTarget.src = "/images/ui/guardian-egg.png";
@@ -240,12 +241,12 @@ export default function GuardianDetailPage() {
             <span
               className="text-white text-sm font-bold px-4 py-2 rounded-full"
               style={{
-                backgroundColor: isStageUnlocked
+                backgroundColor: isStageUnlocked || isEggStage
                   ? `${attr.color}cc`
                   : "#47556999",
               }}
             >
-              {stageInfo?.name || "???"} (Stage {selectedStage})
+              {isEggStage ? "卵" : stageInfo?.name || "???"} (Stage {selectedStage})
             </span>
           </div>
         </div>
@@ -264,7 +265,7 @@ export default function GuardianDetailPage() {
           </div>
         )}
 
-        {/* ステージ切り替えボタン（Stage 1-4のみ） */}
+        {/* ステージ切り替えボタン（Stage 0-4、解放済みのみ） */}
         {isUnlocked && displayStages.length > 0 && (
           <div className="flex items-center justify-center gap-4 mt-4">
             <button
@@ -281,8 +282,9 @@ export default function GuardianDetailPage() {
             </button>
 
             <div className="flex gap-2">
-              {[1, 2, 3, 4].map((stage) => {
+              {[0, 1, 2, 3, 4].map((stage) => {
                 const isThisUnlocked = unlockedStages.includes(stage as EvolutionStage);
+                const stageLabel = stage === 0 ? "卵" : stage.toString();
                 return (
                   <button
                     key={stage}
@@ -292,7 +294,7 @@ export default function GuardianDetailPage() {
                       }
                     }}
                     disabled={!isThisUnlocked}
-                    className={`w-10 h-10 rounded-full font-bold transition-all flex items-center justify-center ${selectedStage === stage
+                    className={`w-10 h-10 rounded-full font-bold transition-all flex items-center justify-center text-sm ${selectedStage === stage
                       ? "text-white scale-110"
                       : isThisUnlocked
                         ? "bg-slate-700 text-slate-300 hover:bg-slate-600"
@@ -307,7 +309,7 @@ export default function GuardianDetailPage() {
                           : "none",
                     }}
                   >
-                    {stage}
+                    {stageLabel}
                   </button>
                 );
               })}
