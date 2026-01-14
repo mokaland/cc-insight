@@ -155,7 +155,7 @@ export function DailyMissions({
                     <div className="text-left">
                         <div className="flex items-center gap-2">
                             <h3 className="font-bold text-white">デイリーミッション</h3>
-                            {todayReported && todayEnergy > 0 && (
+                            {todayEnergy > 0 && (
                                 <motion.span
                                     initial={{ scale: 0, opacity: 0 }}
                                     animate={{
